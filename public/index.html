@@ -376,7 +376,53 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
     margin: 0 auto 10px;
   }
 }
-/* ── AUTO REFRESH TIMER ── */
+/* ── 策略推薦 tab ── */
+.strategy-tab-content { padding: 12px 0; }
+.strategy-section { margin-bottom: 16px; }
+.strategy-section-label {
+  font-size: 10px; font-weight: 600; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--text-5);
+  margin-bottom: 8px; padding: 0 2px;
+}
+.strategy-card {
+  background: var(--bg-0); border: 0.5px solid var(--border);
+  border-radius: var(--radius-lg); padding: 10px 12px;
+  margin-bottom: 7px; transition: border-color var(--transition);
+}
+.strategy-card:hover { border-color: var(--border-hover); }
+.strategy-card.top    { border-left: 2.5px solid var(--up); }
+.strategy-card.mid    { border-left: 2.5px solid var(--accent); }
+.strategy-card.low    { border-left: 2.5px solid var(--border); opacity: 0.65; }
+.strategy-card.no     { border-left: 2.5px solid var(--down); opacity: 0.5; }
+
+.sc-header { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
+.sc-star    { font-size: 12px; line-height: 1; }
+.sc-name    { font-size: 12px; font-weight: 600; color: var(--text-2); flex: 1; }
+.sc-tag     {
+  font-size: 10px; padding: 1px 6px; border-radius: 3px;
+  font-weight: 600; flex-shrink: 0;
+}
+.sc-tag.best  { background: var(--up-bg);    color: var(--up);         border: 0.5px solid #15532e; }
+.sc-tag.good  { background: var(--accent-dim); color: var(--accent-text); border: 0.5px solid var(--accent); }
+.sc-tag.ok    { background: var(--bg-2);     color: var(--text-4);     border: 0.5px solid var(--border); }
+.sc-tag.avoid { background: var(--down-bg);  color: var(--down);       border: 0.5px solid #7f1d1d; }
+
+.sc-desc  { font-size: 11px; color: var(--text-4); line-height: 1.6; }
+.sc-action {
+  margin-top: 7px; padding: 6px 10px;
+  background: var(--bg-2); border-radius: var(--radius-sm);
+  font-size: 11px; color: var(--text-3); line-height: 1.6;
+  border-left: 2px solid var(--accent);
+}
+.sc-action-label { font-size: 10px; color: var(--accent-text); font-weight: 600; margin-bottom: 2px; }
+
+.strategy-gap-context {
+  background: var(--bg-2); border: 0.5px solid var(--border);
+  border-radius: var(--radius); padding: 9px 12px; margin-bottom: 14px;
+  font-size: 11px; color: var(--text-4); line-height: 1.7;
+}
+.strategy-gap-context strong { color: var(--text-2); }
+
 .auto-refresh-wrap { display: flex; align-items: center; gap: 6px; }
 .auto-refresh-select {
   height: 26px; padding: 0 6px; border-radius: var(--radius);
@@ -741,8 +787,9 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
         <div class="sidebar-meta" id="sidebarMeta">點選左側族群查看詳情</div>
       </div>
       <div class="sidebar-tabs">
-        <div class="sidebar-tab active" id="tabDetail" onclick="UI.switchSidebarTab('detail')">個股詳情</div>
-        <div class="sidebar-tab" id="tabHistory" onclick="UI.switchSidebarTab('history')">歷史 Gap</div>
+        <div class="sidebar-tab active" id="tabDetail"   onclick="UI.switchSidebarTab('detail')">個股詳情</div>
+        <div class="sidebar-tab"        id="tabHistory"  onclick="UI.switchSidebarTab('history')">歷史 Gap</div>
+        <div class="sidebar-tab"        id="tabStrategy" onclick="UI.switchSidebarTab('strategy')">策略推薦</div>
       </div>
       <div class="sidebar-body" id="sidebarBody">
         <div class="sidebar-placeholder">
@@ -1334,6 +1381,246 @@ const CONFIG = {
         {id:'2357',name:'華碩', price:580, chg:null, role:'核心', seed:4302},
       ]},
   ],
+};
+
+/* ═══════════════════════════════════════════════════════════
+   STRATEGY ENGINE  — 根據族群屬性推薦追蹤策略
+   ═══════════════════════════════════════════════════════════
+   策略庫依據公開技術指標分類，對應族群的市場驅動和 Gap 方向。
+   ═══════════════════════════════════════════════════════════ */
+const StrategyEngine = {
+
+  // ── 策略資料庫 ──
+  // tier: 'top'=強推 / 'mid'=適合 / 'low'=一般 / 'no'=不適合
+  // market: 'US'/'JP'/'all'  gap: 'pos'=正Gap / 'neg'=負Gap / 'any'=皆可
+  STRATEGIES: [
+    // ── 動能突破類 ──
+    {
+      id: 'sixline', name: '六條線多頭排列', cat: '動能突破',
+      market: ['US'], gap: 'pos',
+      tag: '追漲首選', tagType: 'best',
+      desc: '六條均線多頭排列時動能最強，適合 Gap 正值的族群剛開始補漲',
+      action: '等待族群龍頭股日線出現六線多頭排列（6MA 由短到長依序向上），確認後順勢進場，停損設在最短均線下方。',
+    },
+    {
+      id: 'supertrend', name: 'Supertrend 趨勢線', cat: '動能突破',
+      market: ['US', 'JP', 'all'], gap: 'pos',
+      tag: '美台皆宜', tagType: 'good',
+      desc: '趨勢明確時訊號清晰，適合台股和美股驅動的族群',
+      action: '進場條件：股價站上 Supertrend 綠線且 Gap 為正。出場條件：跌破 Supertrend 紅線或 Gap 轉負。',
+    },
+    {
+      id: 'ttm', name: 'TTM 擠壓突破', cat: '動能突破',
+      market: ['US'], gap: 'pos',
+      tag: '爆量突破', tagType: 'best',
+      desc: 'TTM 偵測布林帶收縮後的能量釋放，適合等待補漲的啟動點',
+      action: '等 TTM 由紅轉綠（能量釋放），且族群 Gap 為正值時同步進場。成交量需明顯放大才有效。',
+    },
+    {
+      id: 'donchian', name: 'Donchian 通道突破', cat: '動能突破',
+      market: ['US'], gap: 'pos',
+      tag: '追漲', tagType: 'good',
+      desc: '突破 N 日高點時進場，適合族群剛啟動補漲時追進',
+      action: '族群龍頭股突破 20 日 Donchian 上軌且 Gap 為正，可視為補漲啟動訊號，設停損在下軌。',
+    },
+    {
+      id: 'wave', name: '波動突破（ATR 過濾）', cat: '動能突破',
+      market: ['US', 'JP'], gap: 'pos',
+      tag: '適用', tagType: 'good',
+      desc: '用 ATR 過濾假突破，補漲行情中減少雜訊',
+      action: '突破條件加入 ATR 過濾：突破幅度 ≥ 1 倍 ATR 才算有效。適合在 Gap 大但族群尚未大幅波動時使用。',
+    },
+
+    // ── 趨勢跟蹤類 ──
+    {
+      id: 'dmi', name: 'DMI/ADX 方向動能', cat: '趨勢跟蹤',
+      market: ['US', 'JP'], gap: 'pos',
+      tag: '台股最強', tagType: 'best',
+      desc: 'ADX > 25 代表趨勢明確，+DI > -DI 確認多頭，適合補漲族群',
+      action: '確認 ADX > 25（趨勢強勁）且 +DI 在 -DI 上方，進場做多。Gap 轉負或 ADX 走弱時出場。',
+    },
+    {
+      id: 'keltner', name: 'Keltner 通道', cat: '趨勢跟蹤',
+      market: ['US'], gap: 'any',
+      tag: '適用', tagType: 'good',
+      desc: '結合 ATR 的動態通道，趨勢行情中跟蹤效果好',
+      action: '股價持續在 Keltner 上通道內運行時持有，跌破中線時減碼，跌破下通道時出場。',
+    },
+    {
+      id: 'macd', name: 'MACD 趨勢', cat: '趨勢跟蹤',
+      market: ['US', 'JP', 'all'], gap: 'any',
+      tag: '通用', tagType: 'ok',
+      desc: '適合中線趨勢確認，搭配 Gap 訊號過濾進場時機',
+      action: 'MACD 金叉（DIF 上穿 DEA）+ Gap 為正值，雙重確認後進場。死叉時出場或減碼。',
+    },
+    {
+      id: 'ema_fast', name: 'EMA 快慢交叉', cat: '趨勢跟蹤',
+      market: ['US', 'JP', 'all'], gap: 'any',
+      tag: '通用', tagType: 'ok',
+      desc: '短期 EMA 穿越長期 EMA，簡單有效的趨勢確認工具',
+      action: '進場：EMA(9) 上穿 EMA(21) 且族群 Gap 正值。出場：EMA 死叉或 Gap 轉大幅負值。',
+    },
+
+    // ── 均線型態類 ──
+    {
+      id: 'hull', name: 'Hull 均線斜率', cat: '均線型態',
+      market: ['JP', 'all'], gap: 'any',
+      tag: '日股適合', tagType: 'good',
+      desc: 'Hull MA 反應快速，適合日股驅動族群的中線追蹤',
+      action: 'Hull MA 轉折向上且角度 > 45 度，確認族群進入補漲趨勢，可分批進場。',
+    },
+    {
+      id: 'ichimoku', name: '一目均衡表（雲圖）', cat: '均線型態',
+      market: ['JP'], gap: 'pos',
+      tag: '日股首選', tagType: 'best',
+      desc: '日本本土指標，特別適合日股驅動的光學、機器人、汽車電子族群',
+      action: '進場：股價突破雲層上緣 + 轉換線在基準線上方 + 遲行線在 26 日前股價上方，三條件同時成立再進場。',
+    },
+    {
+      id: 'kama', name: 'KAMA 自適應均線', cat: '均線型態',
+      market: ['all'], gap: 'any',
+      tag: '防震盪', tagType: 'ok',
+      desc: '波動小時貼近股價、趨勢明確時快速反應，適合過濾盤整雜訊',
+      action: 'KAMA 斜率轉正且股價站上 KAMA，配合 Gap 訊號進場。盤整期 KAMA 走平時避免操作。',
+    },
+
+    // ── 震盪逆勢類 ──
+    {
+      id: 'rsi50', name: 'RSI-50 收復', cat: '震盪逆勢',
+      market: ['all'], gap: 'pos',
+      tag: '回測進場', tagType: 'good',
+      desc: 'RSI 由 50 以下反彈並站回 50，適合 Gap 正值但剛從低點回升的族群',
+      action: 'RSI 跌破 50 後反彈回穿 50，搭配 Gap 正值，視為族群補漲啟動前的進場機會。',
+    },
+    {
+      id: 'smc', name: 'SMC 結構突破', cat: '震盪逆勢',
+      market: ['US'], gap: 'pos',
+      tag: '進階', tagType: 'ok',
+      desc: '識別市場結構轉折點，適合有 SMC 基礎的交易者',
+      action: '在族群龍頭股出現 BOS（結構突破）或 CHoCH（趨勢轉換）訊號時，結合 Gap 正值進場。',
+    },
+    {
+      id: 'heikinashi', name: 'Heikin-Ashi K線', cat: '震盪逆勢',
+      market: ['all'], gap: 'any',
+      tag: '輔助工具', tagType: 'ok',
+      desc: '平滑化 K 線，幫助辨識趨勢強弱，適合搭配其他指標使用',
+      action: '連續出現無下影線的紅色 HA K 線時，趨勢強勁。搭配主策略使用，不建議單獨操作。',
+    },
+
+    // ── 量能類 ──
+    {
+      id: 'vwap', name: 'VWAP 量價均衡', cat: '量能確認',
+      market: ['US'], gap: 'pos',
+      tag: '量能首選', tagType: 'best',
+      desc: '機構交易重要參考線，適合美股驅動族群的日內到短線操作',
+      action: '補漲族群的龍頭股股價站上 VWAP 且成交量放大，視為機構開始買進的訊號，可跟進。',
+    },
+    {
+      id: 'obv', name: 'OBV 量能趨勢', cat: '量能確認',
+      market: ['US', 'JP'], gap: 'pos',
+      tag: '確認工具', tagType: 'good',
+      desc: '用成交量確認價格趨勢，OBV 創新高代表資金真正流入',
+      action: 'OBV 創近期新高且股價尚未跟上，代表資金提前布局，結合 Gap 正值可視為強力買進訊號。',
+    },
+  ],
+
+  // ── 根據族群屬性篩選推薦策略 ──
+  getRecommendations(sector) {
+    const market  = sector.market;   // 'US' or 'JP'
+    const gap     = sector.gap;      // 數值
+    const gapDir  = gap === null ? 'any' : gap > 0.5 ? 'pos' : gap < -0.5 ? 'neg' : 'any';
+    const isJP    = market === 'JP';
+
+    return this.STRATEGIES.map(s => {
+      // 計算適合度
+      const marketMatch = s.market.includes(market) || s.market.includes('all');
+      const gapMatch    = s.gap === 'any' || s.gap === gapDir;
+
+      let tier = 'low';
+      if (marketMatch && gapMatch)       tier = 'top';
+      else if (marketMatch || gapMatch)  tier = 'mid';
+      else                               tier = 'low';
+
+      // 日股特別降權給美股專屬策略
+      if (isJP && s.market.length === 1 && s.market[0] === 'US') tier = 'low';
+
+      return { ...s, tier, marketMatch, gapMatch };
+    }).sort((a, b) => {
+      const order = { top: 0, mid: 1, low: 2, no: 3 };
+      return order[a.tier] - order[b.tier];
+    });
+  },
+
+  // ── 渲染側邊欄策略推薦 tab ──
+  renderSidebarStrategy(sector) {
+    const body = document.getElementById('sidebarBody');
+    const recs  = this.getRecommendations(sector);
+    const gap   = sector.gap;
+    const gapStr = gap !== null
+      ? `${gap > 0 ? '+' : ''}${gap.toFixed(2)}pp`
+      : '—';
+    const gapColor = gap === null ? 'var(--text-5)' : gap > 0 ? 'var(--up)' : gap < 0 ? 'var(--down)' : 'var(--text-4)';
+
+    // Gap 情境說明
+    let contextMsg = '';
+    if (gap === null) {
+      contextMsg = '尚無今日 Gap 資料，顯示通用策略推薦。';
+    } else if (gap > 2) {
+      contextMsg = `Gap <strong style="color:${gapColor}">${gapStr}</strong>，補漲空間明顯。優先考慮動能突破和趨勢跟蹤策略，等待放量啟動。`;
+    } else if (gap > 0.5) {
+      contextMsg = `Gap <strong style="color:${gapColor}">${gapStr}</strong>，有輕微補漲機會。建議搭配量能確認後再進場。`;
+    } else if (gap > -0.5) {
+      contextMsg = `Gap <strong style="color:var(--text-3)">${gapStr}</strong>，已跟上海外走勢。以趨勢跟蹤為主，不適合追漲。`;
+    } else {
+      contextMsg = `Gap <strong style="color:${gapColor}">${gapStr}</strong>，已超漲。逆勢操作風險高，建議等回測後再評估。`;
+    }
+
+    // 依類別分組（只顯示 top + mid）
+    const cats = {};
+    recs.filter(s => s.tier === 'top' || s.tier === 'mid').forEach(s => {
+      if (!cats[s.cat]) cats[s.cat] = [];
+      cats[s.cat].push(s);
+    });
+
+    // 最多顯示 4 個 top，3 個 mid
+    const topRecs = recs.filter(s => s.tier === 'top').slice(0, 4);
+    const midRecs = recs.filter(s => s.tier === 'mid').slice(0, 3);
+
+    const renderCard = (s) => {
+      const stars = s.tier === 'top' ? '⭐⭐' : s.tier === 'mid' ? '⭐' : '·';
+      return `
+        <div class="strategy-card ${s.tier}">
+          <div class="sc-header">
+            <span class="sc-star">${stars}</span>
+            <span class="sc-name">${s.name}</span>
+            <span class="sc-tag ${s.tagType}">${s.tag}</span>
+          </div>
+          <div class="sc-desc">${s.desc}</div>
+          <div class="sc-action">
+            <div class="sc-action-label">▶ 可採取做法</div>
+            ${s.action}
+          </div>
+        </div>`;
+    };
+
+    body.innerHTML = `
+      <div class="strategy-tab-content">
+        <div class="strategy-gap-context">${contextMsg}</div>
+        ${topRecs.length ? `
+          <div class="strategy-section">
+            <div class="strategy-section-label">⭐⭐ 強力推薦</div>
+            ${topRecs.map(renderCard).join('')}
+          </div>` : ''}
+        ${midRecs.length ? `
+          <div class="strategy-section">
+            <div class="strategy-section-label">⭐ 可考慮</div>
+            ${midRecs.map(renderCard).join('')}
+          </div>` : ''}
+        <div style="font-size:10px;color:var(--text-6);padding:8px 2px;line-height:1.6;">
+          ※ 以上為技術指標參考，非買賣建議。實際操作需自行判斷風險。
+        </div>
+      </div>`;
+  },
 };
 
 /* ═══════════════════════════════════════════════════════════
@@ -3017,12 +3304,15 @@ const UI = {
 
   switchSidebarTab(tab) {
     HistoryEngine._sidebarTab = tab;
-    document.getElementById('tabDetail').classList.toggle('active',  tab === 'detail');
-    document.getElementById('tabHistory').classList.toggle('active', tab === 'history');
+    document.getElementById('tabDetail').classList.toggle('active',   tab === 'detail');
+    document.getElementById('tabHistory').classList.toggle('active',  tab === 'history');
+    document.getElementById('tabStrategy').classList.toggle('active', tab === 'strategy');
     if (STATE.selectedIdx === null) return;
     const r = DataLayer.getAll()[STATE.selectedIdx];
     if (tab === 'history') {
       HistoryEngine.renderSidebarHistory(r.sector);
+    } else if (tab === 'strategy') {
+      StrategyEngine.renderSidebarStrategy(r);
     } else {
       Renderer.sidebar(r);
     }
@@ -3031,10 +3321,13 @@ const UI = {
   selectRow(idx) {
     setState({ selectedIdx: idx, selectedStock: 0 });
     HistoryEngine._sidebarSector = DataLayer.getAll()[idx]?.sector;
-    // 切換 tab 時保持當前 tab
-    if (HistoryEngine._sidebarTab === 'history') {
-      Renderer.sidebar(DataLayer.getAll()[idx]);  // 先渲染 header
+    const tab = HistoryEngine._sidebarTab;
+    if (tab === 'history') {
+      Renderer.sidebar(DataLayer.getAll()[idx]);
       HistoryEngine.renderSidebarHistory(DataLayer.getAll()[idx].sector);
+    } else if (tab === 'strategy') {
+      Renderer.sidebar(DataLayer.getAll()[idx]);
+      StrategyEngine.renderSidebarStrategy(DataLayer.getAll()[idx]);
     } else {
       Renderer.sidebar(DataLayer.getAll()[idx]);
     }
