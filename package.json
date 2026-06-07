@@ -1,0 +1,9 @@
+{
+  "name": "stock-radar",
+  "version": "2.0.0",
+  "description": "台股族群補漲雷達",
+  "private": true,
+  "engines": {
+    "node": ">=18"
+  }
+}
