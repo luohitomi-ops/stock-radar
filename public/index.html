@@ -1791,8 +1791,7 @@ const UI = {
       filters: { search:'', gapMin:null, gapMax:null, expMin:null, market:'all', cover:'all', betaMin:null, driveChgMin:null, starOnly:false },
       gapAlert: null,
     });
-    Renderer.filterUI(STATE.filters);
-    document.getElementById('gapAlert').value = '';
+    this.filterUI(STATE.filters);
     this.render();
     Renderer.toast('篩選條件已清除');
   },
@@ -1854,22 +1853,22 @@ const UI = {
     // 1. 從 localStorage 還原狀態
     Storage.load();
 
-    // 2. 先顯示 fallback macro（讓畫面立即有內容）
+    // 2. 先顯示 fallback macro
     Renderer.macroGrid(CONFIG.macroFallback);
 
-    // 3. 還原 filter UI（inputs / chips）
-    this.filterUI(STATE.filters);
-
-    // 4. 首次渲染表格（用靜態資料，速度快）
-    this.render();
-
-    // 5. 自動選中第一行
-    setTimeout(() => this.selectRow(0), 50);
-
-    // 6. 綁定所有事件
+    // 3. 綁定所有事件（必須在 filterUI 之前，避免事件綁定失敗）
     this._bindEvents();
 
-    // 7. 背景靜默拉 API（silent = true，不顯示 toast）
+    // 4. 還原 filter UI（inputs / chips）
+    this.filterUI(STATE.filters);
+
+    // 5. 首次渲染表格
+    this.render();
+
+    // 6. 自動選中第一行
+    setTimeout(() => this.selectRow(0), 50);
+
+    // 7. 背景靜默拉 API
     setTimeout(() => this.refresh(true), 200);
   },
 
