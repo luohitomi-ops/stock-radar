@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>給獺金幣 使用說明書</title>
+<style>
+:root {
+  --bg:        #0e1117;
+  --bg1:       #0a0e14;
+  --bg2:       #141922;
+  --bg3:       #1a2230;
+  --border:    #1e2533;
+  --accent:    #1a6ef5;
+  --accent-t:  #60a5fa;
+  --accent-dim:#0e2040;
+  --up:        #22c55e;
+  --up-bg:     #0d2a18;
+  --down:      #ef4444;
+  --down-bg:   #2a0d0d;
+  --warn:      #f59e0b;
+  --warn-bg:   #2a1e00;
+  --purple:    #c084fc;
+  --purple-bg: #1a0e2a;
+  --t1: #e2e8f0;
+  --t2: #c8d8e8;
+  --t3: #9aacbe;
+  --t4: #6b7a8e;
+  --t5: #4a5a6e;
+  --radius: 8px;
+  --radius-lg: 12px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 14px; scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--t1);
+  font-family: 'Helvetica Neue', 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+  line-height: 1.7;
+}
+
+/* ── COVER ── */
+.cover {
+  min-height: 100vh;
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  text-align: center; padding: 60px 20px;
+  background: radial-gradient(ellipse at 50% 0%, #0e2040 0%, var(--bg) 65%);
+  position: relative; overflow: hidden;
+}
+.cover::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(
+    0deg, transparent, transparent 59px, #1e253320 60px
+  ), repeating-linear-gradient(
+    90deg, transparent, transparent 59px, #1e253320 60px
+  );
+}
+.cover-inner { position: relative; z-index: 1; }
+.cover-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--accent-dim); border: 0.5px solid var(--accent);
+  color: var(--accent-t); border-radius: 20px;
+  padding: 4px 14px; font-size: 12px; margin-bottom: 24px;
+}
+.cover-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--up); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+.cover h1 { font-size: 48px; font-weight: 700; color: #fff; letter-spacing: -1px; margin-bottom: 12px; }
+.cover h1 span { color: var(--accent-t); }
+.cover-sub { font-size: 16px; color: var(--t3); max-width: 480px; margin: 0 auto 40px; }
+.cover-meta { display: flex; gap: 32px; justify-content: center; font-size: 12px; color: var(--t4); }
+.cover-meta span { display: flex; align-items: center; gap: 6px; }
+
+/* ── LAYOUT ── */
+.container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+
+/* ── NAV ── */
+.toc {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(14,17,23,0.9); backdrop-filter: blur(12px);
+  border-bottom: 0.5px solid var(--border);
+  padding: 0 24px;
+}
+.toc-inner {
+  max-width: 860px; margin: 0 auto;
+  display: flex; align-items: center; gap: 4px;
+  overflow-x: auto; padding: 10px 0;
+  scrollbar-width: none;
+}
+.toc-inner::-webkit-scrollbar { display: none; }
+.toc-link {
+  white-space: nowrap; padding: 5px 12px;
+  border-radius: 20px; font-size: 12px; color: var(--t4);
+  text-decoration: none; transition: all 0.15s;
+  border: 0.5px solid transparent;
+}
+.toc-link:hover { color: var(--accent-t); border-color: var(--accent); background: var(--accent-dim); }
+
+/* ── SECTIONS ── */
+.section { padding: 64px 0 48px; border-bottom: 0.5px solid var(--border); }
+.section:last-child { border-bottom: none; }
+.section-num {
+  font-size: 11px; color: var(--accent-t); font-weight: 600;
+  letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px;
+}
+.section h2 { font-size: 28px; font-weight: 600; color: #fff; margin-bottom: 16px; }
+.section-intro { font-size: 15px; color: var(--t3); margin-bottom: 32px; line-height: 1.8; }
+
+/* ── CARDS ── */
+.card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin-bottom: 24px; }
+.card {
+  background: var(--bg1); border: 0.5px solid var(--border);
+  border-radius: var(--radius-lg); padding: 16px 18px;
+  transition: border-color 0.15s;
+}
+.card:hover { border-color: #2a3a50; }
+.card-icon { font-size: 20px; margin-bottom: 10px; }
+.card-title { font-size: 13px; font-weight: 600; color: var(--t2); margin-bottom: 6px; }
+.card-desc { font-size: 12px; color: var(--t4); line-height: 1.6; }
+
+/* ── TERM TABLE ── */
+.term-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+.term-table th {
+  text-align: left; padding: 8px 14px; font-size: 11px;
+  color: var(--t5); font-weight: 400; border-bottom: 0.5px solid var(--border);
+  background: var(--bg1);
+}
+.term-table td { padding: 12px 14px; border-bottom: 0.5px solid #151e2a; font-size: 13px; vertical-align: top; }
+.term-table tr:last-child td { border-bottom: none; }
+.term-table tr:hover td { background: #0d1520; }
+.term { font-weight: 600; color: var(--accent-t); white-space: nowrap; }
+.term-wrap { background: var(--bg1); border: 0.5px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: 24px; }
+
+/* ── SIGNAL CARDS ── */
+.signal-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
+.signal-card { border-radius: var(--radius-lg); padding: 18px 20px; border: 0.5px solid; }
+.signal-card.pos { background: var(--up-bg); border-color: #15532e; }
+.signal-card.neg { background: var(--down-bg); border-color: #7f1d1d; }
+.signal-card.neu { background: var(--warn-bg); border-color: #78350f; }
+.signal-card.info { background: var(--accent-dim); border-color: var(--accent); }
+.signal-label { font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
+.signal-card.pos .signal-label { color: var(--up); }
+.signal-card.neg .signal-label { color: var(--down); }
+.signal-card.neu .signal-label { color: var(--warn); }
+.signal-card.info .signal-label { color: var(--accent-t); }
+.signal-title { font-size: 14px; font-weight: 600; color: var(--t1); margin-bottom: 8px; }
+.signal-desc { font-size: 12px; color: var(--t3); line-height: 1.6; }
+
+/* ── FORMULA BOX ── */
+.formula-box {
+  background: var(--bg1); border: 0.5px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  padding: 16px 20px; margin-bottom: 20px; font-family: 'Courier New', monospace;
+}
+.formula-box .f-label { font-size: 11px; color: var(--t5); margin-bottom: 8px; font-family: sans-serif; }
+.formula-box .f-main { font-size: 15px; color: var(--accent-t); margin-bottom: 4px; }
+.formula-box .f-note { font-size: 11px; color: var(--t5); font-family: sans-serif; }
+
+/* ── EXAMPLE BOX ── */
+.example-box {
+  background: var(--bg2); border: 0.5px solid var(--border);
+  border-radius: var(--radius-lg); padding: 18px 20px; margin-bottom: 20px;
+}
+.example-label { font-size: 11px; color: var(--warn); font-weight: 600; letter-spacing: 1px; margin-bottom: 10px; }
+.example-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 0.5px solid #1a2230; font-size: 13px; }
+.example-row:last-child { border-bottom: none; }
+.ex-k { color: var(--t4); }
+.ex-v { font-weight: 600; }
+.ex-up { color: var(--up); }
+.ex-down { color: var(--down); }
+.ex-warn { color: var(--warn); }
+.ex-acc { color: var(--accent-t); }
+
+/* ── STEP LIST ── */
+.step-list { list-style: none; margin-bottom: 24px; }
+.step-list li {
+  display: flex; gap: 14px; padding: 14px 0;
+  border-bottom: 0.5px solid #151e2a;
+}
+.step-list li:last-child { border-bottom: none; }
+.step-num {
+  width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
+  background: var(--accent-dim); border: 0.5px solid var(--accent);
+  color: var(--accent-t); font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; margin-top: 2px;
+}
+.step-content .step-title { font-size: 13px; font-weight: 600; color: var(--t2); margin-bottom: 4px; }
+.step-content .step-desc { font-size: 12px; color: var(--t4); line-height: 1.6; }
+
+/* ── TAG ── */
+.tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;
+}
+.tag-live { background: var(--up-bg); color: var(--up); border: 0.5px solid #15532e; }
+.tag-partial { background: var(--warn-bg); color: var(--warn); border: 0.5px solid #78350f; }
+.tag-beta { background: var(--accent-dim); color: var(--accent-t); border: 0.5px solid var(--accent); }
+.tag-custom { background: var(--purple-bg); color: var(--purple); border: 0.5px solid #4a2070; }
+.tag-fallback { background: var(--bg2); color: var(--t4); border: 0.5px solid var(--border); }
+
+/* ── WARNING BOX ── */
+.warn-box {
+  background: var(--warn-bg); border: 0.5px solid #78350f; border-radius: var(--radius);
+  padding: 12px 16px; margin-bottom: 16px; font-size: 12px; color: var(--warn); line-height: 1.6;
+}
+.info-box {
+  background: var(--accent-dim); border: 0.5px solid var(--accent); border-radius: var(--radius);
+  padding: 12px 16px; margin-bottom: 16px; font-size: 12px; color: var(--accent-t); line-height: 1.6;
+}
+
+/* ── FOOTER ── */
+.footer {
+  text-align: center; padding: 48px 24px;
+  font-size: 12px; color: var(--t5);
+  border-top: 0.5px solid var(--border);
+}
+.footer a { color: var(--accent-t); text-decoration: none; }
+
+@media (max-width: 600px) {
+  .cover h1 { font-size: 32px; }
+  .signal-row { grid-template-columns: 1fr; }
+  .card-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- COVER -->
+<div class="cover">
+  <div class="cover-inner">
+    <div class="cover-badge">
+      <span class="cover-dot"></span>
+      使用說明書 v1.2
+    </div>
+    <h1>給獺<span>金幣</span></h1>
+    <p class="cover-sub">台股族群補漲雷達・完整操作指南與訊號解讀手冊</p>
+    <div class="cover-meta">
+      <span>🌐 給獺金幣 · stock-radar2.vercel.app</span>
+      <span>📅 2026 年 6 月</span>
+      <span>⚡ Yahoo Finance 即時資料</span>
+    </div>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav class="toc">
+  <div class="toc-inner">
+    <a href="#lazy"     class="toc-link">🦦 懶人包</a>
+    <a href="#intro"    class="toc-link">工具簡介</a>
+    <a href="#layout"   class="toc-link">頁面結構</a>
+    <a href="#terms"    class="toc-link">名詞解釋</a>
+    <a href="#formula"  class="toc-link">計算原理</a>
+    <a href="#signals"  class="toc-link">訊號解讀</a>
+    <a href="#workflow" class="toc-link">操作流程</a>
+    <a href="#features" class="toc-link">進階功能</a>
+    <a href="#strategy" class="toc-link">策略推薦</a>
+    <a href="#limits"   class="toc-link">注意事項</a>
+  </div>
+</nav>
+
+<div class="container">
+
+  <!-- 0. 懶人包 -->
+  <section class="section" id="lazy">
+    <div class="section-num" style="color:var(--warn);">懶人包</div>
+    <h2>明日開盤準備：5 步完成</h2>
+    <p class="section-intro">
+      假設今天是週一晚上，美股剛收盤，你想知道明天台股開盤哪些族群可能補漲或超漲，
+      下面是最快的操作路徑。全程約 5 分鐘。
+    </p>
+
+    <!-- Step 0：情境說明 -->
+    <div class="example-box" style="border-color:#2a3a50;margin-bottom:28px;">
+      <div class="example-label" style="color:var(--accent-t);">📌 今晚情境假設</div>
+      <div class="example-row"><span class="ex-k">美股費城半導體 SOX</span><span class="ex-v ex-up">今晚大漲 +3.5%</span></div>
+      <div class="example-row"><span class="ex-k">S&P500 SPX</span><span class="ex-v ex-up">上漲 +1.2%</span></div>
+      <div class="example-row"><span class="ex-k">VIX 恐慌指數</span><span class="ex-v ex-down">下跌 −8%（市場偏樂觀）</span></div>
+      <div class="example-row"><span class="ex-k">目標</span><span class="ex-v" style="color:var(--t2);">找出明天可能補漲的台股族群</span></div>
+    </div>
+
+    <!-- 5 steps -->
+    <ul class="step-list">
+      <li>
+        <div class="step-num" style="background:var(--warn-bg);border-color:var(--warn);color:var(--warn);">1</div>
+        <div class="step-content">
+          <div class="step-title">打開工具，先看 Macro Grid 確認方向</div>
+          <div class="step-desc">
+            打開 <strong style="color:var(--accent-t);">給獺金幣（stock-radar2.vercel.app）</strong>，最上方的宏觀指數區會顯示美股昨晚收盤數字。
+            確認 SOX 是大漲還是大跌、漲跌幅度多少。
+            <br><br>
+            <span style="color:var(--up);">✓ 今晚 SOX +3.5%</span> → 幅度夠大，Gap 訊號有意義，可以繼續看下去。
+            <br>
+            <span style="color:var(--t4);">如果 SOX 只有 ±0.5%，訊號意義不大，可以不用特別研究。</span>
+          </div>
+        </div>
+      </li>
+      <li>
+        <div class="step-num" style="background:var(--warn-bg);border-color:var(--warn);color:var(--warn);">2</div>
+        <div class="step-content">
+          <div class="step-title">按「更新行情」拉最新資料</div>
+          <div class="step-desc">
+            點右上角 <strong style="color:var(--accent-t);">↻ 更新行情</strong>，等待約 10–15 秒。
+            <br><br>
+            更新完成後，確認大部分族群的標籤是 <span class="tag tag-live" style="font-size:10px;">即時</span> 或 <span class="tag tag-partial" style="font-size:10px;">部分</span>。
+            如果很多顯示 <span class="tag tag-fallback" style="font-size:10px;">估算</span>，可能是 API 暫時異常，稍後再試。
+          </div>
+        </div>
+      </li>
+      <li>
+        <div class="step-num" style="background:var(--warn-bg);border-color:var(--warn);color:var(--warn);">3</div>
+        <div class="step-content">
+          <div class="step-title">篩選出有意義的訊號</div>
+          <div class="step-desc">
+            在篩選條件設定以下兩個條件（其他清空）：
+            <br><br>
+            <div style="background:var(--bg2);border-radius:var(--radius);padding:10px 14px;margin:8px 0;font-size:12px;">
+              <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:0.5px solid var(--border);">
+                <span style="color:var(--t4);">Beta ≥</span>
+                <span style="color:var(--accent-t);font-weight:600;">0.5</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;padding:4px 0;">
+                <span style="color:var(--t4);">海外市場</span>
+                <span style="color:var(--accent-t);font-weight:600;">🇺🇸 美股（因為今晚是美股大漲）</span>
+              </div>
+            </div>
+            這樣可以過濾掉連動太弱的族群，只看真正跟美股有關係的。
+          </div>
+        </div>
+      </li>
+      <li>
+        <div class="step-num" style="background:var(--warn-bg);border-color:var(--warn);color:var(--warn);">4</div>
+        <div class="step-content">
+          <div class="step-title">看排行表：找 Gap 正值的族群</div>
+          <div class="step-desc">
+            表格已按落差降序排列，<strong style="color:var(--t2);">排在前面的就是今晚還沒漲到位的族群</strong>。
+            <br><br>
+            重點觀察以下三件事：
+            <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px;">
+              <div style="background:var(--up-bg);border:0.5px solid #15532e;border-radius:var(--radius);padding:8px 12px;font-size:12px;">
+                <span style="color:var(--up);font-weight:600;">Gap 為正 ＋ Beta 高</span>
+                <span style="color:var(--t3);margin-left:8px;">→ 補漲潛力最強，優先研究</span>
+              </div>
+              <div style="background:var(--down-bg);border:0.5px solid #7f1d1d;border-radius:var(--radius);padding:8px 12px;font-size:12px;">
+                <span style="color:var(--down);font-weight:600;">Gap 為負（大負值）</span>
+                <span style="color:var(--t3);margin-left:8px;">→ 已超漲，明天開盤追高風險高</span>
+              </div>
+              <div style="background:var(--accent-dim);border:0.5px solid var(--accent);border-radius:var(--radius);padding:8px 12px;font-size:12px;">
+                <span style="color:var(--accent-t);font-weight:600;">R² 高（&gt;0.5）</span>
+                <span style="color:var(--t3);margin-left:8px;">→ 連動穩定，訊號更可靠</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </li>
+      <li>
+        <div class="step-num" style="background:var(--warn-bg);border-color:var(--warn);color:var(--warn);">5</div>
+        <div class="step-content">
+          <div class="step-title">點進族群看個股，記下明天要觀察的標的</div>
+          <div class="step-desc">
+            點選感興趣的族群，右側側邊欄顯示個股走勢。確認：
+            <br><br>
+            <div style="font-size:12px;color:var(--t3);line-height:2;">
+              • 龍頭股今天走勢如何？有沒有開始反應？<br>
+              • Sparkline 折線是往上還是已在高點？<br>
+              • 切換「歷史 Gap」tab，看這族群過去有沒有補漲規律？
+            </div>
+            <br>
+            <div style="background:var(--warn-bg);border:0.5px solid #78350f;border-radius:var(--radius);padding:10px 14px;font-size:12px;color:var(--warn);">
+              ⚠️ 記住：工具找出的是「統計上的補漲機會」，明天開盤是否真的漲，還要看整體盤面氣氛、個股籌碼、消息面等。這個工具只是幫你縮小研究範圍，不是買進訊號。
+            </div>
+          </div>
+        </div>
+      </li>
+    </ul>
+
+    <!-- 快速對照表 -->
+    <p style="font-size:13px;color:var(--t2);font-weight:600;margin-bottom:14px;margin-top:8px;">快速判斷對照表：</p>
+    <div class="term-wrap">
+      <table class="term-table">
+        <thead>
+          <tr>
+            <th>看到這個</th>
+            <th>代表什麼</th>
+            <th>明天怎麼做</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="color:var(--up);font-weight:600;">Gap +3pp 以上，Beta &gt;0.8</td>
+            <td>強補漲訊號，這族群還沒跟上</td>
+            <td>列入明日觀察，開盤看量能決定</td>
+          </tr>
+          <tr>
+            <td style="color:var(--up);font-weight:600;">Gap +1~3pp，Beta 中等</td>
+            <td>輕微補漲機會</td>
+            <td>次要關注，有其他條件配合再考慮</td>
+          </tr>
+          <tr>
+            <td style="color:var(--t3);">Gap 接近 0（±0.5pp）</td>
+            <td>已跟上海外，中性</td>
+            <td>不是補漲標的，跳過</td>
+          </tr>
+          <tr>
+            <td style="color:var(--down);font-weight:600;">Gap −2pp 以下</td>
+            <td>已超漲，跑在海外前面</td>
+            <td>不追高，等回測再評估</td>
+          </tr>
+          <tr>
+            <td style="color:var(--t4);">標籤顯示「估算」</td>
+            <td>資料不可靠</td>
+            <td>忽略這行，等更新後確認</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 1. 工具簡介 -->
+  <section class="section" id="intro">
+    <div class="section-num">01</div>
+    <h2>工具簡介</h2>
+    <p class="section-intro">
+      給獺金幣 是一個追蹤「台股族群補漲機會」的即時雷達工具。核心邏輯是：
+      台股各族群的走勢通常跟著海外市場（美股費城半導體、S&P500、日經225）連動，
+      當海外市場漲了，台股對應族群卻沒有跟上，就存在補漲空間。
+      這個落差（Gap）就是工具要找出的訊號。
+    </p>
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-icon">📡</div>
+        <div class="card-title">即時資料</div>
+        <div class="card-desc">透過 Yahoo Finance API 抓取股價，每次點「更新行情」自動計算最新數值</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">📐</div>
+        <div class="card-title">OLS 線性回歸</div>
+        <div class="card-desc">用三個月歷史資料計算 Beta 值，得出每個族群對海外指數的敏感度</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🎯</div>
+        <div class="card-title">Gap 排行</div>
+        <div class="card-desc">自動排序補漲落差最大的族群，快速找出資金可能流入的標的</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">📊</div>
+        <div class="card-title">歷史回測</div>
+        <div class="card-desc">記錄每日 Gap 值，長期追蹤哪些族群補漲規律最明顯</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. 頁面結構 -->
+  <section class="section" id="layout">
+    <div class="section-num">02</div>
+    <h2>頁面結構</h2>
+    <p class="section-intro">頁面從上到下分為五個區塊：</p>
+    <ul class="step-list">
+      <li>
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <div class="step-title">Topbar（頂部工具列）</div>
+          <div class="step-desc">顯示最後更新時間、自動更新倒數圓環、間隔選單、手動更新按鈕</div>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <div class="step-title">Macro Grid（宏觀指數區）</div>
+          <div class="step-desc">顯示 10 個全球關鍵指數的即時漲跌，包含 TWII、SPX、SOX、VIX、N225、USD/TWD 等</div>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <div class="step-title">篩選條件列</div>
+          <div class="step-desc">可折疊的篩選面板，提供族群搜尋、落差範圍、Beta、驅動指數、覆蓋率等多個維度過濾</div>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <div class="step-title">補漲機會排行表（主表格）</div>
+          <div class="step-desc">核心區域，列出所有族群的預期、實際、落差、Beta、海外驅動等數值，預設依落差排序</div>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">5</div>
+        <div class="step-content">
+          <div class="step-title">側邊欄（詳情 + 歷史）</div>
+          <div class="step-desc">點選任一族群後顯示個股 Sparkline 走勢圖、成交量條，以及歷史 Gap 折線圖</div>
+        </div>
+      </li>
+    </ul>
+  </section>
+
+  <!-- 3. 名詞解釋 -->
+  <section class="section" id="terms">
+    <div class="section-num">03</div>
+    <h2>名詞解釋</h2>
+    <p class="section-intro">以下是表格中每個欄位和標籤的完整說明：</p>
+
+    <div class="term-wrap">
+      <table class="term-table">
+        <thead>
+          <tr>
+            <th style="width:120px;">名詞</th>
+            <th>說明</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="term">預期（Exp）</td>
+            <td>根據今日海外驅動指數的漲跌幅 × 該族群的 Beta 值，計算出「理論上台股族群應該漲跌多少」。單位：%</td>
+          </tr>
+          <tr>
+            <td class="term">實際（Act）</td>
+            <td>該族群內所有個股今日漲跌幅的簡單平均值。單位：%</td>
+          </tr>
+          <tr>
+            <td class="term">落差（Gap）</td>
+            <td>預期 − 實際。正值代表實際漲幅不如預期（補漲空間）；負值代表已超漲。單位：pp（百分點）</td>
+          </tr>
+          <tr>
+            <td class="term">Beta（β）</td>
+            <td>用近三個月日線資料做 OLS 線性回歸，計算出的族群對海外驅動指數的敏感度。Beta = 1 代表跟海外同步；&gt;1 代表放大；&lt;1 代表縮小</td>
+          </tr>
+          <tr>
+            <td class="term">R²</td>
+            <td>Beta 回歸的決定係數，表示模型的解釋力。R² 越接近 1，說明該族群跟海外指數的連動越穩定</td>
+          </tr>
+          <tr>
+            <td class="term">海外驅動</td>
+            <td>這個族群主要跟哪個海外指數連動，分為 US（美股）和 JP（日股）。驅動指數有三個：SOX（費城半導體）、SPX（S&P500）、N225（日經225）</td>
+          </tr>
+          <tr>
+            <td class="term">覆蓋率</td>
+            <td>族群內有成功取得即時資料的個股比例。100% = 全部個股都有資料；75% = 四分之三有資料</td>
+          </tr>
+          <tr>
+            <td class="term">代表股</td>
+            <td>族群內的龍頭或核心個股，旁邊附有近期走勢迷你折線圖（Sparkline）</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p style="font-size:13px;color:var(--t3);margin-bottom:16px;font-weight:600;">資料品質標籤說明：</p>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:24px;">
+      <div style="background:var(--bg1);border:0.5px solid var(--border);border-radius:var(--radius);padding:10px 14px;">
+        <span class="tag tag-live">即時</span>
+        <p style="font-size:12px;color:var(--t4);margin-top:6px;">所有個股均有即時 API 資料，計算結果最可靠</p>
+      </div>
+      <div style="background:var(--bg1);border:0.5px solid var(--border);border-radius:var(--radius);padding:10px 14px;">
+        <span class="tag tag-partial">部分</span>
+        <p style="font-size:12px;color:var(--t4);margin-top:6px;">部分個股有即時資料，act 為有資料個股的平均</p>
+      </div>
+      <div style="background:var(--bg1);border:0.5px solid var(--border);border-radius:var(--radius);padding:10px 14px;">
+        <span class="tag tag-beta">β計算</span>
+        <p style="font-size:12px;color:var(--t4);margin-top:6px;">Beta 已計算，但今日驅動指數資料缺失</p>
+      </div>
+      <div style="background:var(--bg1);border:0.5px solid var(--border);border-radius:var(--radius);padding:10px 14px;">
+        <span class="tag tag-fallback">估算</span>
+        <p style="font-size:12px;color:var(--t4);margin-top:6px;">API 無法取得資料，數值不可靠，請忽略</p>
+      </div>
+      <div style="background:var(--bg1);border:0.5px solid var(--border);border-radius:var(--radius);padding:10px 14px;">
+        <span class="tag tag-custom">自訂</span>
+        <p style="font-size:12px;color:var(--t4);margin-top:6px;">使用者自行新增的族群</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. 計算原理 -->
+  <section class="section" id="formula">
+    <div class="section-num">04</div>
+    <h2>計算原理</h2>
+    <p class="section-intro">了解計算邏輯，有助於正確解讀數值的意義和局限性：</p>
+
+    <div class="formula-box">
+      <div class="f-label">BETA 計算（OLS 線性回歸，近三個月日線）</div>
+      <div class="f-main">β = Σ[(Xi − X̄)(Yi − Ȳ)] / Σ[(Xi − X̄)²]</div>
+      <div class="f-note">Xi = 海外指數每日報酬率　Yi = 族群內個股每日平均報酬率</div>
+    </div>
+
+    <div class="formula-box">
+      <div class="f-label">ACT（實際漲跌）</div>
+      <div class="f-main">Act = 族群內有即時報價個股的漲跌幅簡單平均</div>
+      <div class="f-note">只計算有成功取得即時資料的個股</div>
+    </div>
+
+    <div class="formula-box">
+      <div class="f-label">EXP（預期漲跌）</div>
+      <div class="f-main">Exp = 海外驅動指數今日漲跌% × β</div>
+      <div class="f-note">例如：SOX 今日 −12%，族群 β = 0.8，則 Exp = −9.6%</div>
+    </div>
+
+    <div class="formula-box">
+      <div class="f-label">GAP（補漲落差）</div>
+      <div class="f-main">Gap = Exp − Act</div>
+      <div class="f-note">正值 = 實際不如預期（有補漲空間）　負值 = 實際超過預期（已超漲）</div>
+    </div>
+
+    <div class="example-box">
+      <div class="example-label">📌 實際範例：台股 AI 散熱 / 液冷</div>
+      <div class="example-row"><span class="ex-k">海外驅動</span><span class="ex-v ex-down">SOX 今日 −12.19%</span></div>
+      <div class="example-row"><span class="ex-k">族群 Beta</span><span class="ex-v ex-acc">β = 0.32</span></div>
+      <div class="example-row"><span class="ex-k">預期（Exp）</span><span class="ex-v ex-down">−12.19% × 0.32 = −3.90%</span></div>
+      <div class="example-row"><span class="ex-k">實際（Act）</span><span class="ex-v ex-down">−1.34%（個股平均）</span></div>
+      <div class="example-row"><span class="ex-k">落差（Gap）</span><span class="ex-v ex-down">−3.90% − (−1.34%) = −2.56pp</span></div>
+      <div class="example-row"><span class="ex-k">解讀</span><span class="ex-v" style="color:var(--t2);">負值：實際跌幅比預期小，族群相對強勢</span></div>
+    </div>
+  </section>
+
+  <!-- 5. 訊號解讀 -->
+  <section class="section" id="signals">
+    <div class="section-num">05</div>
+    <h2>訊號解讀</h2>
+    <p class="section-intro">Gap 值是核心訊號，但解讀時必須結合市場背景：</p>
+
+    <div class="signal-row">
+      <div class="signal-card pos">
+        <div class="signal-label">📈 正 Gap（補漲訊號）</div>
+        <div class="signal-title">Gap &gt; 0：有補漲空間</div>
+        <div class="signal-desc">海外漲了但台股族群沒跟上，理論上後續有跟漲機會。Gap 越大，落差越明顯。適合在海外持續上漲的環境中尋找還沒動的族群。</div>
+      </div>
+      <div class="signal-card neg">
+        <div class="signal-label">📉 負 Gap（超漲訊號）</div>
+        <div class="signal-title">Gap &lt; 0：已超漲</div>
+        <div class="signal-desc">台股族群漲幅超過海外預期，代表有額外資金推升。可能是題材炒作或主力介入。短線注意追高風險，不適合追漲。</div>
+      </div>
+    </div>
+
+    <div class="signal-row">
+      <div class="signal-card neu">
+        <div class="signal-label">⚠️ 高 Beta + 高 Gap</div>
+        <div class="signal-title">強力補漲訊號</div>
+        <div class="signal-desc">Beta 高代表這族群平時跟海外連動強；同時 Gap 大，代表這次沒跟上特別異常。這種組合補漲機率相對較高。</div>
+      </div>
+      <div class="signal-card info">
+        <div class="signal-label">ℹ️ 低 R² 警示</div>
+        <div class="signal-title">連動不穩定</div>
+        <div class="signal-desc">R² &lt; 0.3 代表這族群跟海外的連動關係不穩定，Beta 的預測力弱。這時的 Gap 訊號可信度較低，需配合其他指標判斷。</div>
+      </div>
+    </div>
+
+    <p style="font-size:14px;font-weight:600;color:var(--t2);margin-bottom:16px;margin-top:8px;">市場方向對解讀的影響：</p>
+
+    <div class="term-wrap">
+      <table class="term-table">
+        <thead>
+          <tr>
+            <th>市場狀況</th>
+            <th>正 Gap 的意義</th>
+            <th>負 Gap 的意義</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="color:var(--up);font-weight:600;">海外大漲（SOX +3%↑）</td>
+            <td>台股族群還沒跟上，補漲可能性高</td>
+            <td>台股族群已跑在前面，追高需謹慎</td>
+          </tr>
+          <tr>
+            <td style="color:var(--down);font-weight:600;">海外大跌（SOX −10%↓）</td>
+            <td>台股跌幅比預期小，族群相對抗跌強勢</td>
+            <td>台股跌幅超過預期，族群特別弱</td>
+          </tr>
+          <tr>
+            <td style="color:var(--t3);">海外小幅波動（±1%以內）</td>
+            <td colspan="2">驅動力不強，Gap 訊號參考意義較低，雜訊較多</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="warn-box">
+      ⚠️ Gap 訊號是統計規律，不是保證。補漲是否發生取決於資金面、消息面、籌碼等多種因素。建議配合技術分析和基本面判斷，不宜單獨作為進出場依據。
+    </div>
+  </section>
+
+  <!-- 6. 操作流程 -->
+  <section class="section" id="workflow">
+    <div class="section-num">06</div>
+    <h2>每日操作流程</h2>
+    <p class="section-intro">建議的日常使用流程：</p>
+    <ul class="step-list">
+      <li>
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <div class="step-title">開盤前（8:30–9:00）：看宏觀指數</div>
+          <div class="step-desc">先看 Macro Grid，確認昨晚美股（SPX、SOX）或今早日股（N225）的漲跌方向和幅度。幅度越大，Gap 訊號越有意義。</div>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <div class="step-title">開盤後（9:30 後）：更新行情</div>
+          <div class="step-desc">按「↻ 更新行情」等待 10–15 秒讓 API 拉取完畢。等個股開盤有一段時間後資料較準確，建議 9:30 後再更新。</div>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <div class="step-title">看排行：找 Gap 正值且 Beta 高的族群</div>
+          <div class="step-desc">表格預設按落差降序排列。重點看前幾名：Gap 為正、Beta ≥ 0.5、標籤為「即時」或「部分」的族群，是優先研究對象。</div>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <div class="step-title">點族群看個股走勢</div>
+          <div class="step-desc">點選感興趣的族群，右側側邊欄會顯示個股 Sparkline 和成交量。確認族群內的龍頭股走勢是否符合預期。</div>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">5</div>
+        <div class="step-content">
+          <div class="step-title">盤中：設定 Gap 警示 + 自動更新</div>
+          <div class="step-desc">在篩選條件設定「Gap 警示閾值」（如 2pp），超過的行會橘色高亮。搭配自動更新（5 或 10 分鐘），不用一直盯著頁面。</div>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">6</div>
+        <div class="step-content">
+          <div class="step-title">盤後：查看歷史回測</div>
+          <div class="step-desc">點「📊 回測總覽」，看各族群長期平均 Gap 和正值天數比例。找出哪些族群有規律性的補漲模式，作為下次的優先觀察名單。</div>
+        </div>
+      </li>
+    </ul>
+  </section>
+
+  <!-- 7. 進階功能 -->
+  <section class="section" id="features">
+    <div class="section-num">07</div>
+    <h2>進階功能說明</h2>
+
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-icon">⭐</div>
+        <div class="card-title">收藏族群</div>
+        <div class="card-desc">點星號收藏常用族群，收藏的族群會置頂顯示，並可用「只看收藏」篩選，跨頁面保留</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🔔</div>
+        <div class="card-title">Gap 警示閾值</div>
+        <div class="card-desc">設定閾值後，超過的族群整行變橘色並有跳動點，一眼抓住異常訊號</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">⏱️</div>
+        <div class="card-title">自動定時更新</div>
+        <div class="card-desc">選擇 3/5/10/30 分鐘自動重拉資料，圓環倒數顯示剩餘時間，剩 20% 時變橘色</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">📋</div>
+        <div class="card-title">自訂族群</div>
+        <div class="card-desc">點「＋ 自訂族群」可新增自己的族群和個股，參與 Beta 計算和排行，紫色標籤標示</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">📈</div>
+        <div class="card-title">歷史 Gap tab</div>
+        <div class="card-desc">側邊欄切換到「歷史 Gap」，看該族群的 Gap 折線圖、平均值和正值天數比例</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🔍</div>
+        <div class="card-title">族群搜尋</div>
+        <div class="card-desc">輸入關鍵字搜尋，會顯示全部 43 個族群（含預設隱藏的 23 個次熱門族群）</div>
+      </div>
+    </div>
+
+    <p style="font-size:13px;color:var(--t3);margin-top:8px;margin-bottom:16px;font-weight:600;">篩選條件使用建議：</p>
+    <div class="term-wrap">
+      <table class="term-table">
+        <thead>
+          <tr><th>篩選條件</th><th>建議用法</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="term">Beta ≥</td><td>設 0.5 以上，過濾掉連動太弱的族群，讓 Gap 訊號更有意義</td></tr>
+          <tr><td class="term">驅動指數漲跌 ≥</td><td>海外大漲大跌時才看 Gap，設 2% 以上過濾雜訊</td></tr>
+          <tr><td class="term">覆蓋率</td><td>選 ≥75% 確保 act 計算有足夠樣本，避免單一個股扭曲平均</td></tr>
+          <tr><td class="term">落差範圍</td><td>設最小值 1.5pp 以上，只看有意義的補漲機會</td></tr>
+          <tr><td class="term">海外市場</td><td>美股休市時切到「🇯🇵 日股」，只看 N225 驅動的族群</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 7.5 策略推薦 -->
+  <section class="section" id="strategy">
+    <div class="section-num">07.5</div>
+    <h2>策略推薦功能說明</h2>
+    <p class="section-intro">
+      側邊欄第三個 tab「策略推薦」，會根據你點選的族群屬性，自動推薦適合的技術分析策略，
+      並提供具體的「可採取做法」，讓你知道怎麼實際操作。
+    </p>
+
+    <ul class="step-list">
+      <li>
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <div class="step-title">點選任一族群 → 切換到「策略推薦」tab</div>
+          <div class="step-desc">側邊欄頂部有三個 tab：個股詳情 / 歷史 Gap / 策略推薦。切換到策略推薦後，會根據該族群的海外驅動市場（US/JP）和今日 Gap 值自動配對。</div>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <div class="step-title">Gap 情境說明</div>
+          <div class="step-desc">最上方會顯示今日 Gap 的情境解讀，例如「Gap +3.82pp，補漲空間明顯。優先考慮動能突破和趨勢跟蹤策略，等待放量啟動。」讓你立即知道現在適合什麼策略思路。</div>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <div class="step-title">⭐⭐ 強力推薦 / ⭐ 可考慮</div>
+          <div class="step-desc">策略依適合度分兩層顯示。每個策略卡片包含：策略名稱、適用標籤、簡短說明，以及最重要的「▶ 可採取做法」——用白話描述進場條件、出場條件和注意事項。</div>
+        </div>
+      </li>
+    </ul>
+
+    <p style="font-size:13px;color:var(--t2);font-weight:600;margin-bottom:14px;">策略庫總覽（17 個技術指標）：</p>
+    <div class="term-wrap">
+      <table class="term-table">
+        <thead>
+          <tr><th>類別</th><th>策略名稱</th><th>最適合</th></tr>
+        </thead>
+        <tbody>
+          <tr><td rowspan="5" style="color:var(--accent-t);font-weight:600;vertical-align:top;padding-top:14px;">動能突破</td><td>六條線多頭排列</td><td>美股驅動 + Gap 正值</td></tr>
+          <tr><td>Supertrend 趨勢線</td><td>美股/日股皆宜</td></tr>
+          <tr><td>TTM 擠壓突破</td><td>美股 + 等待補漲啟動</td></tr>
+          <tr><td>Donchian 通道突破</td><td>美股 + Gap 正值</td></tr>
+          <tr><td>波動突破（ATR 過濾）</td><td>美股/日股</td></tr>
+          <tr><td rowspan="3" style="color:var(--up);font-weight:600;vertical-align:top;padding-top:14px;">趨勢跟蹤</td><td>DMI/ADX 方向動能</td><td>台股最強，美日皆宜</td></tr>
+          <tr><td>Keltner 通道</td><td>美股驅動族群</td></tr>
+          <tr><td>MACD 趨勢 / EMA 交叉</td><td>通用，搭配 Gap 確認</td></tr>
+          <tr><td rowspan="3" style="color:var(--purple);font-weight:600;vertical-align:top;padding-top:14px;">均線型態</td><td>Hull 均線斜率</td><td>日股驅動族群</td></tr>
+          <tr><td>一目均衡表（雲圖）</td><td>日股首選（光學/機器人）</td></tr>
+          <tr><td>KAMA 自適應均線</td><td>通用，防盤整雜訊</td></tr>
+          <tr><td rowspan="3" style="color:var(--warn);font-weight:600;vertical-align:top;padding-top:14px;">震盪逆勢</td><td>RSI-50 收復</td><td>從低點回升的族群</td></tr>
+          <tr><td>SMC 結構突破</td><td>進階，美股族群</td></tr>
+          <tr><td>Heikin-Ashi K 線</td><td>輔助工具，搭配主策略</td></tr>
+          <tr><td rowspan="2" style="color:var(--down);font-weight:600;vertical-align:top;padding-top:14px;">量能確認</td><td>VWAP 量價均衡</td><td>美股驅動族群日內操作</td></tr>
+          <tr><td>OBV 量能趨勢</td><td>確認資金是否真正流入</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="info-box">
+      ℹ️ 策略推薦是根據「市場屬性 + Gap 方向」做統計配對，不代表每個策略都適合你的操作習慣。建議優先選擇自己熟悉的指標，配合 Gap 訊號使用。
+    </div>
+  </section>
+
+  <!-- 8. 注意事項 -->
+  <section class="section" id="limits">
+    <div class="section-num">08</div>
+    <h2>注意事項與限制</h2>
+
+    <div class="warn-box" style="margin-bottom:12px;">
+      ⚠️ Yahoo Finance 資料有 15 分鐘延遲，非真正即時。盤中高頻交易不適合使用本工具。
+    </div>
+    <div class="warn-box" style="margin-bottom:12px;">
+      ⚠️ Beta 是用過去三個月資料計算，產業風格轉換、法說會、重大事件等會讓 Beta 失準。
+    </div>
+    <div class="warn-box" style="margin-bottom:12px;">
+      ⚠️ 歷史回測資料存在瀏覽器 localStorage，清除快取或換瀏覽器會消失，最多保留 90 天。
+    </div>
+    <div class="info-box" style="margin-bottom:12px;">
+      ℹ️ 族群標籤顯示「估算」時，該行數值不可靠，請忽略或等待更新後重新確認。
+    </div>
+    <div class="info-box" style="margin-bottom:12px;">
+      ℹ️ 每次按「更新行情」會拉取大量 API 請求（約 40–60 個），需等待 10–15 秒，請耐心等候。
+    </div>
+    <div class="info-box">
+      ℹ️ 本工具僅為輔助分析，所有數值均為統計模型估算，不構成買賣建議。投資有風險，請自行判斷。
+    </div>
+  </section>
+
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <p style="margin-bottom:8px;">給獺金幣 使用說明書 · v1.2 · 2026 年 6 月</p>
+  <p><a href="https://stock-radar2.vercel.app/" target="_blank">stock-radar2.vercel.app</a> · 資料來源：Yahoo Finance</p>
+</div>
+
+</body>
+</html>
