@@ -685,7 +685,8 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
           <div class="chip" data-val="starred">⭐ 收藏</div>
         </div>
       </div>
-      <div style="margin-left:auto;">
+      <div style="margin-left:auto;display:flex;gap:6px;align-items:center;">
+        <button class="btn" style="font-size:11px;padding:3px 9px;" onclick="NotifyUI.openSettings()" title="Telegram 通知設定">🔔</button>
         <button class="clear-btn" id="clearBtn">✕ 清除</button>
       </div>
     </div>
@@ -756,6 +757,62 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
 <div class="toast-container" id="toastContainer"></div>
 <button class="sidebar-drawer-btn" id="drawerBtn" title="查看族群詳情">📊</button>
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- Telegram 通知設定 Modal -->
+<div class="modal-backdrop" id="notifyModal">
+  <div class="modal" style="width:420px;">
+    <div class="modal-header">
+      <div class="modal-title">🔔 Telegram 通知設定</div>
+      <button class="modal-close" onclick="NotifyUI.close()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:var(--bg-0);border:0.5px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-bottom:16px;font-size:11px;color:var(--text-4);line-height:1.6;">
+        通知由 Vercel 每 30 分鐘自動觸發，gap 超過閾值時發送到你的 Telegram。<br>
+        <span style="color:var(--text-5);">需在 Vercel Dashboard 設定環境變數才能生效。</span>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Gap 警示閾值（pp）</label>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <input class="form-input" id="notifyThreshold" type="number" value="2.0" step="0.5" min="0.5" style="width:80px;">
+          <span style="font-size:11px;color:var(--text-5);">超過此值的族群會發送通知</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">通知頻率</label>
+        <select class="form-select" id="notifySchedule" style="width:100%;">
+          <option value="*/15 * * * *">每 15 分鐘</option>
+          <option value="*/30 * * * *" selected>每 30 分鐘（預設）</option>
+          <option value="0 * * * *">每小時</option>
+          <option value="0 9,13 * * 1-5">每天 09:00 / 13:00（台股交易日）</option>
+        </select>
+      </div>
+      <hr style="border:none;border-top:0.5px solid var(--border);margin:16px 0;">
+      <div style="font-size:12px;font-weight:500;color:var(--text-2);margin-bottom:12px;">Vercel 環境變數設定說明</div>
+      <div style="font-size:11px;color:var(--text-4);line-height:2;">
+        去 <b>Vercel Dashboard → stock-radar → Settings → Environment Variables</b> 加入：
+      </div>
+      <div style="margin-top:8px;display:flex;flex-direction:column;gap:6px;">
+        <div style="background:var(--bg-0);border:0.5px solid var(--border);border-radius:var(--radius);padding:8px 10px;font-family:monospace;font-size:11px;">
+          <div style="color:var(--text-5);margin-bottom:4px;">必填</div>
+          <div>TELEGRAM_TOKEN = <span style="color:var(--accent-text);">8460980454:AAE...（你的 Bot Token）</span></div>
+          <div>TELEGRAM_CHAT_ID = <span style="color:var(--accent-text);">5217408461</span></div>
+        </div>
+        <div style="background:var(--bg-0);border:0.5px solid var(--border);border-radius:var(--radius);padding:8px 10px;font-family:monospace;font-size:11px;">
+          <div style="color:var(--text-5);margin-bottom:4px;">選填</div>
+          <div>NOTIFY_SECRET = <span style="color:var(--accent-text);">（自訂密鑰，手動測試用）</span></div>
+          <div>GAP_THRESHOLD = <span id="notifyThresholdDisplay">2.0</span></div>
+        </div>
+      </div>
+      <div style="margin-top:14px;padding:10px 12px;background:var(--warn-bg);border:0.5px solid var(--warn);border-radius:var(--radius);font-size:11px;color:var(--warn);">
+        ⚠️ 環境變數設定完後，需要重新部署（Push 一次 GitHub）才會生效
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="NotifyUI.testNow()">▶ 立即測試發送</button>
+      <button class="btn" onclick="NotifyUI.close()">關閉</button>
+    </div>
+  </div>
+</div>
 
 <!-- 歷史回測總覽 Modal -->
 <div class="modal-backdrop history-modal" id="historyModal">
@@ -1277,6 +1334,53 @@ const CONFIG = {
         {id:'2357',name:'華碩', price:580, chg:null, role:'核心', seed:4302},
       ]},
   ],
+};
+
+/* ═══════════════════════════════════════════════════════════
+   NOTIFY UI  — Telegram 通知設定介面
+   ═══════════════════════════════════════════════════════════ */
+const NotifyUI = {
+  openSettings() {
+    document.getElementById('notifyModal').classList.add('open');
+    // 同步閾值顯示
+    const t = document.getElementById('notifyThreshold');
+    t?.addEventListener('input', () => {
+      const d = document.getElementById('notifyThresholdDisplay');
+      if (d) d.textContent = t.value;
+    });
+    document.getElementById('notifyModal').addEventListener('click', e => {
+      if (e.target.id === 'notifyModal') this.close();
+    });
+  },
+
+  close() {
+    document.getElementById('notifyModal').classList.remove('open');
+  },
+
+  async testNow() {
+    const btn = document.querySelector('#notifyModal .btn-primary');
+    btn.textContent = '發送中…';
+    btn.disabled = true;
+    try {
+      const res  = await fetch('/api/notify?secret=test');
+      const data = await res.json();
+      if (data.sent) {
+        Renderer.toast(`✅ 已發送 ${data.alerts} 個警示到 Telegram`, 'success', 4000);
+      } else if (data.reason === 'no alerts') {
+        Renderer.toast('目前沒有超過閾值的族群，未發送', 'info', 3000);
+      } else if (res.status === 401) {
+        Renderer.toast('需先在 Vercel 設定 NOTIFY_SECRET 環境變數', 'error', 4000);
+      } else {
+        Renderer.toast(`發送失敗：${data.error}`, 'error', 4000);
+      }
+    } catch (e) {
+      Renderer.toast('無法連線到通知 API', 'error');
+    } finally {
+      btn.textContent = '▶ 立即測試發送';
+      btn.disabled = false;
+      this.close();
+    }
+  },
 };
 
 /* ═══════════════════════════════════════════════════════════
