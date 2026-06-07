@@ -64,15 +64,14 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
 /* ── TOPBAR ── */
 .topbar {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 12px 20px; border-bottom: 0.5px solid var(--border);
-  position: sticky; top: 0; background: var(--bg-0); z-index: 100;
+  padding: 10px 16px; border-bottom: 0.5px solid var(--border);
+  position: sticky; top: 0; background: rgba(14,17,23,0.92);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  z-index: 100;
 }
 .logo { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 500; color: var(--text-1); }
-.logo-icon {
-  width: 28px; height: 28px; background: var(--accent); border-radius: var(--radius);
-  display: flex; align-items: center; justify-content: center;
-}
-.topbar-right { display: flex; align-items: center; gap: 10px; }
+.logo-icon { width: 28px; height: 28px; background: var(--accent); border-radius: var(--radius); display: flex; align-items: center; justify-content: center; }
+.topbar-right { display: flex; align-items: center; gap: 8px; }
 .last-updated { font-size: 11px; color: var(--text-5); }
 .last-updated span { color: var(--text-4); }
 
@@ -84,20 +83,21 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
 .btn-icon { width: 28px; height: 28px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: var(--radius); }
 
 /* ── PAGE HEADER ── */
-.page-header { padding: 14px 20px 0; display: flex; align-items: flex-end; justify-content: space-between; }
+.page-header { padding: 14px 16px 0; display: flex; align-items: flex-end; justify-content: space-between; }
 .page-title { font-size: 20px; font-weight: 600; color: #fff; }
 .page-sub { font-size: 12px; color: var(--text-5); margin-top: 3px; }
 
 /* ── MACRO GRID ── */
 .macro-grid {
   display: grid; grid-template-columns: repeat(5, 1fr);
-  margin: 12px 20px 14px; border: 0.5px solid var(--border);
+  margin: 12px 16px 14px; border: 0.5px solid var(--border);
   border-radius: var(--radius-lg); overflow: hidden;
 }
 .macro-cell {
   padding: 8px 12px; border-right: 0.5px solid var(--border);
   background: var(--bg-0); cursor: default;
   transition: background var(--transition);
+  position: relative; overflow: hidden;
 }
 .macro-cell:last-child { border-right: none; }
 .macro-cell:nth-child(n+6) { border-top: 0.5px solid var(--border); }
@@ -105,6 +105,12 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
 .macro-label { font-size: 10px; color: var(--text-5); margin-bottom: 2px; }
 .macro-val { font-size: 12px; font-weight: 500; color: var(--text-2); }
 .macro-loading { opacity: 0.35; animation: pulse 1.4s ease-in-out infinite; }
+
+/* 數值更新閃爍動畫 */
+@keyframes flashUp   { 0%{background:rgba(34,197,94,0.15)} 100%{background:transparent} }
+@keyframes flashDown { 0%{background:rgba(239,68,68,0.15)}  100%{background:transparent} }
+.flash-up   { animation: flashUp   0.6s ease; }
+.flash-down { animation: flashDown 0.6s ease; }
 
 /* ── UP / DOWN / NEU ── */
 .up  { color: var(--up);   font-size: 11px; }
@@ -115,19 +121,22 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
 .pct-down { color: var(--down); }
 
 /* ── FILTER PANEL ── */
-.filter-panel { margin: 0 20px 12px; background: var(--bg-1); border: 0.5px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
-.filter-panel-header { padding: 9px 16px; border-bottom: 0.5px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.filter-panel { margin: 0 16px 12px; background: var(--bg-1); border: 0.5px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+.filter-panel-header { padding: 9px 14px; border-bottom: 0.5px solid var(--border); display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; }
 .filter-panel-title { font-size: 12px; font-weight: 500; color: var(--text-3); }
+.filter-toggle-icon { font-size: 10px; color: var(--text-5); transition: transform var(--transition); }
+.filter-panel.collapsed .filter-toggle-icon { transform: rotate(-90deg); }
+.filter-panel.collapsed .filter-panel-body { display: none; }
 .filter-active-badge { font-size: 11px; padding: 1px 7px; border-radius: 20px; background: var(--accent-dim); color: var(--accent-text); border: 0.5px solid var(--accent); display: none; }
 .filter-active-badge.visible { display: inline-block; }
-.filter-panel-body { padding: 10px 16px; display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
+.filter-panel-body { padding: 10px 14px; display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; }
 .filter-group { display: flex; flex-direction: column; gap: 4px; }
 .filter-label { font-size: 10px; color: var(--text-5); }
 
 /* inputs */
-.search-input { width: 180px; height: 30px; background: var(--bg-2); border: 0.5px solid var(--border-hover); border-radius: var(--radius); padding: 0 10px; color: var(--text-2); font-size: 12px; outline: none; transition: border-color var(--transition); }
+.search-input { width: 160px; height: 30px; background: var(--bg-2); border: 0.5px solid var(--border-hover); border-radius: var(--radius); padding: 0 10px; color: var(--text-2); font-size: 12px; outline: none; transition: border-color var(--transition); }
 .search-input:focus { border-color: var(--accent); }
-.range-input { width: 65px; height: 30px; background: var(--bg-2); border: 0.5px solid var(--border-hover); border-radius: var(--radius); padding: 0 8px; color: var(--text-2); font-size: 12px; outline: none; text-align: center; transition: border-color var(--transition); }
+.range-input { width: 62px; height: 30px; background: var(--bg-2); border: 0.5px solid var(--border-hover); border-radius: var(--radius); padding: 0 8px; color: var(--text-2); font-size: 12px; outline: none; text-align: center; transition: border-color var(--transition); }
 .range-input:focus { border-color: var(--accent); }
 .range-sep { color: var(--text-5); font-size: 11px; }
 
@@ -140,16 +149,16 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
 .clear-btn:hover { border-color: var(--down); color: var(--down); }
 
 /* ── RESULT BAR ── */
-.result-bar { padding: 0 20px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; }
+.result-bar { padding: 0 16px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; }
 .result-count { font-size: 11px; color: var(--text-5); }
 .result-count strong { color: var(--text-2); }
-.sort-row { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-5); }
+.sort-row { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-5); flex-wrap: wrap; }
 .sort-btn { padding: 3px 9px; border-radius: var(--radius-sm); border: 0.5px solid var(--border); background: transparent; color: var(--text-4); cursor: pointer; font-size: 11px; transition: all var(--transition); }
 .sort-btn:hover { border-color: var(--accent-text); color: var(--accent-text); }
 .sort-btn.active { border-color: var(--accent); color: var(--accent-text); background: var(--accent-dim); }
 
 /* ── MAIN LAYOUT ── */
-.main-layout { display: grid; grid-template-columns: 1fr 320px; gap: 12px; padding: 0 20px 24px; }
+.main-layout { display: grid; grid-template-columns: 1fr 320px; gap: 12px; padding: 0 16px 24px; }
 
 /* ── TABLE ── */
 .table-wrap { border: 0.5px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
@@ -160,15 +169,24 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
 .data-table th { padding: 7px 10px; text-align: left; font-size: 11px; color: var(--text-5); font-weight: 400; border-bottom: 0.5px solid var(--border); background: var(--bg-1); cursor: pointer; white-space: nowrap; transition: color var(--transition); }
 .data-table th:hover { color: var(--text-3); }
 .data-table th.sorted { color: var(--accent-text); }
-.data-table td { padding: 9px 10px; border-bottom: 0.5px solid #1a2030; vertical-align: middle; }
+.data-table td { padding: 9px 10px; border-bottom: 0.5px solid #1a2030; vertical-align: middle; transition: background 0.2s; }
 .data-table tr:last-child td { border-bottom: none; }
 .data-table tr:hover td { background: var(--bg-3); }
 .active-row td { background: #0e1520 !important; }
 
+/* 新行滑入動畫 */
+.data-table tbody tr { animation: fadeIn 0.18s ease both; }
+.data-table tbody tr:nth-child(1)  { animation-delay: 0.01s; }
+.data-table tbody tr:nth-child(2)  { animation-delay: 0.03s; }
+.data-table tbody tr:nth-child(3)  { animation-delay: 0.05s; }
+.data-table tbody tr:nth-child(4)  { animation-delay: 0.07s; }
+.data-table tbody tr:nth-child(5)  { animation-delay: 0.09s; }
+.data-table tbody tr:nth-child(n+6){ animation-delay: 0.11s; }
+
 .rank-badge { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; background: var(--bg-2); color: var(--text-4); border: 0.5px solid var(--border); }
 .rank-badge.gold { background: #2a1f06; border-color: #a16207; color: var(--warn); }
 .sector-name { font-size: 12px; color: var(--text-2); }
-.gap-bar { height: 3px; border-radius: 2px; background: var(--down); opacity: 0.7; margin-top: 3px; transition: width 0.3s ease; }
+.gap-bar { height: 3px; border-radius: 2px; background: var(--down); opacity: 0.7; margin-top: 3px; transition: width 0.4s ease; }
 
 .overseas-tag { font-size: 10px; padding: 1px 5px; border-radius: 3px; background: var(--accent-dim); color: var(--accent-text); border: 0.5px solid #1a3d6e; margin-right: 3px; }
 .overseas-tag.jp { background: var(--jp-bg); color: var(--jp-text); border-color: var(--jp-border); }
@@ -179,8 +197,8 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
 /* skeleton loading */
 .skeleton { background: linear-gradient(90deg, var(--bg-2) 25%, var(--bg-3) 50%, var(--bg-2) 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: 3px; }
 @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
-@keyframes pulse { 0%,100%{opacity:0.35} 50%{opacity:0.6} }
-@keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:none} }
+@keyframes pulse   { 0%,100%{opacity:0.35} 50%{opacity:0.6} }
+@keyframes fadeIn  { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:none} }
 
 /* ── SIDEBAR ── */
 .sidebar { border: 0.5px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; background: var(--bg-1); align-self: start; max-height: calc(100vh - 80px); overflow-y: auto; }
@@ -260,6 +278,105 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
 .r2-bar-fill { height:2px; border-radius:1px; background:var(--accent); transition:width 0.4s ease; }
 .r2-text { font-size:9px; color:var(--text-6); }
 .filter-sep { width:0.5px; background:var(--border); align-self:stretch; margin:0 2px; }
+
+/* ══════════════════════════════════════════
+   RWD — 響應式版型
+   ══════════════════════════════════════════ */
+
+/* 平板（≤ 1024px）：sidebar 收到下方 */
+@media (max-width: 1024px) {
+  .main-layout { grid-template-columns: 1fr; }
+  .sidebar { max-height: 420px; }
+}
+
+/* 手機（≤ 680px）：全面重排 */
+@media (max-width: 680px) {
+  html { font-size: 12px; }
+
+  .topbar { padding: 8px 12px; }
+  .logo { font-size: 14px; }
+  .last-updated { display: none; }
+  .btn:not(.btn-primary) { display: none; }  /* 手機隱藏「比較族群」按鈕 */
+
+  .page-header { padding: 10px 12px 0; }
+  .page-title { font-size: 17px; }
+
+  /* macro grid：手機改 2 欄 */
+  .macro-grid { grid-template-columns: repeat(2, 1fr); margin: 10px 12px 12px; }
+  .macro-cell:nth-child(2n) { border-right: none; }
+  .macro-cell:nth-child(n+3) { border-top: 0.5px solid var(--border); }
+  .macro-cell:nth-child(n+6) { border-top: 0.5px solid var(--border); }
+
+  .filter-panel { margin: 0 12px 10px; }
+  .filter-panel-body { gap: 8px; }
+  .search-input { width: 100%; }
+  .filter-sep { display: none; }
+
+  .result-bar { padding: 0 12px; }
+
+  .main-layout { padding: 0 12px 20px; gap: 10px; }
+
+  /* 手機表格：隱藏次要欄位，保留核心資訊 */
+  .data-table th:nth-child(7),  /* Beta */
+  .data-table td:nth-child(7),
+  .data-table th:nth-child(9),  /* 代表股 */
+  .data-table td:nth-child(9)  { display: none; }
+
+  .data-table th, .data-table td { padding: 8px 7px; }
+
+  .sidebar { max-height: 360px; }
+  .sidebar-body { padding: 12px; }
+}
+
+/* 超小螢幕（≤ 400px）：再精簡 */
+@media (max-width: 400px) {
+  .data-table th:nth-child(4),  /* 預期 */
+  .data-table td:nth-child(4),
+  .data-table th:nth-child(10), /* 覆蓋 */
+  .data-table td:nth-child(10) { display: none; }
+
+  .sort-btn { padding: 3px 7px; font-size: 10px; }
+}
+
+/* ── 手機底部 sidebar 抽屜 ── */
+.sidebar-drawer-btn {
+  display: none;
+  position: fixed; bottom: 20px; right: 16px; z-index: 200;
+  width: 48px; height: 48px; border-radius: 50%;
+  background: var(--accent); border: none; color: #fff;
+  font-size: 18px; cursor: pointer; box-shadow: 0 4px 20px rgba(26,110,245,0.4);
+  align-items: center; justify-content: center;
+  transition: transform var(--transition);
+}
+.sidebar-drawer-btn:hover { transform: scale(1.08); }
+
+.sidebar-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+  z-index: 300; backdrop-filter: blur(2px);
+}
+.sidebar-overlay.open { display: block; }
+
+@media (max-width: 680px) {
+  .sidebar-drawer-btn { display: flex; }
+
+  /* 手機 sidebar 改為底部滑出抽屜 */
+  .sidebar {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 400;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    max-height: 70vh; transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.32,0.72,0,1);
+    border-bottom: none;
+  }
+  .sidebar.drawer-open { transform: translateY(0); }
+
+  /* 抽屜把手 */
+  .sidebar-header::before {
+    content: ''; display: block; width: 36px; height: 4px;
+    background: var(--border); border-radius: 2px;
+    margin: 0 auto 10px;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -298,7 +415,10 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
   <div class="filter-panel">
     <div class="filter-panel-header">
       <div class="filter-panel-title">篩選條件</div>
-      <span class="filter-active-badge" id="filterBadge"></span>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="filter-active-badge" id="filterBadge"></span>
+        <span class="filter-toggle-icon">▼</span>
+      </div>
     </div>
     <div class="filter-panel-body">
       <div class="filter-group">
@@ -428,6 +548,8 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
 </div>
 
 <div class="toast-container" id="toastContainer"></div>
+<button class="sidebar-drawer-btn" id="drawerBtn" title="查看族群詳情">📊</button>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
 
 <script>
 'use strict';
@@ -1470,7 +1592,6 @@ const Renderer = {
   macroGrid(items, loading = false) {
     const el = document.getElementById('macroGrid');
     if (loading) {
-      // skeleton 狀態
       el.innerHTML = CONFIG.macroFallback.map(m => `
         <div class="macro-cell">
           <div class="macro-label">${m.label}</div>
@@ -1479,11 +1600,19 @@ const Renderer = {
       return;
     }
     const data = items || CONFIG.macroFallback;
-    el.innerHTML = data.map(m => `
+    // 取舊值比較，決定閃爍方向
+    const oldCells = el.querySelectorAll('.macro-val');
+    el.innerHTML = data.map((m, i) => `
       <div class="macro-cell">
         <div class="macro-label">${m.label}</div>
         <div class="macro-val">${m.val} <span class="${m.dir}">${m.chg}</span></div>
       </div>`).join('');
+    // 觸發閃爍
+    el.querySelectorAll('.macro-cell').forEach((cell, i) => {
+      const dir = data[i]?.dir;
+      if (dir === 'up')   { cell.classList.add('flash-up');   setTimeout(() => cell.classList.remove('flash-up'),   600); }
+      if (dir === 'down') { cell.classList.add('flash-down'); setTimeout(() => cell.classList.remove('flash-down'), 600); }
+    });
   },
 
   // null 值顯示為 —，有值才 fmt
@@ -1766,6 +1895,8 @@ const UI = {
     setState({ selectedIdx: idx, selectedStock: 0 });
     Renderer.sidebar(DataLayer.getAll()[idx]);
     this.render();
+    // 手機：自動開抽屜
+    if (window.innerWidth <= 680 && this._openDrawer) this._openDrawer();
   },
 
   selectStock(i) {
@@ -1940,6 +2071,22 @@ const UI = {
     });
 
     document.getElementById('clearBtn').addEventListener('click', () => this.clearFilters());
+
+    // filter panel 折疊（點 header 展開/收合）
+    document.querySelector('.filter-panel-header').addEventListener('click', () => {
+      document.querySelector('.filter-panel').classList.toggle('collapsed');
+    });
+
+    // 手機 sidebar 抽屜
+    const drawerBtn     = document.getElementById('drawerBtn');
+    const sidebarEl     = document.getElementById('sidebar');
+    const overlayEl     = document.getElementById('sidebarOverlay');
+    const openDrawer  = () => { sidebarEl.classList.add('drawer-open');  overlayEl.classList.add('open'); };
+    const closeDrawer = () => { sidebarEl.classList.remove('drawer-open'); overlayEl.classList.remove('open'); };
+    drawerBtn?.addEventListener('click', openDrawer);
+    overlayEl?.addEventListener('click', closeDrawer);
+    // 選了族群後手機自動開抽屜
+    this._openDrawer = openDrawer;
   },
 };
 
