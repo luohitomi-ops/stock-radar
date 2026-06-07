@@ -247,6 +247,19 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
 .toast { background: var(--bg-2); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 8px 14px; font-size: 12px; color: var(--text-2); animation: fadeIn 0.2s ease; box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
 .toast.success { border-color: var(--up); }
 .toast.error   { border-color: var(--down); }
+
+/* ── PHASE 3: 收藏、gap 警示、R² ── */
+.star-btn { background:none; border:none; cursor:pointer; font-size:14px; padding:0 2px; opacity:0.25; transition:opacity var(--transition),transform var(--transition); line-height:1; }
+.star-btn:hover { opacity:0.7; transform:scale(1.2); }
+.star-btn.starred { opacity:1; filter:drop-shadow(0 0 4px #f59e0b); }
+.gap-alert-row td { background:#150e00 !important; }
+.gap-alert-row td:nth-child(5) { background:#2a1500 !important; }
+.gap-alert-dot { display:inline-block; width:5px; height:5px; border-radius:50%; background:var(--warn); margin-left:3px; vertical-align:middle; animation:livePulse 1.5s ease-in-out infinite; }
+.r2-wrap { margin-top:2px; }
+.r2-bar-bg { height:2px; border-radius:1px; background:var(--border); }
+.r2-bar-fill { height:2px; border-radius:1px; background:var(--accent); transition:width 0.4s ease; }
+.r2-text { font-size:9px; color:var(--text-6); }
+.filter-sep { width:0.5px; background:var(--border); align-self:stretch; margin:0 2px; }
 </style>
 </head>
 <body>
@@ -324,6 +337,34 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
           <div class="chip" data-val="50">≥50%</div>
         </div>
       </div>
+      <div class="filter-sep"></div>
+      <div class="filter-group">
+        <div class="filter-label">Beta ≥</div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <input class="range-input" type="number" id="betaMin" placeholder="0.5" step="0.1" style="width:72px;">
+        </div>
+      </div>
+      <div class="filter-group">
+        <div class="filter-label">驅動指數漲跌 ≥</div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <input class="range-input" type="number" id="driveChgMin" placeholder="%" step="0.5" style="width:72px;">
+          <span class="range-sep">%</span>
+        </div>
+      </div>
+      <div class="filter-group">
+        <div class="filter-label">Gap 警示閾值</div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <input class="range-input" type="number" id="gapAlert" placeholder="pp" step="0.5" style="width:72px;" title="超過此值的行高亮顯示">
+          <span class="range-sep">pp</span>
+        </div>
+      </div>
+      <div class="filter-group">
+        <div class="filter-label">只看</div>
+        <div class="chip-row" id="starChips">
+          <div class="chip active" data-val="all">全部</div>
+          <div class="chip" data-val="starred">⭐ 收藏</div>
+        </div>
+      </div>
       <div style="margin-left:auto;">
         <button class="clear-btn" id="clearBtn">✕ 清除</button>
       </div>
@@ -337,6 +378,7 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
       <button class="sort-btn active" data-sort="gap">↓ 落差</button>
       <button class="sort-btn" data-sort="exp">↓ 預期</button>
       <button class="sort-btn" data-sort="act">↓ 實際</button>
+      <button class="sort-btn" data-sort="beta">↓ Beta</button>
     </div>
   </div>
 
@@ -352,11 +394,13 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
         <table class="data-table">
           <thead>
             <tr>
+              <th style="width:28px;"></th>
               <th style="width:36px;">#</th>
               <th>台股族群</th>
               <th data-sort="exp">預期 <span>↕</span></th>
               <th data-sort="act">實際 <span>↕</span></th>
               <th data-sort="gap" class="sorted">落差 <span>↓</span></th>
+              <th data-sort="beta">Beta <span>↕</span></th>
               <th>海外驅動</th>
               <th>代表股</th>
               <th>覆蓋</th>
@@ -558,13 +602,18 @@ const STATE = {
   sortDir:       CONFIG.defaultSortDir,
   selectedIdx:   null,
   selectedStock: 0,
+  starred:       new Set(),   // 收藏的 sector 名稱
+  gapAlert:      null,        // gap 警示閾值（pp）
   filters: {
-    search:  '',
-    gapMin:  null,
-    gapMax:  null,
-    expMin:  null,
-    market:  'all',
-    cover:   'all',
+    search:      '',
+    gapMin:      null,
+    gapMax:      null,
+    expMin:      null,
+    market:      'all',
+    cover:       'all',
+    betaMin:     null,        // beta 最小值篩選
+    driveChgMin: null,        // 驅動指數漲跌最小值篩選
+    starOnly:    false,       // 只看收藏
   },
   lastUpdated: null,
 };
@@ -588,12 +637,14 @@ const Storage = {
   save() {
     try {
       const payload = {
-        sort:    STATE.sort,
-        sortDir: STATE.sortDir,
-        filters: { ...STATE.filters },
+        sort:      STATE.sort,
+        sortDir:   STATE.sortDir,
+        filters:   { ...STATE.filters },
+        starred:   [...STATE.starred],
+        gapAlert:  STATE.gapAlert,
       };
       localStorage.setItem(this.key, JSON.stringify(payload));
-    } catch (e) { /* 私密/無痕模式下 localStorage 可能不可用 */ }
+    } catch (e) {}
   },
 
   load() {
@@ -604,7 +655,9 @@ const Storage = {
       if (saved.sort)    STATE.sort    = saved.sort;
       if (saved.sortDir) STATE.sortDir = saved.sortDir;
       if (saved.filters) Object.assign(STATE.filters, saved.filters);
-    } catch (e) { /* 損毀的資料直接忽略 */ }
+      if (saved.starred) STATE.starred = new Set(saved.starred);
+      if (saved.gapAlert !== undefined) STATE.gapAlert = saved.gapAlert;
+    } catch (e) {}
   },
 
   clear() {
@@ -937,10 +990,9 @@ const DataLayer = {
    ═══════════════════════════════════════════════════════════ */
 const BetaEngine = {
 
-  // ── OLS 線性回歸（只需 beta，不需截距）──
-  // x, y 都是日報酬率陣列（%，如 1.5 表示漲 1.5%）
+  // ── OLS 線性回歸，回傳 { beta, r2 } ──
   _olsBeta(x, y) {
-    if (x.length !== y.length || x.length < CONFIG.betaMinDays) return null;
+    if (x.length !== y.length || x.length < CONFIG.betaMinDays) return { beta: null, r2: null };
     const n = x.length;
     const xBar = x.reduce((a, v) => a + v, 0) / n;
     const yBar = y.reduce((a, v) => a + v, 0) / n;
@@ -949,8 +1001,19 @@ const BetaEngine = {
       cov  += (x[i] - xBar) * (y[i] - yBar);
       varX += (x[i] - xBar) ** 2;
     }
-    if (varX === 0) return null;
-    return cov / varX;
+    if (varX === 0) return { beta: null, r2: null };
+    const beta = cov / varX;
+
+    // R² = 1 - SS_res / SS_tot
+    const alpha = yBar - beta * xBar;
+    let ssRes = 0, ssTot = 0;
+    for (let i = 0; i < n; i++) {
+      const yHat = alpha + beta * x[i];
+      ssRes += (y[i] - yHat) ** 2;
+      ssTot += (y[i] - yBar) ** 2;
+    }
+    const r2 = ssTot === 0 ? null : Math.max(0, 1 - ssRes / ssTot);
+    return { beta, r2 };
   },
 
   // ── 把 price series 轉成日報酬率序列 ──
@@ -972,23 +1035,19 @@ const BetaEngine = {
   // stockHistories: Map<stockId, {prices:[]}> —— 各個股的 history
   // driveHistory:   {prices:[]}              —— 驅動指數的 history
   computeBeta(stockHistories, driveHistory) {
-    if (!driveHistory || driveHistory.prices.length < CONFIG.betaMinDays + 1) return null;
+    if (!driveHistory || driveHistory.prices.length < CONFIG.betaMinDays + 1) return { beta: null, r2: null };
     const driveRet = this._toReturns(driveHistory.prices);
-
-    // 取每個有資料的個股報酬率，算每日平均（族群等權重）
     const stockRetArrays = [];
     for (const hist of stockHistories.values()) {
       if (!hist || hist.prices.length < CONFIG.betaMinDays + 1) continue;
       stockRetArrays.push(this._toReturns(hist.prices));
     }
-    if (stockRetArrays.length === 0) return null;
-
+    if (stockRetArrays.length === 0) return { beta: null, r2: null };
     const minLen = Math.min(...stockRetArrays.map(a => a.length));
     const sectorRet = Array.from({ length: minLen }, (_, i) => {
       const vals = stockRetArrays.map(a => a[a.length - minLen + i]);
       return vals.reduce((s, v) => s + v, 0) / vals.length;
     });
-
     const { x, y } = this._align(driveRet, sectorRet);
     return this._olsBeta(x, y);
   },
@@ -1020,7 +1079,7 @@ const BetaEngine = {
       const sectorHistMap = new Map(
         r.stocks.map(s => [s.id, stockHistories.get(s.id)])
       );
-      const beta = this.computeBeta(sectorHistMap, driveHist);
+      const { beta, r2 } = this.computeBeta(sectorHistMap, driveHist);
 
       // ── exp：beta × 海外今日漲跌 ──
       const exp = (beta !== null && driveChgToday !== null)
@@ -1049,6 +1108,7 @@ const BetaEngine = {
         gap:       gap   !== null ? parseFloat(gap.toFixed(2))   : null,
         driveChg:  driveChgToday !== null ? parseFloat(driveChgToday.toFixed(2)) : null,
         beta:      beta  !== null ? parseFloat(beta.toFixed(3))  : null,
+        r2:        r2    !== null ? parseFloat(r2.toFixed(3))    : null,
         _quality:  quality,
         _liveCover: liveCover,
         stocks:    updatedStocks,
@@ -1061,29 +1121,44 @@ const BetaEngine = {
    FILTER ENGINE  — 純函數，不碰 DOM
    ═══════════════════════════════════════════════════════════ */
 const FilterEngine = {
-  apply(data, filters, sort, sortDir) {
+  apply(data, filters, sort, sortDir, starred) {
     const f = filters;
     let result = data.filter(r => {
       const searchTarget = (r.sector + ' ' + r.driveName).toLowerCase();
-      if (f.search  && !searchTarget.includes(f.search)) return false;
-      if (f.gapMin  !== null && r.gap < f.gapMin) return false;
-      if (f.gapMax  !== null && r.gap > f.gapMax) return false;
-      if (f.expMin  !== null && r.exp < f.expMin) return false;
-      if (f.market  !== 'all' && r.market !== f.market) return false;
-      if (f.cover   !== 'all' && r.cover < parseInt(f.cover)) return false;
+      if (f.search      && !searchTarget.includes(f.search)) return false;
+      if (f.gapMin      !== null && (r.gap ?? -Infinity) < f.gapMin) return false;
+      if (f.gapMax      !== null && (r.gap ?? Infinity)  > f.gapMax) return false;
+      if (f.expMin      !== null && (r.exp ?? -Infinity) < f.expMin) return false;
+      if (f.market      !== 'all' && r.market !== f.market) return false;
+      if (f.cover       !== 'all' && r.cover < parseInt(f.cover)) return false;
+      if (f.betaMin     !== null && (r.beta ?? -Infinity) < f.betaMin) return false;
+      if (f.driveChgMin !== null && Math.abs(r.driveChg ?? 0) < f.driveChgMin) return false;
+      if (f.starOnly    && !starred.has(r.sector)) return false;
       return true;
     });
-    result.sort((a, b) => sortDir * (b[sort] - a[sort]));
+
+    // 收藏的族群永遠置頂，其餘按選定排序
+    result.sort((a, b) => {
+      const aStarred = starred.has(a.sector) ? 1 : 0;
+      const bStarred = starred.has(b.sector) ? 1 : 0;
+      if (aStarred !== bStarred) return bStarred - aStarred;
+      const aVal = a[sort] ?? (sortDir === -1 ? -Infinity : Infinity);
+      const bVal = b[sort] ?? (sortDir === -1 ? -Infinity : Infinity);
+      return sortDir * (bVal - aVal);
+    });
     return result;
   },
 
   countActive(filters) {
     let n = 0;
-    if (filters.search)  n++;
+    if (filters.search)      n++;
     if (filters.gapMin !== null || filters.gapMax !== null) n++;
     if (filters.expMin  !== null) n++;
     if (filters.market  !== 'all') n++;
     if (filters.cover   !== 'all') n++;
+    if (filters.betaMin !== null)  n++;
+    if (filters.driveChgMin !== null) n++;
+    if (filters.starOnly)  n++;
     return n;
   },
 };
@@ -1247,40 +1322,54 @@ const Renderer = {
   table(data, allData, query) {
     const tbody = document.getElementById('tableBody');
     if (!data.length) {
-      tbody.innerHTML = `<tr><td colspan="9"><div class="no-results">沒有符合條件的族群</div></td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="10"><div class="no-results">沒有符合條件的族群</div></td></tr>`;
       return;
     }
     tbody.innerHTML = data.map((r, i) => {
-      const origIdx  = allData.indexOf(r);
-      const isActive = origIdx === STATE.selectedIdx;
-      const gap      = r.gap;
-      const gapBarW  = gap !== null ? Math.min(100, (Math.abs(gap) / 4) * 100).toFixed(0) : 0;
-      const s0       = r.stocks[0];
-      const prevP    = s0.chg !== null
+      const origIdx   = allData.indexOf(r);
+      const isActive  = origIdx === STATE.selectedIdx;
+      const isStarred = STATE.starred.has(r.sector);
+      const gap       = r.gap;
+      const gapBarW   = gap !== null ? Math.min(100, (Math.abs(gap) / 4) * 100).toFixed(0) : 0;
+      const s0        = r.stocks[0];
+      const prevP     = s0.chg !== null
         ? DataLayer.genPrices(s0.seed, 10, s0.price / (1 + s0.chg / 100), s0.chg)
         : DataLayer.genPrices(s0.seed, 10, s0.price, 0);
-      const miniSvg  = SparklineEngine.buildStatic(prevP, s0.chg ?? 0, 52, 20);
-      const coverC   = this.coverColor(r.cover);
-      const isJP     = r.market === 'JP';
-
-      // gap bar 顏色：正 gap（補漲空間）= 紅，負 gap（超漲）= 綠
+      const miniSvg   = SparklineEngine.buildStatic(prevP, s0.chg ?? 0, 52, 20);
+      const coverC    = this.coverColor(r.cover);
+      const isJP      = r.market === 'JP';
       const gapBarColor = (gap ?? 0) >= 0 ? 'var(--down)' : 'var(--up)';
+      const isAlert   = STATE.gapAlert !== null && gap !== null && Math.abs(gap) >= STATE.gapAlert;
+      const alertDot  = isAlert ? `<span class="gap-alert-dot" title="Gap 超過警示閾值 ${STATE.gapAlert}pp"></span>` : '';
 
-      return `<tr class="${isActive ? 'active-row' : ''}" onclick="UI.selectRow(${origIdx})" style="cursor:pointer;">
-        <td><div class="rank-badge ${i === 0 ? 'gold' : ''}">${i + 1}</div></td>
+      const betaCell = r.beta !== null
+        ? `<div style="font-size:12px;font-weight:500;color:var(--text-2);">${r.beta.toFixed(2)}</div>
+           ${r.r2 !== null ? `
+           <div class="r2-wrap">
+             <div class="r2-bar-bg"><div class="r2-bar-fill" style="width:${(r.r2*100).toFixed(0)}%"></div></div>
+             <div class="r2-text">R² ${r.r2.toFixed(2)}</div>
+           </div>` : ''}`
+        : `<span style="color:var(--text-6);">—</span>`;
+
+      return `<tr class="${isActive ? 'active-row' : ''} ${isAlert ? 'gap-alert-row' : ''}" onclick="UI.selectRow(${origIdx})" style="cursor:pointer;">
+        <td onclick="event.stopPropagation()">
+          <button class="star-btn ${isStarred ? 'starred' : ''}" onclick="UI.toggleStar('${r.sector.replace(/'/g,"\\'")}',this)" title="${isStarred ? '取消收藏' : '加入收藏'}">${isStarred ? '⭐' : '☆'}</button>
+        </td>
+        <td><div class="rank-badge ${i === 0 && !isStarred ? 'gold' : ''}">${i + 1}</div></td>
         <td>
           <div style="display:flex;align-items:center;gap:5px;">
             <div class="sector-name">${this.highlight(r.sector, query)}</div>
             ${this.qualityBadge(r._quality || 'fallback')}
           </div>
-          <div style="font-size:10px;color:var(--text-6);margin-top:1px;">${r.stocks.length} 檔${r.beta !== null && r.beta !== undefined ? `・β ${r.beta.toFixed(2)}` : ''}</div>
+          <div style="font-size:10px;color:var(--text-6);margin-top:1px;">${r.stocks.length} 檔</div>
         </td>
         <td><span class="pct ${(r.exp??0)>=0?'pct-up':'pct-down'}">${this.fmtOrDash(r.exp)}</span></td>
         <td><span class="pct ${(r.act??0)>=0?'pct-up':'pct-down'}">${this.fmtOrDash(r.act)}</span></td>
         <td>
-          <span class="pct ${(gap??0)>=0?'pct-down':'pct-up'}" style="font-weight:600;">${this.fmtOrDash(gap,'pp')}</span>
+          <span class="pct ${(gap??0)>=0?'pct-down':'pct-up'}" style="font-weight:600;">${this.fmtOrDash(gap,'pp')}${alertDot}</span>
           ${gap !== null ? `<div class="gap-bar" style="width:${gapBarW}%;background:${gapBarColor};"></div>` : ''}
         </td>
+        <td>${betaCell}</td>
         <td>
           <span class="overseas-tag ${isJP ? 'jp' : ''}">${r.market}</span>
           <span style="color:var(--text-4);font-size:11px;">${this.highlight(r.driveName, query)}</span>
@@ -1422,22 +1511,6 @@ const Renderer = {
     });
   },
 
-  filterUI(filters) {
-    // 還原 input 值
-    document.getElementById('searchInput').value = filters.search || '';
-    document.getElementById('gapMin').value = filters.gapMin ?? '';
-    document.getElementById('gapMax').value = filters.gapMax ?? '';
-    document.getElementById('expMin').value = filters.expMin ?? '';
-
-    // 還原 chips
-    ['marketChips', 'coverChips'].forEach(groupId => {
-      const key = groupId === 'marketChips' ? 'market' : 'cover';
-      document.querySelectorAll(`#${groupId} .chip`).forEach(c => {
-        c.classList.toggle('active', c.dataset.val === String(filters[key]));
-      });
-    });
-  },
-
   resultCount(shown, total) {
     document.getElementById('resultCount').innerHTML = `顯示 <strong>${shown}</strong> / ${total} 個族群`;
   },
@@ -1480,15 +1553,29 @@ const UI = {
   // 主渲染循環
   render() {
     const allData = DataLayer.getAll();
-    const filtered = FilterEngine.apply(allData, STATE.filters, STATE.sort, STATE.sortDir);
+    const filtered = FilterEngine.apply(allData, STATE.filters, STATE.sort, STATE.sortDir, STATE.starred);
     const activeCount = FilterEngine.countActive(STATE.filters);
-
     Renderer.table(filtered, allData, STATE.filters.search);
     Renderer.sortButtons(STATE.sort, STATE.sortDir);
     Renderer.resultCount(filtered.length, allData.length);
     Renderer.filterBadge(activeCount);
     Renderer.lastUpdated(STATE.lastUpdated);
     document.getElementById('totalCount').textContent = allData.length;
+  },
+
+  toggleStar(sector, btn) {
+    if (STATE.starred.has(sector)) {
+      STATE.starred.delete(sector);
+      btn.textContent = '☆';
+      btn.classList.remove('starred');
+    } else {
+      STATE.starred.add(sector);
+      btn.textContent = '⭐';
+      btn.classList.add('starred');
+      Renderer.toast(`已收藏：${sector}`, 'success', 1500);
+    }
+    Storage.save();
+    this.render();
   },
 
   selectRow(idx) {
@@ -1517,9 +1604,11 @@ const UI = {
 
   clearFilters() {
     setState({
-      filters: { search:'', gapMin:null, gapMax:null, expMin:null, market:'all', cover:'all' }
+      filters: { search:'', gapMin:null, gapMax:null, expMin:null, market:'all', cover:'all', betaMin:null, driveChgMin:null, starOnly:false },
+      gapAlert: null,
     });
     Renderer.filterUI(STATE.filters);
+    document.getElementById('gapAlert').value = '';
     this.render();
     Renderer.toast('篩選條件已清除');
   },
@@ -1585,7 +1674,7 @@ const UI = {
     Renderer.macroGrid(CONFIG.macroFallback);
 
     // 3. 還原 filter UI（inputs / chips）
-    Renderer.filterUI(STATE.filters);
+    this.filterUI(STATE.filters);
 
     // 4. 首次渲染表格（用靜態資料，速度快）
     this.render();
@@ -1600,29 +1689,62 @@ const UI = {
     setTimeout(() => this.refresh(true), 200);
   },
 
+  filterUI(filters) {
+    document.getElementById('searchInput').value = filters.search || '';
+    document.getElementById('gapMin').value  = filters.gapMin  ?? '';
+    document.getElementById('gapMax').value  = filters.gapMax  ?? '';
+    document.getElementById('expMin').value  = filters.expMin  ?? '';
+    document.getElementById('betaMin').value      = filters.betaMin      ?? '';
+    document.getElementById('driveChgMin').value  = filters.driveChgMin  ?? '';
+    document.getElementById('gapAlert').value     = STATE.gapAlert ?? '';
+
+    ['marketChips','coverChips','starChips'].forEach(groupId => {
+      const key = groupId === 'marketChips' ? 'market' : groupId === 'coverChips' ? 'cover' : 'starOnly';
+      document.querySelectorAll(`#${groupId} .chip`).forEach(c => {
+        if (key === 'starOnly') {
+          c.classList.toggle('active', (c.dataset.val === 'starred') === filters.starOnly);
+        } else {
+          c.classList.toggle('active', c.dataset.val === String(filters[key]));
+        }
+      });
+    });
+  },
+
   _bindEvents() {
     // 文字 / 數值 inputs
-    ['searchInput', 'gapMin', 'gapMax', 'expMin'].forEach(id => {
-      document.getElementById(id).addEventListener('input', e => {
-        const val = e.target.value.trim();
-        const key = id === 'searchInput' ? 'search'
-                  : id === 'gapMin' ? 'gapMin'
-                  : id === 'gapMax' ? 'gapMax'
-                  : 'expMin';
-        const parsed = (key === 'search') ? val.toLowerCase()
-                     : (val === '' ? null : parseFloat(val));
-        this.setFilter({ [key]: parsed });
+    const inputMap = {
+      searchInput:  v => ({ search: v.toLowerCase() }),
+      gapMin:       v => ({ gapMin: v === '' ? null : parseFloat(v) }),
+      gapMax:       v => ({ gapMax: v === '' ? null : parseFloat(v) }),
+      expMin:       v => ({ expMin: v === '' ? null : parseFloat(v) }),
+      betaMin:      v => ({ betaMin: v === '' ? null : parseFloat(v) }),
+      driveChgMin:  v => ({ driveChgMin: v === '' ? null : parseFloat(v) }),
+    };
+    Object.entries(inputMap).forEach(([id, fn]) => {
+      document.getElementById(id)?.addEventListener('input', e => {
+        this.setFilter(fn(e.target.value.trim()));
       });
     });
 
+    // gap 警示閾值（不進 filters，直接存 STATE）
+    document.getElementById('gapAlert')?.addEventListener('input', e => {
+      const v = e.target.value.trim();
+      setState({ gapAlert: v === '' ? null : parseFloat(v) });
+      this.render();
+    });
+
     // chips（單選）
-    document.querySelectorAll('#marketChips .chip, #coverChips .chip').forEach(chip => {
+    document.querySelectorAll('#marketChips .chip, #coverChips .chip, #starChips .chip').forEach(chip => {
       chip.addEventListener('click', () => {
         const groupId = chip.closest('.chip-row').id;
-        const key = groupId === 'marketChips' ? 'market' : 'cover';
         chip.closest('.chip-row').querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
         chip.classList.add('active');
-        this.setFilter({ [key]: chip.dataset.val });
+        if (groupId === 'starChips') {
+          this.setFilter({ starOnly: chip.dataset.val === 'starred' });
+        } else {
+          const key = groupId === 'marketChips' ? 'market' : 'cover';
+          this.setFilter({ [key]: chip.dataset.val });
+        }
       });
     });
 
@@ -1630,13 +1752,10 @@ const UI = {
     document.querySelectorAll('.sort-btn[data-sort]').forEach(btn => {
       btn.addEventListener('click', () => this.setSort(btn.dataset.sort));
     });
-
-    // 欄位 th 排序
     document.querySelectorAll('th[data-sort]').forEach(th => {
       th.addEventListener('click', () => this.setSort(th.dataset.sort));
     });
 
-    // 清除
     document.getElementById('clearBtn').addEventListener('click', () => this.clearFilters());
   },
 };
