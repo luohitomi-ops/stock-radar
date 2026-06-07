@@ -402,6 +402,114 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
 }
 @media (max-width: 680px) { .auto-refresh-wrap { display: none; } }
 
+/* ══════════════════════════════════════════
+   CUSTOM SECTOR MODAL
+   ══════════════════════════════════════════ */
+.modal-backdrop {
+  display: none; position: fixed; inset: 0; z-index: 500;
+  background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+  align-items: center; justify-content: center;
+}
+.modal-backdrop.open { display: flex; }
+
+.modal {
+  background: var(--bg-1); border: 0.5px solid var(--border);
+  border-radius: 12px; width: 480px; max-width: calc(100vw - 32px);
+  max-height: 85vh; display: flex; flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  animation: fadeIn 0.2s ease;
+}
+.modal-header {
+  padding: 16px 20px; border-bottom: 0.5px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0;
+}
+.modal-title { font-size: 14px; font-weight: 600; color: var(--text-1); }
+.modal-close {
+  width: 28px; height: 28px; border-radius: var(--radius);
+  border: 0.5px solid var(--border-hover); background: var(--bg-2);
+  color: var(--text-4); cursor: pointer; font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all var(--transition);
+}
+.modal-close:hover { border-color: var(--down); color: var(--down); }
+
+.modal-body { padding: 18px 20px; overflow-y: auto; flex: 1; }
+.modal-body::-webkit-scrollbar { width: 4px; }
+.modal-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.modal-footer {
+  padding: 14px 20px; border-top: 0.5px solid var(--border);
+  display: flex; gap: 8px; justify-content: flex-end; flex-shrink: 0;
+}
+
+/* form elements inside modal */
+.form-group { margin-bottom: 14px; }
+.form-label { font-size: 11px; color: var(--text-4); margin-bottom: 5px; display: block; }
+.form-input {
+  width: 100%; height: 32px; background: var(--bg-2);
+  border: 0.5px solid var(--border-hover); border-radius: var(--radius);
+  padding: 0 10px; color: var(--text-2); font-size: 12px; outline: none;
+  transition: border-color var(--transition);
+}
+.form-input:focus { border-color: var(--accent); }
+.form-select {
+  height: 32px; background: var(--bg-2); border: 0.5px solid var(--border-hover);
+  border-radius: var(--radius); padding: 0 8px; color: var(--text-2);
+  font-size: 12px; outline: none; cursor: pointer;
+  transition: border-color var(--transition);
+}
+.form-select:focus { border-color: var(--accent); }
+.form-row { display: flex; gap: 8px; align-items: flex-end; }
+
+/* stock list inside modal */
+.stock-list { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+.stock-item {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--bg-0); border: 0.5px solid var(--border);
+  border-radius: var(--radius); padding: 7px 10px;
+}
+.stock-item-id   { font-size: 11px; color: var(--text-5); width: 40px; flex-shrink: 0; }
+.stock-item-name { font-size: 12px; color: var(--text-2); flex: 1; }
+.stock-item-role { font-size: 10px; color: var(--text-5); width: 36px; flex-shrink: 0; }
+.stock-item-del  {
+  width: 22px; height: 22px; border-radius: var(--radius-sm);
+  border: 0.5px solid var(--border-hover); background: transparent;
+  color: var(--text-5); cursor: pointer; font-size: 13px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all var(--transition); flex-shrink: 0;
+}
+.stock-item-del:hover { border-color: var(--down); color: var(--down); }
+
+/* custom sector tag in table */
+.custom-tag {
+  font-size: 9px; padding: 1px 4px; border-radius: 3px;
+  background: #1a0e2a; color: #c084fc; border: 0.5px solid #4a2070;
+  margin-left: 3px; vertical-align: middle;
+}
+
+/* custom sectors list in manage modal */
+.custom-sector-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 12px; background: var(--bg-0); border: 0.5px solid var(--border);
+  border-radius: var(--radius); margin-bottom: 6px;
+  transition: border-color var(--transition);
+}
+.custom-sector-item:hover { border-color: var(--border-hover); }
+.cs-info { flex: 1; }
+.cs-name { font-size: 12px; color: var(--text-2); font-weight: 500; }
+.cs-meta { font-size: 10px; color: var(--text-5); margin-top: 2px; }
+.cs-actions { display: flex; gap: 5px; }
+.cs-btn {
+  padding: 4px 9px; border-radius: var(--radius-sm); font-size: 11px;
+  cursor: pointer; border: 0.5px solid var(--border-hover);
+  background: var(--bg-2); color: var(--text-4);
+  transition: all var(--transition);
+}
+.cs-btn:hover { border-color: var(--accent); color: var(--accent-text); }
+.cs-btn.del:hover { border-color: var(--down); color: var(--down); }
+
+
 </style>
 </head>
 <body>
@@ -541,6 +649,7 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
       <button class="sort-btn" data-sort="exp">↓ 預期</button>
       <button class="sort-btn" data-sort="act">↓ 實際</button>
       <button class="sort-btn" data-sort="beta">↓ Beta</button>
+      <button class="btn" style="margin-left:8px;font-size:11px;padding:3px 10px;" onclick="CustomSector.openManage()">＋ 自訂族群</button>
     </div>
   </div>
 
@@ -592,6 +701,74 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
 <div class="toast-container" id="toastContainer"></div>
 <button class="sidebar-drawer-btn" id="drawerBtn" title="查看族群詳情">📊</button>
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- 自訂族群管理 Modal -->
+<div class="modal-backdrop" id="manageModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">自訂族群管理</div>
+      <button class="modal-close" onclick="CustomSector.closeManage()">✕</button>
+    </div>
+    <div class="modal-body" id="manageModalBody">
+      <!-- 由 JS 填入 -->
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="CustomSector.openEdit(null)">＋ 新增族群</button>
+      <button class="btn" onclick="CustomSector.closeManage()">關閉</button>
+    </div>
+  </div>
+</div>
+
+<!-- 新增 / 編輯族群 Modal -->
+<div class="modal-backdrop" id="editModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="editModalTitle">新增族群</div>
+      <button class="modal-close" onclick="CustomSector.closeEdit()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">族群名稱 *</label>
+        <input class="form-input" id="csName" placeholder="例：台股 AI 記憶體" maxlength="30">
+      </div>
+      <div class="form-row" style="margin-bottom:14px;">
+        <div style="flex:1;">
+          <label class="form-label">海外驅動市場</label>
+          <select class="form-select" id="csMarket" style="width:100%;">
+            <option value="US">🇺🇸 美股</option>
+            <option value="JP">🇯🇵 日股</option>
+          </select>
+        </div>
+        <div style="flex:1;">
+          <label class="form-label">驅動指數</label>
+          <select class="form-select" id="csDriveIndex" style="width:100%;">
+            <option value="SOX">費城半導體 SOX</option>
+            <option value="SPX">S&P500 SPX</option>
+            <option value="N225">日經225 N225</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">加入個股（輸入股票代號，按 Enter 加入）</label>
+        <div class="form-row">
+          <input class="form-input" id="csStockId" placeholder="代號，如 2330" style="width:90px;flex-shrink:0;" maxlength="6">
+          <input class="form-input" id="csStockName" placeholder="名稱，如 台積電" style="flex:1;">
+          <select class="form-select" id="csStockRole">
+            <option value="龍頭">龍頭</option>
+            <option value="核心">核心</option>
+            <option value="觀察">觀察</option>
+          </select>
+          <button class="btn" id="csAddStock" style="flex-shrink:0;">加入</button>
+        </div>
+        <div class="stock-list" id="csStockList"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="CustomSector.saveEdit()">儲存族群</button>
+      <button class="btn" onclick="CustomSector.closeEdit()">取消</button>
+    </div>
+  </div>
+</div>
 
 <script>
 'use strict';
@@ -1033,6 +1210,204 @@ const CONFIG = {
 };
 
 /* ═══════════════════════════════════════════════════════════
+   CUSTOM SECTOR  — 自訂族群（新增 / 編輯 / 刪除）
+   ═══════════════════════════════════════════════════════════ */
+const CustomSector = {
+  STORAGE_KEY: 'stockRadar_customSectors',
+  _editIdx: null,          // null = 新增, number = 編輯
+  _editStocks: [],         // 暫存正在編輯的個股列表
+
+  // ── 讀取 / 儲存 ──
+  load() {
+    try {
+      const raw = localStorage.getItem(this.STORAGE_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch { return []; }
+  },
+
+  save(sectors) {
+    try { localStorage.setItem(this.STORAGE_KEY, JSON.stringify(sectors)); }
+    catch (e) { Renderer.toast('儲存失敗（localStorage 已滿）', 'error'); }
+  },
+
+  // 把自訂族群合併到 CONFIG.sectorData（標記 _custom: true）
+  merge() {
+    const customs = this.load().map(r => ({ ...r, _custom: true, hot: true }));
+    // 移除舊的自訂族群，再重新加入
+    CONFIG.sectorData = CONFIG.sectorData.filter(r => !r._custom).concat(customs);
+  },
+
+  // ── 管理列表 Modal ──
+  openManage() {
+    this._renderManageList();
+    document.getElementById('manageModal').classList.add('open');
+  },
+
+  closeManage() {
+    document.getElementById('manageModal').classList.remove('open');
+  },
+
+  _renderManageList() {
+    const customs = this.load();
+    const body = document.getElementById('manageModalBody');
+    if (!customs.length) {
+      body.innerHTML = `<div style="text-align:center;padding:32px;color:var(--text-5);font-size:12px;">
+        <div style="font-size:28px;margin-bottom:10px;opacity:0.3;">📋</div>
+        還沒有自訂族群<br>點下方「新增族群」開始建立
+      </div>`;
+      return;
+    }
+    body.innerHTML = customs.map((r, i) => `
+      <div class="custom-sector-item">
+        <div class="cs-info">
+          <div class="cs-name">${r.sector}</div>
+          <div class="cs-meta">${r.stocks.length} 檔・${r.market} ${r.driveName}</div>
+        </div>
+        <div class="cs-actions">
+          <button class="cs-btn" onclick="CustomSector.openEdit(${i})">編輯</button>
+          <button class="cs-btn del" onclick="CustomSector.delete(${i})">刪除</button>
+        </div>
+      </div>`).join('');
+  },
+
+  delete(idx) {
+    const customs = this.load();
+    const name = customs[idx]?.sector;
+    customs.splice(idx, 1);
+    this.save(customs);
+    this.merge();
+    this._renderManageList();
+    UI.render();
+    Renderer.toast(`已刪除：${name}`);
+  },
+
+  // ── 編輯 Modal ──
+  openEdit(idx) {
+    this._editIdx = idx;
+    const customs = this.load();
+    const isNew = idx === null;
+    const r = isNew ? null : customs[idx];
+
+    document.getElementById('editModalTitle').textContent = isNew ? '新增族群' : '編輯族群';
+    document.getElementById('csName').value       = r?.sector.replace('台股 ','') ?? '';
+    document.getElementById('csMarket').value     = r?.market ?? 'US';
+    document.getElementById('csDriveIndex').value = r?.driveIndex ?? 'SOX';
+    document.getElementById('csStockId').value    = '';
+    document.getElementById('csStockName').value  = '';
+
+    this._editStocks = r ? [...r.stocks] : [];
+    this._renderStockList();
+
+    // 關閉管理 modal，開啟編輯 modal
+    this.closeManage();
+    document.getElementById('editModal').classList.add('open');
+
+    // 綁定加入個股按鈕（避免重複綁定）
+    const addBtn = document.getElementById('csAddStock');
+    const newBtn = addBtn.cloneNode(true);
+    addBtn.parentNode.replaceChild(newBtn, addBtn);
+    newBtn.addEventListener('click', () => this._addStock());
+    document.getElementById('csStockId').addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); document.getElementById('csStockName').focus(); }
+    });
+    document.getElementById('csStockName').addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); this._addStock(); }
+    });
+  },
+
+  closeEdit() {
+    document.getElementById('editModal').classList.remove('open');
+    this.openManage();
+  },
+
+  _addStock() {
+    const id   = document.getElementById('csStockId').value.trim();
+    const name = document.getElementById('csStockName').value.trim();
+    const role = document.getElementById('csStockRole').value;
+    if (!id || !name) { Renderer.toast('請填入代號和名稱', 'error'); return; }
+    if (this._editStocks.length >= 8) { Renderer.toast('最多 8 檔個股', 'error'); return; }
+
+    // 自動加入 stockSymbolMap
+    const sym = id.length <= 4 ? `${id}.TW` : `${id}.TWO`;
+    if (!CONFIG.stockSymbolMap[id]) CONFIG.stockSymbolMap[id] = sym;
+
+    const seed = Date.now() % 999999;
+    this._editStocks.push({ id, name, price: 100, chg: null, role, seed });
+    document.getElementById('csStockId').value   = '';
+    document.getElementById('csStockName').value = '';
+    document.getElementById('csStockId').focus();
+    this._renderStockList();
+  },
+
+  _removeStock(idx) {
+    this._editStocks.splice(idx, 1);
+    this._renderStockList();
+  },
+
+  _renderStockList() {
+    const list = document.getElementById('csStockList');
+    if (!this._editStocks.length) {
+      list.innerHTML = `<div style="font-size:11px;color:var(--text-6);padding:8px 0;">尚未加入任何個股</div>`;
+      return;
+    }
+    list.innerHTML = this._editStocks.map((s, i) => `
+      <div class="stock-item">
+        <span class="stock-item-id">${s.id}</span>
+        <span class="stock-item-name">${s.name}</span>
+        <span class="stock-item-role">${s.role}</span>
+        <button class="stock-item-del" onclick="CustomSector._removeStock(${i})">✕</button>
+      </div>`).join('');
+  },
+
+  saveEdit() {
+    const nameRaw = document.getElementById('csName').value.trim();
+    if (!nameRaw) { Renderer.toast('請填入族群名稱', 'error'); return; }
+    if (!this._editStocks.length) { Renderer.toast('請至少加入一檔個股', 'error'); return; }
+
+    const driveIndex = document.getElementById('csDriveIndex').value;
+    const market     = document.getElementById('csMarket').value;
+    const driveNames = { SOX:'美股 費城半導體', SPX:'美股 S&P500', N225:'日股 日經225' };
+
+    const sector = {
+      sector:     `台股 ${nameRaw}`,
+      exp: null, act: null, gap: null,
+      market,
+      driveName:  driveNames[driveIndex],
+      driveIndex,
+      driveChg:   null,
+      cover:      100,
+      stocks:     this._editStocks,
+    };
+
+    const customs = this.load();
+    if (this._editIdx === null) {
+      customs.push(sector);
+    } else {
+      customs[this._editIdx] = sector;
+    }
+    this.save(customs);
+    this.merge();
+    UI.render();
+    Renderer.toast(`族群「${sector.sector}」已儲存`, 'success');
+
+    document.getElementById('editModal').classList.remove('open');
+    this.openManage();
+  },
+
+  // modal 點背景關閉
+  initBackdropClose() {
+    ['manageModal','editModal'].forEach(id => {
+      document.getElementById(id).addEventListener('click', e => {
+        if (e.target.id === id) {
+          if (id === 'editModal') this.closeEdit();
+          else this.closeManage();
+        }
+      });
+    });
+  },
+};
+
+/* ═══════════════════════════════════════════════════════════
    AUTO REFRESH  — 自動定時更新模組
    ═══════════════════════════════════════════════════════════ */
 const AutoRefresh = {
@@ -1233,11 +1608,11 @@ const DataLayer = {
   },
 
   getAll()    { return CONFIG.sectorData; },
-  getHot()    { return CONFIG.sectorData.filter(r => r.hot); },
+  getHot()    { return CONFIG.sectorData.filter(r => r.hot || r._custom); },
   getVisible(search) {
-    // 有搜尋時顯示全部，無搜尋時只顯示熱門
+    // 有搜尋時顯示全部，無搜尋時只顯示熱門 + 自訂
     if (search && search.trim()) return CONFIG.sectorData;
-    return CONFIG.sectorData.filter(r => r.hot);
+    return CONFIG.sectorData.filter(r => r.hot || r._custom);
   },
 
   // ── 核心：自動偵測環境，選擇正確的 proxy ──
@@ -1910,6 +2285,7 @@ const Renderer = {
           <div style="display:flex;align-items:center;gap:5px;">
             <div class="sector-name">${this.highlight(r.sector, query)}</div>
             ${this.qualityBadge(r._quality || 'fallback')}
+            ${r._custom ? '<span class="custom-tag">自訂</span>' : ''}
           </div>
           <div style="font-size:10px;color:var(--text-6);margin-top:1px;">${r.stocks.length} 檔</div>
         </td>
@@ -2251,6 +2627,11 @@ const UI = {
 
     // 8. 啟動自動更新計時器
     AutoRefresh.init();
+
+    // 9. 載入自訂族群並合併
+    CustomSector.merge();
+    CustomSector.initBackdropClose();
+    this.render();  // 重新渲染含自訂族群的結果
   },
 
   filterUI(filters) {
