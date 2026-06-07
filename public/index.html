@@ -376,6 +376,31 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
     margin: 0 auto 10px;
   }
 }
+/* ── AUTO REFRESH TIMER ── */
+.auto-refresh-wrap { display: flex; align-items: center; gap: 6px; }
+.auto-refresh-select {
+  height: 26px; padding: 0 6px; border-radius: var(--radius);
+  border: 0.5px solid var(--border-hover); background: var(--bg-2);
+  color: var(--text-3); font-size: 11px; cursor: pointer; outline: none;
+  transition: border-color var(--transition);
+}
+.auto-refresh-select:focus { border-color: var(--accent); }
+.auto-refresh-select.active { border-color: var(--up); color: var(--up); }
+.timer-ring-wrap { position: relative; width: 20px; height: 20px; flex-shrink: 0; }
+.timer-ring-wrap svg { position: absolute; top: 0; left: 0; transform: rotate(-90deg); }
+.timer-track { fill: none; stroke: var(--border); stroke-width: 2.5; }
+.timer-fill  {
+  fill: none; stroke: var(--up); stroke-width: 2.5; stroke-linecap: round;
+  transition: stroke-dashoffset 1s linear;
+  stroke-dasharray: 50.3; stroke-dashoffset: 0;
+}
+.timer-fill.warn { stroke: var(--warn); }
+.timer-label {
+  position: absolute; inset: 0; display: flex; align-items: center;
+  justify-content: center; font-size: 8px; color: var(--text-4);
+  font-weight: 600; line-height: 1;
+}
+@media (max-width: 680px) { .auto-refresh-wrap { display: none; } }
 
 </style>
 </head>
@@ -396,6 +421,23 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
     </div>
     <div class="topbar-right">
       <span class="last-updated"><span class="live-dot" id="liveDot"></span>更新：<span id="lastUpdatedTime">—</span></span>
+      <!-- 自動更新計時器 -->
+      <div class="auto-refresh-wrap" id="autoRefreshWrap">
+        <select class="auto-refresh-select" id="autoRefreshSelect" title="自動更新間隔">
+          <option value="0">手動</option>
+          <option value="3">3 分鐘</option>
+          <option value="5" selected>5 分鐘</option>
+          <option value="10">10 分鐘</option>
+          <option value="30">30 分鐘</option>
+        </select>
+        <div class="timer-ring-wrap" id="timerRingWrap" style="display:none;">
+          <svg width="20" height="20" viewBox="0 0 20 20">
+            <circle class="timer-track" cx="10" cy="10" r="8"/>
+            <circle class="timer-fill" id="timerFill" cx="10" cy="10" r="8"/>
+          </svg>
+          <div class="timer-label" id="timerLabel">—</div>
+        </div>
+      </div>
       <button class="btn">比較族群</button>
       <button class="btn btn-primary" id="refreshBtn" onclick="UI.refresh()">↻ 更新行情</button>
     </div>
@@ -988,6 +1030,105 @@ const CONFIG = {
         {id:'2357',name:'華碩', price:580, chg:null, role:'核心', seed:4302},
       ]},
   ],
+};
+
+/* ═══════════════════════════════════════════════════════════
+   AUTO REFRESH  — 自動定時更新模組
+   ═══════════════════════════════════════════════════════════ */
+const AutoRefresh = {
+  _timer:      null,   // setInterval handle
+  _ticker:     null,   // setInterval handle（每秒更新倒數）
+  _intervalMs: 0,      // 0 = 關閉
+  _remaining:  0,      // 剩餘秒數
+  _total:      0,      // 總秒數（用來算圓環進度）
+
+  // 圓環周長（r=8, circumference = 2π×8 ≈ 50.3）
+  CIRCUMFERENCE: 50.3,
+
+  init() {
+    const sel = document.getElementById('autoRefreshSelect');
+    if (!sel) return;
+
+    // 從 localStorage 還原上次設定
+    try {
+      const saved = localStorage.getItem('stockRadar_autoRefresh');
+      if (saved !== null) sel.value = saved;
+    } catch (e) {}
+
+    sel.addEventListener('change', () => {
+      try { localStorage.setItem('stockRadar_autoRefresh', sel.value); } catch (e) {}
+      this.start(parseInt(sel.value));
+    });
+
+    // 初始啟動
+    this.start(parseInt(sel.value));
+  },
+
+  start(minutes) {
+    this._stop();
+    this._intervalMs = minutes * 60 * 1000;
+
+    const ringWrap = document.getElementById('timerRingWrap');
+    const sel      = document.getElementById('autoRefreshSelect');
+
+    if (minutes === 0) {
+      // 手動模式：隱藏圓環
+      if (ringWrap) ringWrap.style.display = 'none';
+      if (sel) sel.classList.remove('active');
+      return;
+    }
+
+    if (ringWrap) ringWrap.style.display = 'flex';
+    if (sel) sel.classList.add('active');
+
+    this._total     = minutes * 60;
+    this._remaining = this._total;
+    this._updateRing();
+
+    // 每秒倒數
+    this._ticker = setInterval(() => {
+      this._remaining = Math.max(0, this._remaining - 1);
+      this._updateRing();
+      if (this._remaining === 0) {
+        // 時間到：靜默更新，然後重設倒數
+        UI.refresh(true).then(() => {
+          this._remaining = this._total;
+        });
+      }
+    }, 1000);
+  },
+
+  _stop() {
+    if (this._timer)  { clearInterval(this._timer);  this._timer  = null; }
+    if (this._ticker) { clearInterval(this._ticker); this._ticker = null; }
+  },
+
+  _updateRing() {
+    const fill  = document.getElementById('timerFill');
+    const label = document.getElementById('timerLabel');
+    if (!fill || !label) return;
+
+    const pct    = this._remaining / this._total;  // 1 → 0
+    const offset = this.CIRCUMFERENCE * (1 - pct);
+    fill.style.strokeDashoffset = offset;
+
+    // 剩餘 < 20% 時變橘色警示
+    fill.classList.toggle('warn', pct < 0.2);
+
+    // 標籤顯示剩餘秒 / 分
+    if (this._remaining >= 60) {
+      label.textContent = Math.ceil(this._remaining / 60) + 'm';
+    } else {
+      label.textContent = this._remaining + 's';
+    }
+  },
+
+  // 手動更新後重設倒數（避免剛更新完馬上又觸發）
+  resetCountdown() {
+    if (this._intervalMs === 0) return;
+    this._remaining = this._total;
+    this._updateRing();
+  },
 };
 
 /* ═══════════════════════════════════════════════════════════
@@ -2074,6 +2215,8 @@ const UI = {
           'success'
         );
       }
+      // 手動更新後重設倒數，避免剛更新完馬上又自動觸發
+      AutoRefresh.resetCountdown();
     } catch (err) {
       console.warn('refresh failed:', err);
       Renderer.macroGrid(CONFIG.macroFallback);
@@ -2105,6 +2248,9 @@ const UI = {
 
     // 7. 背景靜默拉 API
     setTimeout(() => this.refresh(true), 200);
+
+    // 8. 啟動自動更新計時器
+    AutoRefresh.init();
   },
 
   filterUI(filters) {
