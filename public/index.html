@@ -509,6 +509,56 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
 .cs-btn:hover { border-color: var(--accent); color: var(--accent-text); }
 .cs-btn.del:hover { border-color: var(--down); color: var(--down); }
 
+/* ══════════════════════════════════════════
+   HISTORY BACKTESTING
+   ══════════════════════════════════════════ */
+/* 側邊欄 tab 切換 */
+.sidebar-tabs { display: flex; border-bottom: 0.5px solid var(--border); }
+.sidebar-tab {
+  flex: 1; padding: 8px 0; text-align: center; font-size: 11px;
+  color: var(--text-4); cursor: pointer; border-bottom: 2px solid transparent;
+  transition: all var(--transition); user-select: none;
+}
+.sidebar-tab.active { color: var(--accent-text); border-bottom-color: var(--accent); }
+.sidebar-tab:hover  { color: var(--text-2); }
+
+/* 回測總覽 Modal */
+.history-modal .modal { width: 720px; max-height: 88vh; }
+
+/* gap 歷史折線圖容器 */
+.gap-history-chart { width: 100%; height: 80px; position: relative; margin: 6px 0; }
+.gap-history-chart svg { display: block; width: 100%; height: 100%; }
+.ghc-tooltip {
+  position: absolute; background: #1e2d42; border: 0.5px solid #2a4060;
+  border-radius: 4px; padding: 3px 8px; font-size: 10px; color: var(--text-2);
+  pointer-events: none; display: none; white-space: nowrap; z-index: 10;
+}
+
+/* 回測統計卡 */
+.bt-stat-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 14px; }
+.bt-stat { background: var(--bg-0); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 8px 10px; }
+.bt-stat-label { font-size: 10px; color: var(--text-5); margin-bottom: 3px; }
+.bt-stat-val   { font-size: 14px; font-weight: 600; }
+
+/* 回測族群列表 */
+.bt-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 12px; background: var(--bg-0); border: 0.5px solid var(--border);
+  border-radius: var(--radius); margin-bottom: 6px;
+  transition: border-color var(--transition); cursor: pointer;
+}
+.bt-row:hover { border-color: var(--accent); }
+.bt-row-name { font-size: 12px; color: var(--text-2); flex: 1; }
+.bt-row-days  { font-size: 10px; color: var(--text-5); width: 52px; text-align: right; }
+.bt-bar-wrap  { width: 80px; height: 6px; background: var(--border); border-radius: 3px; flex-shrink: 0; }
+.bt-bar-fill  { height: 6px; border-radius: 3px; background: var(--accent); }
+.bt-avg       { font-size: 12px; font-weight: 600; width: 52px; text-align: right; flex-shrink: 0; }
+
+/* 歷史折線（側邊欄內嵌） */
+.history-tab-content { padding: 12px 0; }
+.ht-empty { text-align: center; color: var(--text-6); font-size: 11px; padding: 20px 0; }
+
+
 
 </style>
 </head>
@@ -661,6 +711,7 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
             <div class="table-title">補漲機會排行</div>
             <div class="table-sub">點選族群查看個股走勢迷你圖</div>
           </div>
+          <button class="btn" style="font-size:11px;padding:4px 10px;" onclick="HistoryEngine.openOverview()">📊 回測總覽</button>
         </div>
         <table class="data-table">
           <thead>
@@ -688,6 +739,10 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
         <div class="sidebar-title" id="sidebarTitle">—</div>
         <div class="sidebar-meta" id="sidebarMeta">點選左側族群查看詳情</div>
       </div>
+      <div class="sidebar-tabs">
+        <div class="sidebar-tab active" id="tabDetail" onclick="UI.switchSidebarTab('detail')">個股詳情</div>
+        <div class="sidebar-tab" id="tabHistory" onclick="UI.switchSidebarTab('history')">歷史 Gap</div>
+      </div>
       <div class="sidebar-body" id="sidebarBody">
         <div class="sidebar-placeholder">
           <div class="sidebar-placeholder-icon">📈</div>
@@ -702,7 +757,22 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
 <button class="sidebar-drawer-btn" id="drawerBtn" title="查看族群詳情">📊</button>
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-<!-- 自訂族群管理 Modal -->
+<!-- 歷史回測總覽 Modal -->
+<div class="modal-backdrop history-modal" id="historyModal">
+  <div class="modal" style="width:680px;">
+    <div class="modal-header">
+      <div class="modal-title">📊 Gap 歷史回測總覽</div>
+      <button class="modal-close" onclick="HistoryEngine.closeOverview()">✕</button>
+    </div>
+    <div class="modal-body" id="historyModalBody">
+      <!-- 由 JS 填入 -->
+    </div>
+    <div class="modal-footer">
+      <button class="btn" style="color:var(--down);" onclick="HistoryEngine.clearAll()">清除所有歷史</button>
+      <button class="btn" onclick="HistoryEngine.closeOverview()">關閉</button>
+    </div>
+  </div>
+</div>
 <div class="modal-backdrop" id="manageModal">
   <div class="modal">
     <div class="modal-header">
@@ -1207,6 +1277,335 @@ const CONFIG = {
         {id:'2357',name:'華碩', price:580, chg:null, role:'核心', seed:4302},
       ]},
   ],
+};
+
+/* ═══════════════════════════════════════════════════════════
+   HISTORY ENGINE  — 記錄每日 gap，歷史回測
+   ═══════════════════════════════════════════════════════════
+   資料格式（localStorage）：
+   {
+     "2026-06-08": { "台股 AI 散熱": 2.3, "台股 交換器": -0.8, ... },
+     "2026-06-07": { ... },
+     ...
+   }
+   最多保留 90 天，超過自動刪除最舊的。
+   ═══════════════════════════════════════════════════════════ */
+const HistoryEngine = {
+  STORAGE_KEY: 'stockRadar_gapHistory',
+  MAX_DAYS:    90,
+  _sidebarSector: null,  // 當前側邊欄選取的族群名稱
+  _sidebarTab:    'detail',
+
+  // ── 今日日期 key ──
+  _todayKey() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  },
+
+  // ── 讀取全部歷史 ──
+  load() {
+    try {
+      const raw = localStorage.getItem(this.STORAGE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch { return {}; }
+  },
+
+  // ── 儲存 ──
+  _save(data) {
+    try { localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data)); }
+    catch { console.warn('HistoryEngine: localStorage full'); }
+  },
+
+  // ── 記錄今日快照（每次更新行情成功後呼叫）──
+  record(sectorData) {
+    const today   = this._todayKey();
+    const history = this.load();
+
+    // 只記錄有真實 gap 值的族群
+    const snap = {};
+    sectorData.forEach(r => {
+      if (r.gap !== null && r.gap !== undefined && !isNaN(r.gap)) {
+        snap[r.sector] = parseFloat(r.gap.toFixed(2));
+      }
+    });
+
+    if (!Object.keys(snap).length) return;
+
+    history[today] = { ...history[today], ...snap };  // 同天多次更新合併
+
+    // 刪除超過 MAX_DAYS 的舊資料
+    const keys = Object.keys(history).sort();
+    if (keys.length > this.MAX_DAYS) {
+      keys.slice(0, keys.length - this.MAX_DAYS).forEach(k => delete history[k]);
+    }
+
+    this._save(history);
+  },
+
+  // ── 取單一族群的歷史 gap 序列 ──
+  getSectorHistory(sectorName) {
+    const history = this.load();
+    const result  = [];
+    Object.keys(history).sort().forEach(date => {
+      const val = history[date][sectorName];
+      if (val !== undefined) result.push({ date, gap: val });
+    });
+    return result;  // [{ date:'2026-06-01', gap: 2.3 }, ...]
+  },
+
+  // ── 統計：平均 gap、正值天數比例、最大 gap ──
+  stats(series) {
+    if (!series.length) return null;
+    const gaps     = series.map(d => d.gap);
+    const avg      = gaps.reduce((s,v) => s+v, 0) / gaps.length;
+    const posCount = gaps.filter(v => v > 0).length;
+    const maxGap   = Math.max(...gaps);
+    const minGap   = Math.min(...gaps);
+    return { avg, posRatio: posCount / gaps.length, maxGap, minGap, days: gaps.length };
+  },
+
+  // ── 所有族群統計排行（按平均 gap 降序）──
+  allStats() {
+    const history = this.load();
+    const sectorMap = {};
+    Object.values(history).forEach(snap => {
+      Object.entries(snap).forEach(([name, gap]) => {
+        if (!sectorMap[name]) sectorMap[name] = [];
+        sectorMap[name].push(gap);
+      });
+    });
+    return Object.entries(sectorMap)
+      .map(([name, gaps]) => {
+        const avg      = gaps.reduce((s,v) => s+v, 0) / gaps.length;
+        const posRatio = gaps.filter(v => v > 0).length / gaps.length;
+        const maxGap   = Math.max(...gaps);
+        return { name, avg, posRatio, maxGap, days: gaps.length };
+      })
+      .sort((a,b) => b.avg - a.avg);
+  },
+
+  // ── 清除所有歷史 ──
+  clearAll() {
+    if (!confirm('確定清除所有歷史回測資料？此操作無法復原。')) return;
+    try { localStorage.removeItem(this.STORAGE_KEY); } catch {}
+    Renderer.toast('歷史資料已清除');
+    this.closeOverview();
+  },
+
+  // ── 回測總覽 Modal ──
+  openOverview() {
+    this._renderOverview();
+    document.getElementById('historyModal').classList.add('open');
+    document.getElementById('historyModal').addEventListener('click', e => {
+      if (e.target.id === 'historyModal') this.closeOverview();
+    });
+  },
+
+  closeOverview() {
+    document.getElementById('historyModal').classList.remove('open');
+  },
+
+  _renderOverview() {
+    const body  = document.getElementById('historyModalBody');
+    const stats = this.allStats();
+    const history = this.load();
+    const totalDays = Object.keys(history).length;
+
+    if (!totalDays) {
+      body.innerHTML = `
+        <div style="text-align:center;padding:40px;color:var(--text-5);font-size:12px;">
+          <div style="font-size:32px;margin-bottom:12px;opacity:0.25;">📭</div>
+          還沒有歷史資料<br>
+          <span style="color:var(--text-6);">每次「更新行情」成功後會自動記錄當天的 gap 值<br>累積幾天後再來看趨勢</span>
+        </div>`;
+      return;
+    }
+
+    // 全域統計
+    const maxAvg = stats.length ? Math.max(...stats.map(s => Math.abs(s.avg)), 0.01) : 1;
+
+    body.innerHTML = `
+      <div class="bt-stat-grid">
+        <div class="bt-stat">
+          <div class="bt-stat-label">記錄天數</div>
+          <div class="bt-stat-val">${totalDays} 天</div>
+        </div>
+        <div class="bt-stat">
+          <div class="bt-stat-label">追蹤族群數</div>
+          <div class="bt-stat-val">${stats.length} 個</div>
+        </div>
+        <div class="bt-stat">
+          <div class="bt-stat-label">平均正 Gap 族群</div>
+          <div class="bt-stat-val pct-up">${stats.filter(s => s.avg > 0).length} 個</div>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--text-5);margin-bottom:10px;">
+        族群排行（按平均 Gap 降序）・正值代表補漲潛力
+      </div>
+      <div id="btRows">
+        ${stats.map(s => {
+          const avgColor = s.avg > 0 ? 'var(--up)' : s.avg < 0 ? 'var(--down)' : 'var(--text-4)';
+          const barW = Math.round(Math.abs(s.avg) / maxAvg * 100);
+          const barColor = s.avg >= 0 ? 'var(--up)' : 'var(--down)';
+          return `
+          <div class="bt-row" onclick="HistoryEngine.showSectorDetail('${s.name.replace(/'/g,"\\'")}')">
+            <div class="bt-row-name">${s.name.replace('台股 ','')}</div>
+            <div class="bt-bar-wrap"><div class="bt-bar-fill" style="width:${barW}%;background:${barColor};"></div></div>
+            <div class="bt-avg" style="color:${avgColor};">${s.avg > 0 ? '+' : ''}${s.avg.toFixed(2)}pp</div>
+            <div class="bt-row-days" style="color:var(--text-6);">${s.days}天 ${Math.round(s.posRatio*100)}%↑</div>
+          </div>`;
+        }).join('')}
+      </div>`;
+  },
+
+  showSectorDetail(name) {
+    const series = this.getSectorHistory(name);
+    const s      = this.stats(series);
+    if (!series.length || !s) return;
+
+    const body = document.getElementById('historyModalBody');
+    body.innerHTML = `
+      <button class="btn" style="margin-bottom:14px;font-size:11px;" onclick="HistoryEngine._renderOverview()">← 返回總覽</button>
+      <div style="font-size:14px;font-weight:500;color:var(--text-2);margin-bottom:12px;">${name}</div>
+      <div class="bt-stat-grid">
+        <div class="bt-stat">
+          <div class="bt-stat-label">平均 Gap</div>
+          <div class="bt-stat-val ${s.avg>=0?'pct-up':'pct-down'}">${s.avg>=0?'+':''}${s.avg.toFixed(2)}pp</div>
+        </div>
+        <div class="bt-stat">
+          <div class="bt-stat-label">正值天數</div>
+          <div class="bt-stat-val pct-up">${Math.round(s.posRatio*100)}%</div>
+        </div>
+        <div class="bt-stat">
+          <div class="bt-stat-label">最大 Gap</div>
+          <div class="bt-stat-val pct-up">+${s.maxGap.toFixed(2)}pp</div>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--text-5);margin-bottom:6px;">歷史 Gap 走勢（${series.length} 個交易日）</div>
+      <div class="gap-history-chart" id="detailChart"></div>
+      <div style="margin-top:14px;">
+        <div style="font-size:11px;color:var(--text-5);margin-bottom:8px;">每日記錄</div>
+        <div style="max-height:160px;overflow-y:auto;">
+          ${[...series].reverse().map(d => `
+            <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:0.5px solid var(--border);font-size:11px;">
+              <span style="color:var(--text-5);">${d.date}</span>
+              <span class="${d.gap>=0?'pct-up':'pct-down'}" style="font-weight:500;">${d.gap>=0?'+':''}${d.gap.toFixed(2)}pp</span>
+            </div>`).join('')}
+        </div>
+      </div>`;
+
+    // 畫折線圖
+    setTimeout(() => this._drawChart('detailChart', series), 0);
+  },
+
+  // ── 側邊欄歷史 tab ──
+  renderSidebarHistory(sectorName) {
+    const body   = document.getElementById('sidebarBody');
+    const series = this.getSectorHistory(sectorName);
+    const s      = this.stats(series);
+
+    if (!series.length) {
+      body.innerHTML = `
+        <div class="history-tab-content">
+          <div class="ht-empty">
+            📭 尚無歷史資料<br>
+            <span style="font-size:10px;">每次更新行情後自動記錄</span>
+          </div>
+        </div>`;
+      return;
+    }
+
+    body.innerHTML = `
+      <div class="history-tab-content">
+        <div class="bt-stat-grid">
+          <div class="bt-stat">
+            <div class="bt-stat-label">平均 Gap</div>
+            <div class="bt-stat-val ${s.avg>=0?'pct-up':'pct-down'}">${s.avg>=0?'+':''}${s.avg.toFixed(2)}pp</div>
+          </div>
+          <div class="bt-stat">
+            <div class="bt-stat-label">正值天數</div>
+            <div class="bt-stat-val">${Math.round(s.posRatio*100)}%</div>
+          </div>
+          <div class="bt-stat">
+            <div class="bt-stat-label">記錄天數</div>
+            <div class="bt-stat-val">${s.days} 天</div>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--text-5);margin-bottom:6px;margin-top:4px;">Gap 歷史走勢</div>
+        <div class="gap-history-chart" id="sidebarHistoryChart"></div>
+        <div style="margin-top:10px;max-height:200px;overflow-y:auto;">
+          ${[...series].reverse().slice(0,20).map(d => `
+            <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:0.5px solid var(--border);font-size:11px;">
+              <span style="color:var(--text-5);">${d.date}</span>
+              <span class="${d.gap>=0?'pct-up':'pct-down'}">${d.gap>=0?'+':''}${d.gap.toFixed(2)}pp</span>
+            </div>`).join('')}
+        </div>
+      </div>`;
+
+    setTimeout(() => this._drawChart('sidebarHistoryChart', series), 0);
+  },
+
+  // ── SVG 折線圖繪製 ──
+  _drawChart(containerId, series) {
+    const container = document.getElementById(containerId);
+    if (!container || !series.length) return;
+
+    const W = container.clientWidth || 280;
+    const H = 80;
+    const pad = { t:8, r:8, b:20, l:32 };
+    const iW = W - pad.l - pad.r;
+    const iH = H - pad.t - pad.b;
+
+    const gaps = series.map(d => d.gap);
+    const minG = Math.min(...gaps, 0);
+    const maxG = Math.max(...gaps, 0);
+    const range = maxG - minG || 1;
+
+    const toX = (i) => pad.l + (i / (series.length - 1 || 1)) * iW;
+    const toY = (v) => pad.t + (1 - (v - minG) / range) * iH;
+    const zero = toY(0);
+
+    const pts = series.map((d,i) => `${toX(i)},${toY(d.gap)}`).join(' ');
+
+    // area fill（正負分色）
+    const areaPos = series.map((d,i) => {
+      const x = toX(i), y = toY(Math.max(d.gap, 0));
+      return i === 0 ? `M${x},${zero}` : `L${x},${Math.min(y, zero)}`;
+    }).join(' ') + ` L${toX(series.length-1)},${zero} Z`;
+
+    const areaNeg = series.map((d,i) => {
+      const x = toX(i), y = toY(Math.min(d.gap, 0));
+      return i === 0 ? `M${x},${zero}` : `L${x},${Math.max(y, zero)}`;
+    }).join(' ') + ` L${toX(series.length-1)},${zero} Z`;
+
+    // X 軸日期標籤（最多顯示 5 個）
+    const labelStep = Math.max(1, Math.floor(series.length / 4));
+    const labels = series.filter((_, i) => i % labelStep === 0 || i === series.length - 1)
+      .map(d => ({ x: toX(series.indexOf(d)), text: d.date.slice(5) }));
+
+    container.innerHTML = `
+      <svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
+        <!-- 零軸 -->
+        <line x1="${pad.l}" y1="${zero}" x2="${W-pad.r}" y2="${zero}"
+              stroke="var(--border)" stroke-width="0.5" stroke-dasharray="3,3"/>
+        <!-- 正值區域 -->
+        <path d="${areaPos}" fill="#0d2a18" opacity="0.6"/>
+        <!-- 負值區域 -->
+        <path d="${areaNeg}" fill="#2a0d0d" opacity="0.6"/>
+        <!-- 折線 -->
+        <polyline points="${pts}" fill="none" stroke="var(--accent-text)"
+                  stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+        <!-- Y 軸標籤 -->
+        <text x="${pad.l-3}" y="${pad.t+4}" text-anchor="end" font-size="8" fill="var(--text-6)">${maxG.toFixed(1)}</text>
+        <text x="${pad.l-3}" y="${H-pad.b+4}" text-anchor="end" font-size="8" fill="var(--text-6)">${minG.toFixed(1)}</text>
+        <!-- X 軸標籤 -->
+        ${labels.map(l => `<text x="${l.x}" y="${H-4}" text-anchor="middle" font-size="8" fill="var(--text-6)">${l.text}</text>`).join('')}
+        <!-- 資料點 -->
+        ${series.map((d,i) => `<circle cx="${toX(i)}" cy="${toY(d.gap)}" r="2"
+          fill="${d.gap>=0?'var(--up)':'var(--down)'}"
+          opacity="0.8"/>`).join('')}
+      </svg>`;
+  },
 };
 
 /* ═══════════════════════════════════════════════════════════
@@ -2512,9 +2911,29 @@ const UI = {
     this.render();
   },
 
+  switchSidebarTab(tab) {
+    HistoryEngine._sidebarTab = tab;
+    document.getElementById('tabDetail').classList.toggle('active',  tab === 'detail');
+    document.getElementById('tabHistory').classList.toggle('active', tab === 'history');
+    if (STATE.selectedIdx === null) return;
+    const r = DataLayer.getAll()[STATE.selectedIdx];
+    if (tab === 'history') {
+      HistoryEngine.renderSidebarHistory(r.sector);
+    } else {
+      Renderer.sidebar(r);
+    }
+  },
+
   selectRow(idx) {
     setState({ selectedIdx: idx, selectedStock: 0 });
-    Renderer.sidebar(DataLayer.getAll()[idx]);
+    HistoryEngine._sidebarSector = DataLayer.getAll()[idx]?.sector;
+    // 切換 tab 時保持當前 tab
+    if (HistoryEngine._sidebarTab === 'history') {
+      Renderer.sidebar(DataLayer.getAll()[idx]);  // 先渲染 header
+      HistoryEngine.renderSidebarHistory(DataLayer.getAll()[idx].sector);
+    } else {
+      Renderer.sidebar(DataLayer.getAll()[idx]);
+    }
     this.render();
     // 手機：自動開抽屜
     if (window.innerWidth <= 680 && this._openDrawer) this._openDrawer();
@@ -2593,6 +3012,9 @@ const UI = {
       }
       // 手動更新後重設倒數，避免剛更新完馬上又自動觸發
       AutoRefresh.resetCountdown();
+
+      // 記錄今日 gap 快照到歷史
+      HistoryEngine.record(computed);
     } catch (err) {
       console.warn('refresh failed:', err);
       Renderer.macroGrid(CONFIG.macroFallback);
