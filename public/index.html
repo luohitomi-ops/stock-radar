@@ -1,0 +1,1648 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stock Radar</title>
+<style>
+/* ═══════════════════════════════════════════
+   CONFIG-DRIVEN CSS VARIABLES
+   所有顏色、間距、字體從這裡統一管理
+   ═══════════════════════════════════════════ */
+:root {
+  /* 品牌色 */
+  --accent:       #1a6ef5;
+  --accent-dim:   #0e2040;
+  --accent-text:  #60a5fa;
+
+  /* 背景層次 */
+  --bg-0:   #0e1117;   /* 最深：頁面底色 */
+  --bg-1:   #0a0e14;   /* 次深：panel/sidebar */
+  --bg-2:   #141922;   /* 卡片、input */
+  --bg-3:   #121820;   /* hover */
+
+  /* 邊框 */
+  --border:       #1e2533;
+  --border-hover: #2a3344;
+
+  /* 文字層次 */
+  --text-1: #e2e8f0;   /* 主要 */
+  --text-2: #c8d8e8;   /* 次要 */
+  --text-3: #9aacbe;   /* 說明 */
+  --text-4: #6b7a8e;   /* 淡化 */
+  --text-5: #4a5a6e;   /* 最淡 */
+  --text-6: #3a4a5e;   /* 幾乎不可見 */
+
+  /* 語意色 */
+  --up:      #22c55e;
+  --up-bg:   #0d2a18;
+  --down:    #ef4444;
+  --down-bg: #2a0d0d;
+  --warn:    #f59e0b;
+  --warn-bg: #2a1e00;
+  --neu:     #6b7a8e;
+
+  /* JP 標籤 */
+  --jp-bg:     #1a0e2a;
+  --jp-text:   #c084fc;
+  --jp-border: #4a2070;
+
+  /* 間距 */
+  --radius-sm: 4px;
+  --radius:    6px;
+  --radius-lg: 8px;
+
+  /* 動畫 */
+  --transition: 0.15s ease;
+}
+
+/* ── reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 13px; }
+body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Neue', 'PingFang TC', 'Microsoft JhengHei', sans-serif; }
+
+/* ── TOPBAR ── */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 20px; border-bottom: 0.5px solid var(--border);
+  position: sticky; top: 0; background: var(--bg-0); z-index: 100;
+}
+.logo { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 500; color: var(--text-1); }
+.logo-icon {
+  width: 28px; height: 28px; background: var(--accent); border-radius: var(--radius);
+  display: flex; align-items: center; justify-content: center;
+}
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+.last-updated { font-size: 11px; color: var(--text-5); }
+.last-updated span { color: var(--text-4); }
+
+/* ── BUTTONS ── */
+.btn { padding: 5px 12px; border-radius: var(--radius); font-size: 12px; cursor: pointer; border: 0.5px solid var(--border-hover); background: var(--bg-2); color: var(--text-3); transition: all var(--transition); }
+.btn:hover { border-color: var(--accent); color: var(--accent-text); }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn-primary:hover { background: #1558cc; }
+.btn-icon { width: 28px; height: 28px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: var(--radius); }
+
+/* ── PAGE HEADER ── */
+.page-header { padding: 14px 20px 0; display: flex; align-items: flex-end; justify-content: space-between; }
+.page-title { font-size: 20px; font-weight: 600; color: #fff; }
+.page-sub { font-size: 12px; color: var(--text-5); margin-top: 3px; }
+
+/* ── MACRO GRID ── */
+.macro-grid {
+  display: grid; grid-template-columns: repeat(5, 1fr);
+  margin: 12px 20px 14px; border: 0.5px solid var(--border);
+  border-radius: var(--radius-lg); overflow: hidden;
+}
+.macro-cell {
+  padding: 8px 12px; border-right: 0.5px solid var(--border);
+  background: var(--bg-0); cursor: default;
+  transition: background var(--transition);
+}
+.macro-cell:last-child { border-right: none; }
+.macro-cell:nth-child(n+6) { border-top: 0.5px solid var(--border); }
+.macro-cell:hover { background: var(--bg-3); }
+.macro-label { font-size: 10px; color: var(--text-5); margin-bottom: 2px; }
+.macro-val { font-size: 12px; font-weight: 500; color: var(--text-2); }
+.macro-loading { opacity: 0.35; animation: pulse 1.4s ease-in-out infinite; }
+
+/* ── UP / DOWN / NEU ── */
+.up  { color: var(--up);   font-size: 11px; }
+.down{ color: var(--down); font-size: 11px; }
+.neu { color: var(--neu);  font-size: 11px; }
+.pct { font-weight: 500; font-size: 12px; }
+.pct-up   { color: var(--up); }
+.pct-down { color: var(--down); }
+
+/* ── FILTER PANEL ── */
+.filter-panel { margin: 0 20px 12px; background: var(--bg-1); border: 0.5px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+.filter-panel-header { padding: 9px 16px; border-bottom: 0.5px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.filter-panel-title { font-size: 12px; font-weight: 500; color: var(--text-3); }
+.filter-active-badge { font-size: 11px; padding: 1px 7px; border-radius: 20px; background: var(--accent-dim); color: var(--accent-text); border: 0.5px solid var(--accent); display: none; }
+.filter-active-badge.visible { display: inline-block; }
+.filter-panel-body { padding: 10px 16px; display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
+.filter-group { display: flex; flex-direction: column; gap: 4px; }
+.filter-label { font-size: 10px; color: var(--text-5); }
+
+/* inputs */
+.search-input { width: 180px; height: 30px; background: var(--bg-2); border: 0.5px solid var(--border-hover); border-radius: var(--radius); padding: 0 10px; color: var(--text-2); font-size: 12px; outline: none; transition: border-color var(--transition); }
+.search-input:focus { border-color: var(--accent); }
+.range-input { width: 65px; height: 30px; background: var(--bg-2); border: 0.5px solid var(--border-hover); border-radius: var(--radius); padding: 0 8px; color: var(--text-2); font-size: 12px; outline: none; text-align: center; transition: border-color var(--transition); }
+.range-input:focus { border-color: var(--accent); }
+.range-sep { color: var(--text-5); font-size: 11px; }
+
+/* chips */
+.chip-row { display: flex; gap: 5px; flex-wrap: wrap; }
+.chip { padding: 4px 10px; border-radius: 20px; font-size: 11px; cursor: pointer; border: 0.5px solid var(--border-hover); background: var(--bg-2); color: var(--text-4); transition: all var(--transition); user-select: none; }
+.chip:hover { border-color: var(--accent-text); color: var(--accent-text); }
+.chip.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent-text); }
+.clear-btn { padding: 5px 10px; border-radius: var(--radius); font-size: 11px; cursor: pointer; border: 0.5px solid var(--border-hover); background: transparent; color: var(--text-4); transition: all var(--transition); }
+.clear-btn:hover { border-color: var(--down); color: var(--down); }
+
+/* ── RESULT BAR ── */
+.result-bar { padding: 0 20px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; }
+.result-count { font-size: 11px; color: var(--text-5); }
+.result-count strong { color: var(--text-2); }
+.sort-row { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-5); }
+.sort-btn { padding: 3px 9px; border-radius: var(--radius-sm); border: 0.5px solid var(--border); background: transparent; color: var(--text-4); cursor: pointer; font-size: 11px; transition: all var(--transition); }
+.sort-btn:hover { border-color: var(--accent-text); color: var(--accent-text); }
+.sort-btn.active { border-color: var(--accent); color: var(--accent-text); background: var(--accent-dim); }
+
+/* ── MAIN LAYOUT ── */
+.main-layout { display: grid; grid-template-columns: 1fr 320px; gap: 12px; padding: 0 20px 24px; }
+
+/* ── TABLE ── */
+.table-wrap { border: 0.5px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+.table-header { padding: 9px 14px; background: var(--bg-1); border-bottom: 0.5px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.table-title { font-size: 13px; font-weight: 500; color: var(--text-2); }
+.table-sub { font-size: 11px; color: var(--text-5); }
+.data-table { width: 100%; border-collapse: collapse; }
+.data-table th { padding: 7px 10px; text-align: left; font-size: 11px; color: var(--text-5); font-weight: 400; border-bottom: 0.5px solid var(--border); background: var(--bg-1); cursor: pointer; white-space: nowrap; transition: color var(--transition); }
+.data-table th:hover { color: var(--text-3); }
+.data-table th.sorted { color: var(--accent-text); }
+.data-table td { padding: 9px 10px; border-bottom: 0.5px solid #1a2030; vertical-align: middle; }
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tr:hover td { background: var(--bg-3); }
+.active-row td { background: #0e1520 !important; }
+
+.rank-badge { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; background: var(--bg-2); color: var(--text-4); border: 0.5px solid var(--border); }
+.rank-badge.gold { background: #2a1f06; border-color: #a16207; color: var(--warn); }
+.sector-name { font-size: 12px; color: var(--text-2); }
+.gap-bar { height: 3px; border-radius: 2px; background: var(--down); opacity: 0.7; margin-top: 3px; transition: width 0.3s ease; }
+
+.overseas-tag { font-size: 10px; padding: 1px 5px; border-radius: 3px; background: var(--accent-dim); color: var(--accent-text); border: 0.5px solid #1a3d6e; margin-right: 3px; }
+.overseas-tag.jp { background: var(--jp-bg); color: var(--jp-text); border-color: var(--jp-border); }
+
+.highlight { background: var(--warn-bg); color: var(--warn); border-radius: 2px; padding: 0 2px; }
+.no-results { padding: 36px; text-align: center; color: var(--text-5); font-size: 13px; }
+
+/* skeleton loading */
+.skeleton { background: linear-gradient(90deg, var(--bg-2) 25%, var(--bg-3) 50%, var(--bg-2) 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: 3px; }
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+@keyframes pulse { 0%,100%{opacity:0.35} 50%{opacity:0.6} }
+@keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:none} }
+
+/* ── SIDEBAR ── */
+.sidebar { border: 0.5px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; background: var(--bg-1); align-self: start; max-height: calc(100vh - 80px); overflow-y: auto; }
+.sidebar::-webkit-scrollbar { width: 4px; }
+.sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.sidebar-header { padding: 12px 16px; border-bottom: 0.5px solid var(--border); position: sticky; top: 0; background: var(--bg-1); z-index: 2; }
+.sidebar-kicker { font-size: 10px; color: var(--text-5); margin-bottom: 2px; }
+.sidebar-title { font-size: 13px; font-weight: 500; color: var(--text-2); }
+.sidebar-meta { font-size: 11px; color: var(--text-5); margin-top: 1px; }
+.sidebar-body { padding: 14px 16px; }
+.sidebar-placeholder { padding: 32px 0; text-align: center; color: var(--text-6); font-size: 12px; }
+.sidebar-placeholder-icon { font-size: 28px; margin-bottom: 10px; opacity: 0.25; }
+
+.sidebar-metric { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+.s-metric-label { font-size: 10px; color: var(--text-5); margin-bottom: 3px; }
+.s-metric-val { font-size: 15px; font-weight: 600; }
+.gap-pill { color: var(--down); background: var(--down-bg); border-radius: var(--radius-sm); padding: 2px 6px; font-size: 12px; }
+
+.driver-box { background: var(--bg-0); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 9px 12px; margin-bottom: 14px; }
+.driver-label { font-size: 10px; color: var(--text-5); margin-bottom: 5px; }
+.driver-row { display: flex; align-items: center; justify-content: space-between; }
+
+.compare-btn { width: 100%; padding: 7px; border-radius: var(--radius); border: 0.5px solid var(--accent); background: transparent; color: var(--accent-text); font-size: 12px; cursor: pointer; transition: all var(--transition); }
+.compare-btn:hover { background: var(--accent-dim); }
+
+.stocks-label { font-size: 11px; color: var(--text-5); margin-bottom: 8px; }
+
+/* ── SPARKLINE CARDS ── */
+.stock-sparkline-card {
+  background: var(--bg-0); border: 0.5px solid var(--border);
+  border-radius: var(--radius-lg); padding: 10px 12px; margin-bottom: 10px;
+  cursor: pointer; transition: border-color var(--transition), background var(--transition);
+  animation: fadeIn 0.2s ease;
+}
+.stock-sparkline-card:hover { border-color: #2a3d54; }
+.stock-sparkline-card.selected { border-color: var(--accent); background: #0b1628; }
+
+.ssc-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 6px; }
+.ssc-id   { font-size: 10px; color: var(--text-5); }
+.ssc-name { font-size: 13px; font-weight: 500; color: var(--text-2); }
+.ssc-role { font-size: 10px; padding: 1px 5px; border-radius: 3px; background: #0e2218; color: #4ade80; border: 0.5px solid #15532e; display: inline-block; margin-top: 2px; }
+.ssc-price { font-size: 13px; font-weight: 500; color: var(--text-2); text-align: right; }
+.ssc-chg  { font-size: 12px; font-weight: 600; text-align: right; }
+
+.sparkline-wrap { position: relative; height: 48px; }
+.sparkline-tooltip { position: absolute; background: #1e2d42; border: 0.5px solid #2a4060; border-radius: var(--radius-sm); padding: 3px 7px; font-size: 10px; color: var(--text-2); pointer-events: none; display: none; white-space: nowrap; z-index: 10; }
+
+.ssc-footer { display: flex; justify-content: space-between; margin-top: 5px; font-size: 10px; color: var(--text-6); }
+
+/* volume bars */
+.vol-row { display: flex; align-items: flex-end; gap: 1px; height: 18px; margin-top: 4px; }
+.vol-bar { flex: 1; border-radius: 1px; background: #2a3a52; opacity: 0.7; }
+
+/* ── LIVE DATA INDICATOR ── */
+.live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--up); display: inline-block; margin-right: 4px; animation: livePulse 2s ease-in-out infinite; }
+.live-dot.stale { background: var(--warn); animation: none; }
+.live-dot.error { background: var(--down); animation: none; }
+@keyframes livePulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
+
+/* ── API ERROR STATE ── */
+.api-error-row td { color: var(--text-5) !important; }
+
+.toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 1000; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+.toast { background: var(--bg-2); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 8px 14px; font-size: 12px; color: var(--text-2); animation: fadeIn 0.2s ease; box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
+.toast.success { border-color: var(--up); }
+.toast.error   { border-color: var(--down); }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div class="topbar">
+    <div class="logo">
+      <div class="logo-icon">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <circle cx="8" cy="8" r="6" stroke="#fff" stroke-width="1.5"/>
+          <line x1="8" y1="2" x2="8" y2="14" stroke="#fff" stroke-width="1"/>
+          <line x1="2" y1="8" x2="14" y2="8" stroke="#fff" stroke-width="1"/>
+          <circle cx="8" cy="5" r="1.5" fill="#fff"/>
+        </svg>
+      </div>
+      Stock Radar
+    </div>
+    <div class="topbar-right">
+      <span class="last-updated"><span class="live-dot" id="liveDot"></span>更新：<span id="lastUpdatedTime">—</span></span>
+      <button class="btn">比較族群</button>
+      <button class="btn btn-primary" id="refreshBtn" onclick="UI.refresh()">↻ 更新行情</button>
+    </div>
+  </div>
+
+  <div class="page-header">
+    <div>
+      <div class="page-title">今日族群異動雷達</div>
+      <div class="page-sub" id="pageSubtitle">跨市場族群運動・<span id="totalCount">—</span> 個族群</div>
+    </div>
+  </div>
+
+  <div class="macro-grid" id="macroGrid">
+    <!-- 由 Renderer.macroGrid() 填入 -->
+  </div>
+
+  <div class="filter-panel">
+    <div class="filter-panel-header">
+      <div class="filter-panel-title">篩選條件</div>
+      <span class="filter-active-badge" id="filterBadge"></span>
+    </div>
+    <div class="filter-panel-body">
+      <div class="filter-group">
+        <div class="filter-label">族群名稱搜尋</div>
+        <input class="search-input" type="text" id="searchInput" placeholder="例：半導體、EV、光學...">
+      </div>
+      <div class="filter-group">
+        <div class="filter-label">落差範圍 (pp)</div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <input class="range-input" type="number" id="gapMin" placeholder="最小" step="0.1">
+          <span class="range-sep">—</span>
+          <input class="range-input" type="number" id="gapMax" placeholder="最大" step="0.1">
+        </div>
+      </div>
+      <div class="filter-group">
+        <div class="filter-label">預期漲幅 ≥</div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <input class="range-input" type="number" id="expMin" placeholder="%" step="0.1" style="width:72px;">
+          <span class="range-sep">%</span>
+        </div>
+      </div>
+      <div class="filter-group">
+        <div class="filter-label">海外市場</div>
+        <div class="chip-row" id="marketChips">
+          <div class="chip active" data-val="all">全部</div>
+          <div class="chip" data-val="US">🇺🇸 美股</div>
+          <div class="chip" data-val="JP">🇯🇵 日股</div>
+        </div>
+      </div>
+      <div class="filter-group">
+        <div class="filter-label">覆蓋率</div>
+        <div class="chip-row" id="coverChips">
+          <div class="chip active" data-val="all">全部</div>
+          <div class="chip" data-val="100">100%</div>
+          <div class="chip" data-val="75">≥75%</div>
+          <div class="chip" data-val="50">≥50%</div>
+        </div>
+      </div>
+      <div style="margin-left:auto;">
+        <button class="clear-btn" id="clearBtn">✕ 清除</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="result-bar">
+    <div class="result-count" id="resultCount"></div>
+    <div class="sort-row">
+      排序：
+      <button class="sort-btn active" data-sort="gap">↓ 落差</button>
+      <button class="sort-btn" data-sort="exp">↓ 預期</button>
+      <button class="sort-btn" data-sort="act">↓ 實際</button>
+    </div>
+  </div>
+
+  <div class="main-layout">
+    <div>
+      <div class="table-wrap">
+        <div class="table-header">
+          <div>
+            <div class="table-title">補漲機會排行</div>
+            <div class="table-sub">點選族群查看個股走勢迷你圖</div>
+          </div>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width:36px;">#</th>
+              <th>台股族群</th>
+              <th data-sort="exp">預期 <span>↕</span></th>
+              <th data-sort="act">實際 <span>↕</span></th>
+              <th data-sort="gap" class="sorted">落差 <span>↓</span></th>
+              <th>海外驅動</th>
+              <th>代表股</th>
+              <th>覆蓋</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-kicker">TW 選取</div>
+        <div class="sidebar-title" id="sidebarTitle">—</div>
+        <div class="sidebar-meta" id="sidebarMeta">點選左側族群查看詳情</div>
+      </div>
+      <div class="sidebar-body" id="sidebarBody">
+        <div class="sidebar-placeholder">
+          <div class="sidebar-placeholder-icon">📈</div>
+          點選任一族群<br>查看個股走勢圖
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+'use strict';
+
+/* ═══════════════════════════════════════════════════════════
+   CONFIG  — 所有設定集中在這裡，後面 Phase 2 只需改這裡
+   ═══════════════════════════════════════════════════════════ */
+const CONFIG = {
+  version: '2.0.0',
+
+  // localStorage key prefix
+  storageKey: 'stockRadar_v2',
+
+  // 排序預設
+  defaultSort: 'gap',
+  defaultSortDir: -1,   // -1 = 降序
+
+  // 覆蓋率顏色閾值
+  coverThresholds: [
+    { min: 100, color: '#22c55e' },
+    { min: 75,  color: '#f59e0b' },
+    { min: 0,   color: '#ef4444' },
+  ],
+
+  // Sparkline
+  sparklineDays: 20,
+  sparklineLabels: ['5/5','5/6','5/7','5/8','5/9','5/12','5/13','5/14','5/15','5/16',
+                    '5/19','5/20','5/21','5/22','5/23','5/26','5/27','5/28','5/29','5/30'],
+
+  // ── API 設定（Phase 2）──
+  // CORS proxy：allorigins.win 把跨域請求包裝成同源
+  corsProxy: 'https://api.allorigins.win/get?url=',
+
+  // Yahoo Finance v8 quote endpoint
+  yahooQuoteUrl: 'https://query1.finance.yahoo.com/v8/finance/chart/',
+
+  // Yahoo Finance v8 history endpoint（個股 sparkline 用）
+  yahooHistUrl: 'https://query1.finance.yahoo.com/v8/finance/chart/',
+
+  // 宏觀指數：label → Yahoo symbol 對照
+  // ^TWII = 台灣加權、^GSPC = S&P500、^SOX = 費城半導體、^VIX
+  // TWD=X = USD/TWD、^N225 = 日經、JPY=X = USD/JPY
+  // ^TNX = US 10Y殖利率、DX-Y.NYB = DXY、CL=F = WTI原油
+  macroSymbols: [
+    { label:'TWII',    symbol:'^TWII',    fmt:'price', decimals:0 },
+    { label:'SPX',     symbol:'^GSPC',    fmt:'price', decimals:0 },
+    { label:'SOX',     symbol:'^SOX',     fmt:'price', decimals:0 },
+    { label:'VIX',     symbol:'^VIX',     fmt:'price', decimals:2 },
+    { label:'USD/TWD', symbol:'TWD=X',    fmt:'price', decimals:3 },
+    { label:'N225',    symbol:'^N225',    fmt:'price', decimals:0 },
+    { label:'USD/JPY', symbol:'JPY=X',    fmt:'price', decimals:2 },
+    { label:'US10Y',   symbol:'^TNX',     fmt:'pct',   decimals:2 },
+    { label:'DXY',     symbol:'DX-Y.NYB', fmt:'price', decimals:2 },
+    { label:'WTI',     symbol:'CL=F',     fmt:'price', decimals:2 },
+  ],
+
+  // 宏觀指數 fallback（API 失敗時顯示，避免空白）
+  macroFallback: [
+    { label:'TWII',    val:'42,268', chg:'+2.17%', dir:'up' },
+    { label:'SPX',     val:'7,473',  chg:'+0.37%', dir:'up' },
+    { label:'SOX',     val:'12,203', chg:'+1.99%', dir:'up' },
+    { label:'VIX',     val:'16.70',  chg:'-0.36%', dir:'down' },
+    { label:'USD/TWD', val:'31.438', chg:'-0.36%', dir:'down' },
+    { label:'N225',    val:'63,339', chg:'+2.68%', dir:'up' },
+    { label:'USD/JPY', val:'158.85', chg:'-0.11%', dir:'down' },
+    { label:'US10Y',   val:'4.56%',  chg:'-0.03pp',dir:'down' },
+    { label:'DXY',     val:'99.06',  chg:'-0.26%', dir:'down' },
+    { label:'WTI',     val:'96.60',  chg:'0.00%',  dir:'neu' },
+  ],
+
+  // 個股 Yahoo symbol 對照（代號.TWO = 上櫃, 代號.TW = 上市）
+  stockSymbolMap: {
+    '3491': '3491.TWO',
+    '6285': '6285.TW',
+    '2345': '2345.TW',
+    '3596': '3596.TWO',
+    '2308': '2308.TW',
+    '2301': '2301.TW',
+    '1590': '1590.TWO',
+    '3008': '3008.TW',
+    '3406': '3406.TW',
+    '6415': '6415.TWO',
+    '8081': '8081.TWO',
+    '2356': '2356.TW',
+    '3017': '3017.TW',
+    '3037': '3037.TW',
+    '8046': '8046.TW',
+  },
+
+  // ── Beta 計算設定 ──
+  // 每個族群對應的「海外驅動指數」Yahoo symbol
+  // driveSymbol 決定用哪個指數算 beta（也決定 exp 的來源）
+  betaLookback: '3mo',    // 抓 3 個月日線算 beta（約 60 個交易日）
+  betaMinDays:  20,       // 至少需要 20 個重疊交易日才算，否則 beta = null
+  betaInterval: '1d',
+
+  // 族群 → 驅動指數對照（sector index → driveSymbol）
+  // 在 sectorData 裡每筆加 driveSymbol 欄位
+  // US 科技 / 半導體族群通常跟 ^SOX 最相關
+  // JP 族群跟 ^N225
+  // AI / 伺服器跟 ^GSPC（SPX）也有參考
+  driveIndexSymbols: {
+    'SOX':  '^SOX',
+    'SPX':  '^GSPC',
+    'N225': '^N225',
+  },
+
+  // 族群資料
+  // exp / act / gap 初始為 null → 由 BetaEngine.computeAll() 填入真實計算值
+  // driveIndex: 對應 driveIndexSymbols 的 key（決定用哪個海外指數算 beta）
+  sectorData: [
+    { sector:'台股 低軌衛星', exp:null, act:null, gap:null,
+      market:'US', driveName:'美股 費城半導體', driveIndex:'SOX', driveChg:null, cover:100,
+      stocks:[
+        {id:'3491',name:'昇達科', price:1930,chg:null,role:'龍頭',seed:1001},
+        {id:'6285',name:'啟蓄',   price:296, chg:null,role:'核心',seed:1002},
+        {id:'6衛', name:'立衛',   price:128, chg:null,role:'觀察',seed:1003},
+        {id:'4743',name:'合一',   price:85,  chg:null,role:'觀察',seed:1004},
+      ]},
+    { sector:'台股 交換器 / 網通設備', exp:null, act:null, gap:null,
+      market:'US', driveName:'美股 費城半導體', driveIndex:'SOX', driveChg:null, cover:100,
+      stocks:[
+        {id:'2345',name:'智邦', price:520,chg:null,role:'龍頭',seed:2001},
+        {id:'3596',name:'智易', price:178,chg:null,role:'核心',seed:2002},
+        {id:'4S55',name:'中磊', price:96, chg:null,role:'觀察',seed:2003},
+      ]},
+    { sector:'台股 EV 充電樁 / 充電設備', exp:null, act:null, gap:null,
+      market:'JP', driveName:'日股 日經225', driveIndex:'N225', driveChg:null, cover:100,
+      stocks:[
+        {id:'2308',name:'台達電', price:380,chg:null,role:'龍頭',seed:3001},
+        {id:'2301',name:'光寶科', price:112,chg:null,role:'核心',seed:3002},
+        {id:'1590',name:'亞德客', price:890,chg:null,role:'觀察',seed:3003},
+      ]},
+    { sector:'台股 光學鏡頭', exp:null, act:null, gap:null,
+      market:'JP', driveName:'日股 日經225', driveIndex:'N225', driveChg:null, cover:100,
+      stocks:[
+        {id:'3008',name:'大立光', price:2560,chg:null,role:'龍頭',seed:4001},
+        {id:'3406',name:'玉晶光', price:310, chg:null,role:'核心',seed:4002},
+      ]},
+    { sector:'台股 功率半導體 / 電源管理', exp:null, act:null, gap:null,
+      market:'JP', driveName:'日股 日經225', driveIndex:'N225', driveChg:null, cover:100,
+      stocks:[
+        {id:'6415',name:'矽力-KY', price:1420,chg:null,role:'龍頭',seed:5001},
+        {id:'8081',name:'致新',    price:238, chg:null,role:'核心',seed:5002},
+      ]},
+    { sector:'台股 伺服器 / 機櫃', exp:null, act:null, gap:null,
+      market:'US', driveName:'美股 S&P500', driveIndex:'SPX', driveChg:null, cover:75,
+      stocks:[
+        {id:'2356',name:'英業達', price:47, chg:null,role:'龍頭',seed:6001},
+        {id:'3017',name:'奇鋐',   price:195,chg:null,role:'核心',seed:6002},
+      ]},
+    { sector:'台股 AI 散熱 / 液冷', exp:null, act:null, gap:null,
+      market:'US', driveName:'美股 費城半導體', driveIndex:'SOX', driveChg:null, cover:75,
+      stocks:[
+        {id:'3017',name:'奇鋐',   price:195,chg:null,role:'龍頭',seed:7001},
+        {id:'1590',name:'亞德客', price:890,chg:null,role:'核心',seed:7002},
+      ]},
+    { sector:'台股 PCB 載板', exp:null, act:null, gap:null,
+      market:'US', driveName:'美股 費城半導體', driveIndex:'SOX', driveChg:null, cover:100,
+      stocks:[
+        {id:'3037',name:'欣興', price:142,chg:null,role:'龍頭',seed:8001},
+        {id:'8046',name:'南電', price:98, chg:null,role:'核心',seed:8002},
+      ]},
+  ],
+};
+
+/* ═══════════════════════════════════════════════════════════
+   STATE  — 單一狀態樹，所有互動透過 setState() 更新
+   ═══════════════════════════════════════════════════════════ */
+const STATE = {
+  sort:          CONFIG.defaultSort,
+  sortDir:       CONFIG.defaultSortDir,
+  selectedIdx:   null,
+  selectedStock: 0,
+  filters: {
+    search:  '',
+    gapMin:  null,
+    gapMax:  null,
+    expMin:  null,
+    market:  'all',
+    cover:   'all',
+  },
+  lastUpdated: null,
+};
+
+function setState(patch) {
+  // 深度合併 filters，其餘直接覆蓋
+  if (patch.filters) {
+    Object.assign(STATE.filters, patch.filters);
+    delete patch.filters;
+  }
+  Object.assign(STATE, patch);
+  Storage.save();   // 每次狀態變化自動持久化
+}
+
+/* ═══════════════════════════════════════════════════════════
+   STORAGE  — localStorage 持久化
+   ═══════════════════════════════════════════════════════════ */
+const Storage = {
+  key: CONFIG.storageKey,
+
+  save() {
+    try {
+      const payload = {
+        sort:    STATE.sort,
+        sortDir: STATE.sortDir,
+        filters: { ...STATE.filters },
+      };
+      localStorage.setItem(this.key, JSON.stringify(payload));
+    } catch (e) { /* 私密/無痕模式下 localStorage 可能不可用 */ }
+  },
+
+  load() {
+    try {
+      const raw = localStorage.getItem(this.key);
+      if (!raw) return;
+      const saved = JSON.parse(raw);
+      if (saved.sort)    STATE.sort    = saved.sort;
+      if (saved.sortDir) STATE.sortDir = saved.sortDir;
+      if (saved.filters) Object.assign(STATE.filters, saved.filters);
+    } catch (e) { /* 損毀的資料直接忽略 */ }
+  },
+
+  clear() {
+    try { localStorage.removeItem(this.key); } catch (e) {}
+  },
+};
+
+/* ═══════════════════════════════════════════════════════════
+   DATA LAYER  — 資料來源（mock + Yahoo Finance API）
+   ═══════════════════════════════════════════════════════════ */
+const DataLayer = {
+  // ── 快取（key = yahoo symbol, value = { quote, history, ts }）
+  _cache: {},
+  _cacheMs: 5 * 60 * 1000,   // 5 分鐘內不重複請求
+
+  // ── 偽隨機數生成器（seed 固定 → 每次渲染一致）
+  _rng(seed) {
+    let s = seed;
+    return () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; };
+  },
+
+  genPrices(seed, days, startPrice, trendPct) {
+    const rng = this._rng(seed);
+    const prices = [startPrice];
+    for (let i = 1; i < days; i++) {
+      const drift = (trendPct / days) * startPrice;
+      const noise = (rng() - 0.48) * startPrice * 0.025;
+      prices.push(Math.max(prices[i-1] + drift + noise, startPrice * 0.5));
+    }
+    return prices;
+  },
+
+  genVolume(seed, days) {
+    const rng = this._rng(seed + 999);
+    return Array.from({ length: days }, () => 0.3 + rng() * 0.7);
+  },
+
+  getAll() { return CONFIG.sectorData; },
+
+  // ── 核心：自動偵測環境，選擇正確的 proxy ──
+  // Vercel 部署後：使用自己的 /api/proxy（伺服器端，無 CORS 問題）
+  // 本地 file:// 開啟：fallback 到 allorigins.win
+  _isVercel() {
+    return window.location.protocol === 'https:' &&
+           !window.location.hostname.includes('localhost');
+  },
+
+  async _yahooFetch(url) {
+    if (this._isVercel()) {
+      // ── Vercel 模式：打自己的 serverless proxy ──
+      const proxied = `/api/proxy?url=${encodeURIComponent(url)}`;
+      const res = await fetch(proxied, { signal: AbortSignal.timeout(10000) });
+      if (!res.ok) throw new Error(`Proxy HTTP ${res.status}`);
+      return await res.json();
+    } else {
+      // ── 本地模式：透過 allorigins.win ──
+      const proxied = CONFIG.corsProxy + encodeURIComponent(url);
+      const res = await fetch(proxied, { signal: AbortSignal.timeout(10000) });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const wrapper = await res.json();
+      return JSON.parse(wrapper.contents);
+    }
+  },
+
+  // ── 取單一 symbol 即時報價 ──
+  async fetchQuote(symbol) {
+    const cached = this._cache[symbol];
+    if (cached && Date.now() - cached.ts < this._cacheMs) return cached.quote;
+
+    const url = `${CONFIG.yahooQuoteUrl}${symbol}?interval=1d&range=2d`;
+    const data = await this._yahooFetch(url);
+    const meta = data?.chart?.result?.[0]?.meta;
+    if (!meta) throw new Error('no meta');
+
+    const quote = {
+      symbol,
+      price:      meta.regularMarketPrice,
+      prevClose:  meta.chartPreviousClose || meta.previousClose,
+      currency:   meta.currency,
+      exchName:   meta.exchangeName,
+    };
+    quote.chgAbs = quote.price - quote.prevClose;
+    quote.chgPct = (quote.chgAbs / quote.prevClose) * 100;
+
+    this._cache[symbol] = { quote, ts: Date.now() };
+    return quote;
+  },
+
+  // ── 取 history（日線 closes + volumes）for sparkline ──
+  async fetchHistory(symbol) {
+    const ckey = symbol + '_hist';
+    const cached = this._cache[ckey];
+    if (cached && Date.now() - cached.ts < this._cacheMs) return cached.hist;
+
+    const url = `${CONFIG.yahooHistUrl}${symbol}?interval=${CONFIG.histInterval}&range=${CONFIG.histRange}`;
+    const data = await this._yahooFetch(url);
+    const result = data?.chart?.result?.[0];
+    if (!result) throw new Error('no result');
+
+    const closes  = result.indicators?.quote?.[0]?.close  || [];
+    const volumes = result.indicators?.quote?.[0]?.volume || [];
+    const timestamps = result.timestamp || [];
+
+    // 過濾掉 null（休市日）
+    const valid = timestamps.map((t, i) => ({ t, c: closes[i], v: volumes[i] }))
+                            .filter(d => d.c !== null && d.c !== undefined);
+
+    const hist = {
+      prices:  valid.map(d => d.c),
+      volumes: valid.map(d => d.v || 0),
+      labels:  valid.map(d => {
+        const dt = new Date(d.t * 1000);
+        return `${dt.getMonth()+1}/${dt.getDate()}`;
+      }),
+    };
+
+    this._cache[ckey] = { hist, ts: Date.now() };
+    return hist;
+  },
+
+  // ── 批次拉所有宏觀指數 ──
+  async fetchAllMacro() {
+    const results = await Promise.allSettled(
+      CONFIG.macroSymbols.map(m => this.fetchQuote(m.symbol))
+    );
+
+    return CONFIG.macroSymbols.map((m, i) => {
+      const outcome = results[i];
+      if (outcome.status === 'rejected') {
+        // fallback 到靜態資料
+        return CONFIG.macroFallback[i];
+      }
+      const q = outcome.value;
+      const dir = Math.abs(q.chgPct) < 0.005 ? 'neu' : q.chgPct > 0 ? 'up' : 'down';
+      let val, chg;
+
+      if (m.fmt === 'pct') {
+        // US10Y：Yahoo 給的是 yield 數字如 4.56，顯示成 4.56%
+        val = q.price.toFixed(m.decimals) + '%';
+        const chgPp = (q.chgAbs).toFixed(2);
+        chg = (q.chgAbs >= 0 ? '+' : '') + chgPp + 'pp';
+      } else {
+        val = q.price >= 1000
+          ? q.price.toLocaleString('en-US', { maximumFractionDigits: m.decimals })
+          : q.price.toFixed(m.decimals);
+        chg = (q.chgPct >= 0 ? '+' : '') + q.chgPct.toFixed(2) + '%';
+      }
+
+      return { label: m.label, val, chg, dir };
+    });
+  },
+
+  // ── 批次拉個股即時報價（更新 sector data 的 price / chg）──
+  async fetchStockQuotes(sectorData) {
+    // 收集所有需要的 symbol
+    const allStocks = sectorData.flatMap(r => r.stocks);
+    const uniqueIds = [...new Set(allStocks.map(s => s.id))];
+
+    const fetchOne = async (id) => {
+      const symbol = CONFIG.stockSymbolMap[id];
+      if (!symbol) return null;
+      try {
+        return { id, quote: await this.fetchQuote(symbol) };
+      } catch {
+        return null;
+      }
+    };
+
+    const outcomes = await Promise.allSettled(uniqueIds.map(fetchOne));
+    const quoteMap = {};
+    outcomes.forEach(o => {
+      if (o.status === 'fulfilled' && o.value) {
+        quoteMap[o.value.id] = o.value.quote;
+      }
+    });
+
+    // 把即時資料覆寫回 sectorData（不動靜態的 exp / act / gap，那些是人工計算的）
+    return sectorData.map(r => ({
+      ...r,
+      stocks: r.stocks.map(s => {
+        const q = quoteMap[s.id];
+        if (!q) return s;
+        return {
+          ...s,
+          price: q.price,
+          chg:   q.chgPct,
+          _live: true,   // 標記為即時資料
+        };
+      }),
+    }));
+  },
+
+  // ── 取個股 history（sparkline 用）──
+  async fetchStockHistory(stockId) {
+    const symbol = CONFIG.stockSymbolMap[stockId];
+    if (!symbol) return null;
+    try {
+      return await this.fetchHistory(symbol);
+    } catch {
+      return null;
+    }
+  },
+
+  // ── 批次拉「所有需要的 history」用於 beta 計算 ──
+  // 回傳 { stockHistories: Map, driveHistories: Map, stockQuotes: Map, driveQuotes: Map }
+  async fetchAllForBeta(sectorData) {
+    // 1. 收集所有個股 id（去重）
+    const allIds = [...new Set(sectorData.flatMap(r => r.stocks.map(s => s.id)))];
+
+    // 2. 收集所有用到的驅動指數 key（去重）
+    const driveKeys = [...new Set(sectorData.map(r => r.driveIndex))];
+
+    // 3. 並行拉所有個股 quote（即時）+ history（3個月）
+    //    + 所有驅動指數 quote + history
+    const betaRange = CONFIG.betaLookback;
+
+    const fetchStockHist = async (id) => {
+      const sym = CONFIG.stockSymbolMap[id];
+      if (!sym) return { id, hist: null };
+      try {
+        const url = `${CONFIG.yahooHistUrl}${sym}?interval=1d&range=${betaRange}`;
+        const hist = await this._fetchHistFromUrl(url);
+        return { id, hist };
+      } catch { return { id, hist: null }; }
+    };
+
+    const fetchDriveHist = async (key) => {
+      const sym = CONFIG.driveIndexSymbols[key];
+      if (!sym) return { key, hist: null, quote: null };
+      try {
+        const [hist, quote] = await Promise.all([
+          this._fetchHistFromUrl(`${CONFIG.yahooHistUrl}${sym}?interval=1d&range=${betaRange}`),
+          this.fetchQuote(sym),
+        ]);
+        return { key, hist, quote };
+      } catch { return { key, hist: null, quote: null }; }
+    };
+
+    const fetchStockQ = async (id) => {
+      const sym = CONFIG.stockSymbolMap[id];
+      if (!sym) return { id, quote: null };
+      try { return { id, quote: await this.fetchQuote(sym) }; }
+      catch { return { id, quote: null }; }
+    };
+
+    // 全部並行
+    const [stockHistResults, driveResults, stockQResults] = await Promise.all([
+      Promise.allSettled(allIds.map(fetchStockHist)),
+      Promise.allSettled(driveKeys.map(fetchDriveHist)),
+      Promise.allSettled(allIds.map(fetchStockQ)),
+    ]);
+
+    // 整理成 Map
+    const stockHistories = new Map();
+    stockHistResults.forEach(o => {
+      if (o.status === 'fulfilled' && o.value.hist) {
+        stockHistories.set(o.value.id, o.value.hist);
+      }
+    });
+
+    const driveHistories = new Map();
+    const driveQuotes    = new Map();
+    driveResults.forEach(o => {
+      if (o.status === 'fulfilled') {
+        const { key, hist, quote } = o.value;
+        if (hist)  driveHistories.set(key, hist);
+        if (quote) driveQuotes.set(key, quote);
+      }
+    });
+
+    const stockQuotes = new Map();
+    stockQResults.forEach(o => {
+      if (o.status === 'fulfilled' && o.value.quote) {
+        stockQuotes.set(o.value.id, o.value.quote);
+      }
+    });
+
+    return { stockHistories, driveHistories, stockQuotes, driveQuotes };
+  },
+
+  // ── 內部：從完整 URL 拉 history（不走 cache key 的那版）──
+  async _fetchHistFromUrl(url) {
+    const ckey = 'url_' + url;
+    const cached = this._cache[ckey];
+    if (cached && Date.now() - cached.ts < this._cacheMs) return cached.hist;
+
+    const data = await this._yahooFetch(url);
+    const result = data?.chart?.result?.[0];
+    if (!result) throw new Error('no result');
+
+    const closes     = result.indicators?.quote?.[0]?.close  || [];
+    const volumes    = result.indicators?.quote?.[0]?.volume || [];
+    const timestamps = result.timestamp || [];
+
+    const valid = timestamps.map((t, i) => ({ t, c: closes[i], v: volumes[i] }))
+                            .filter(d => d.c !== null && d.c !== undefined);
+
+    const hist = {
+      prices:  valid.map(d => d.c),
+      volumes: valid.map(d => d.v || 0),
+      labels:  valid.map(d => {
+        const dt = new Date(d.t * 1000);
+        return `${dt.getMonth()+1}/${dt.getDate()}`;
+      }),
+    };
+
+    this._cache[ckey] = { hist, ts: Date.now() };
+    return hist;
+  },
+};
+
+/* ═══════════════════════════════════════════════════════════
+   BETA ENGINE  — 線性回歸計算 beta，推算 exp / act / gap
+   ═══════════════════════════════════════════════════════════
+
+   公式：
+     beta  = Σ[(Xi - X̄)(Yi - Ȳ)] / Σ[(Xi - X̄)²]
+             Xi = 海外指數第 i 日報酬率
+             Yi = 台股族群第 i 日平均報酬率
+
+     act   = 族群內有即時 chg 的個股，取簡單平均
+     exp   = 海外驅動今日漲跌% × beta
+     gap   = exp - act
+
+   資料品質標記（_dataQuality）：
+     'live'    = act / exp 皆為即時計算
+     'partial' = act 有部分個股缺資料
+     'beta_only' = beta 算出但今日驅動資料缺
+     'fallback'  = 完全無法計算，顯示 —
+   ═══════════════════════════════════════════════════════════ */
+const BetaEngine = {
+
+  // ── OLS 線性回歸（只需 beta，不需截距）──
+  // x, y 都是日報酬率陣列（%，如 1.5 表示漲 1.5%）
+  _olsBeta(x, y) {
+    if (x.length !== y.length || x.length < CONFIG.betaMinDays) return null;
+    const n = x.length;
+    const xBar = x.reduce((a, v) => a + v, 0) / n;
+    const yBar = y.reduce((a, v) => a + v, 0) / n;
+    let cov = 0, varX = 0;
+    for (let i = 0; i < n; i++) {
+      cov  += (x[i] - xBar) * (y[i] - yBar);
+      varX += (x[i] - xBar) ** 2;
+    }
+    if (varX === 0) return null;
+    return cov / varX;
+  },
+
+  // ── 把 price series 轉成日報酬率序列 ──
+  _toReturns(prices) {
+    const ret = [];
+    for (let i = 1; i < prices.length; i++) {
+      if (prices[i-1] > 0) ret.push((prices[i] - prices[i-1]) / prices[i-1] * 100);
+    }
+    return ret;
+  },
+
+  // ── 對齊兩組 series（取交集長度，截掉較長的尾端）──
+  _align(xRet, yRet) {
+    const len = Math.min(xRet.length, yRet.length);
+    return { x: xRet.slice(-len), y: yRet.slice(-len) };
+  },
+
+  // ── 計算單一族群的 beta（回傳 null 表示資料不足）──
+  // stockHistories: Map<stockId, {prices:[]}> —— 各個股的 history
+  // driveHistory:   {prices:[]}              —— 驅動指數的 history
+  computeBeta(stockHistories, driveHistory) {
+    if (!driveHistory || driveHistory.prices.length < CONFIG.betaMinDays + 1) return null;
+    const driveRet = this._toReturns(driveHistory.prices);
+
+    // 取每個有資料的個股報酬率，算每日平均（族群等權重）
+    const stockRetArrays = [];
+    for (const hist of stockHistories.values()) {
+      if (!hist || hist.prices.length < CONFIG.betaMinDays + 1) continue;
+      stockRetArrays.push(this._toReturns(hist.prices));
+    }
+    if (stockRetArrays.length === 0) return null;
+
+    const minLen = Math.min(...stockRetArrays.map(a => a.length));
+    const sectorRet = Array.from({ length: minLen }, (_, i) => {
+      const vals = stockRetArrays.map(a => a[a.length - minLen + i]);
+      return vals.reduce((s, v) => s + v, 0) / vals.length;
+    });
+
+    const { x, y } = this._align(driveRet, sectorRet);
+    return this._olsBeta(x, y);
+  },
+
+  // ── 計算所有族群的 act / exp / gap，回傳更新後的 sectorData ──
+  // stockQuotes:   Map<stockId, {chgPct}> —— 今日個股即時漲跌
+  // driveQuotes:   Map<driveKey, {chgPct}> —— 今日驅動指數漲跌（如 'SOX' → chgPct）
+  // stockHistories: Map<stockId, hist>
+  // driveHistories: Map<driveKey, hist>
+  computeAll(sectorData, { stockQuotes, driveQuotes, stockHistories, driveHistories }) {
+    return sectorData.map(r => {
+      // ── act：有即時 chg 的個股取平均 ──
+      const liveChgs = r.stocks
+        .map(s => stockQuotes.get(s.id))
+        .filter(q => q !== null && q !== undefined && typeof q.chgPct === 'number');
+
+      const act = liveChgs.length > 0
+        ? liveChgs.reduce((s, q) => s + q.chgPct, 0) / liveChgs.length
+        : null;
+
+      const liveCover = liveChgs.length / r.stocks.length;  // 有多少比例個股有資料
+
+      // ── 驅動指數今日漲跌 ──
+      const driveQuote   = driveQuotes.get(r.driveIndex);
+      const driveChgToday = driveQuote?.chgPct ?? null;
+
+      // ── beta：用歷史 history 算 ──
+      const driveHist = driveHistories.get(r.driveIndex);
+      const sectorHistMap = new Map(
+        r.stocks.map(s => [s.id, stockHistories.get(s.id)])
+      );
+      const beta = this.computeBeta(sectorHistMap, driveHist);
+
+      // ── exp：beta × 海外今日漲跌 ──
+      const exp = (beta !== null && driveChgToday !== null)
+        ? driveChgToday * beta
+        : null;
+
+      // ── gap = exp - act ──
+      const gap = (exp !== null && act !== null) ? exp - act : null;
+
+      // ── 資料品質標記 ──
+      let quality = 'live';
+      if (beta === null || driveChgToday === null) quality = 'beta_only';
+      if (act === null) quality = 'fallback';
+      if (liveCover < 1) quality = quality === 'live' ? 'partial' : quality;
+
+      // ── 更新 stocks 的 price / chg ──
+      const updatedStocks = r.stocks.map(s => {
+        const q = stockQuotes.get(s.id);
+        return q ? { ...s, price: q.price, chg: q.chgPct, _live: true } : s;
+      });
+
+      return {
+        ...r,
+        act:       act   !== null ? parseFloat(act.toFixed(2))   : null,
+        exp:       exp   !== null ? parseFloat(exp.toFixed(2))   : null,
+        gap:       gap   !== null ? parseFloat(gap.toFixed(2))   : null,
+        driveChg:  driveChgToday !== null ? parseFloat(driveChgToday.toFixed(2)) : null,
+        beta:      beta  !== null ? parseFloat(beta.toFixed(3))  : null,
+        _quality:  quality,
+        _liveCover: liveCover,
+        stocks:    updatedStocks,
+      };
+    });
+  },
+};
+
+/* ═══════════════════════════════════════════════════════════
+   FILTER ENGINE  — 純函數，不碰 DOM
+   ═══════════════════════════════════════════════════════════ */
+const FilterEngine = {
+  apply(data, filters, sort, sortDir) {
+    const f = filters;
+    let result = data.filter(r => {
+      const searchTarget = (r.sector + ' ' + r.driveName).toLowerCase();
+      if (f.search  && !searchTarget.includes(f.search)) return false;
+      if (f.gapMin  !== null && r.gap < f.gapMin) return false;
+      if (f.gapMax  !== null && r.gap > f.gapMax) return false;
+      if (f.expMin  !== null && r.exp < f.expMin) return false;
+      if (f.market  !== 'all' && r.market !== f.market) return false;
+      if (f.cover   !== 'all' && r.cover < parseInt(f.cover)) return false;
+      return true;
+    });
+    result.sort((a, b) => sortDir * (b[sort] - a[sort]));
+    return result;
+  },
+
+  countActive(filters) {
+    let n = 0;
+    if (filters.search)  n++;
+    if (filters.gapMin !== null || filters.gapMax !== null) n++;
+    if (filters.expMin  !== null) n++;
+    if (filters.market  !== 'all') n++;
+    if (filters.cover   !== 'all') n++;
+    return n;
+  },
+};
+
+/* ═══════════════════════════════════════════════════════════
+   SPARKLINE ENGINE  — SVG 繪製，與渲染層分離
+   ═══════════════════════════════════════════════════════════ */
+const SparklineEngine = {
+  // 靜態小圖（表格用，無互動）
+  buildStatic(prices, chg, w, h) {
+    const color    = chg >= 0 ? '#22c55e' : '#ef4444';
+    const areaFill = chg >= 0 ? '#0d2a18' : '#2a0d0d';
+    const [min, max] = [Math.min(...prices), Math.max(...prices)];
+    const range = max - min || 1;
+    const pad = 4;
+    const xs = prices.map((_, i) => pad + (i / (prices.length - 1)) * (w - pad * 2));
+    const ys = prices.map(p => pad + (1 - (p - min) / range) * (h - pad * 2));
+    const pts = xs.map((x, i) => `${x},${ys[i]}`).join(' ');
+    const area = `M${xs[0]},${h - pad} ${xs.map((x, i) => `L${x},${ys[i]}`).join(' ')} L${xs[xs.length-1]},${h - pad} Z`;
+    return `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" style="width:100%;height:${h}px;display:block;">
+      <path d="${area}" fill="${areaFill}" opacity="0.6"/>
+      <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+      <circle cx="${xs[xs.length-1]}" cy="${ys[ys.length-1]}" r="2.5" fill="${color}"/>
+    </svg>`;
+  },
+
+  // 互動式（側邊欄用，有 hover crosshair）
+  buildInteractive(containerId, prices, chg, labels) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    const draw = () => {
+      container.innerHTML = '';
+      const color = chg >= 0 ? '#22c55e' : '#ef4444';
+      const [min, max] = [Math.min(...prices), Math.max(...prices)];
+      const range = max - min || 1;
+      const W = container.clientWidth || container.parentElement?.clientWidth || 280;
+      const H = 52, pad = 4;
+      const xs = prices.map((_, i) => pad + (i / (prices.length - 1)) * (W - pad * 2));
+      const ys = prices.map(p => pad + (1 - (p - min) / range) * (H - pad * 2));
+
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+      svg.setAttribute('width', '100%');
+      svg.setAttribute('height', H);
+      svg.style.cssText = 'display:block;cursor:crosshair;';
+
+      const mk = (tag, attrs) => {
+        const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+        Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, v));
+        return el;
+      };
+
+      svg.appendChild(mk('path', {
+        d: `M${xs[0]},${H-pad} ${xs.map((x,i)=>`L${x},${ys[i]}`).join(' ')} L${xs[xs.length-1]},${H-pad} Z`,
+        fill: chg >= 0 ? '#0d2a18' : '#2a0d0d', opacity: '0.7',
+      }));
+      svg.appendChild(mk('polyline', {
+        points: xs.map((x,i)=>`${x},${ys[i]}`).join(' '),
+        fill:'none', stroke:color, 'stroke-width':'1.8',
+        'stroke-linejoin':'round', 'stroke-linecap':'round',
+      }));
+      svg.appendChild(mk('circle', { cx:xs[xs.length-1], cy:ys[ys.length-1], r:'2.5', fill:color }));
+
+      const hLine = mk('line', { y1:0, y2:H, stroke:'#3a5070', 'stroke-width':'1', 'stroke-dasharray':'3,3' });
+      hLine.style.display = 'none';
+      const hDot = mk('circle', { r:'3', fill:color, stroke:'#0a0e14', 'stroke-width':'2' });
+      hDot.style.display = 'none';
+      svg.appendChild(hLine); svg.appendChild(hDot);
+      container.appendChild(svg);
+
+      const tip = document.createElement('div');
+      tip.className = 'sparkline-tooltip';
+      container.appendChild(tip);
+
+      svg.addEventListener('mousemove', e => {
+        const rect = svg.getBoundingClientRect();
+        const mx = (e.clientX - rect.left) * (W / rect.width);
+        const closest = xs.reduce((best, x, i) => Math.abs(x - mx) < Math.abs(xs[best] - mx) ? i : best, 0);
+        hLine.setAttribute('x1', xs[closest]); hLine.setAttribute('x2', xs[closest]);
+        hDot.setAttribute('cx', xs[closest]);   hDot.setAttribute('cy', ys[closest]);
+        hLine.style.display = hDot.style.display = '';
+        tip.style.display = 'block';
+        tip.textContent = `${labels[closest]}　${prices[closest].toFixed(2)}`;
+        const tipX = xs[closest] * (rect.width / W);
+        tip.style.left = Math.min(tipX + 8, rect.width - 115) + 'px';
+        tip.style.top = '2px';
+      });
+      svg.addEventListener('mouseleave', () => {
+        hLine.style.display = hDot.style.display = tip.style.display = 'none';
+      });
+    };
+
+    // Bug 2 fix：用 ResizeObserver 等到有真實寬度再畫
+    if (typeof ResizeObserver !== 'undefined') {
+      const ro = new ResizeObserver((entries, obs) => {
+        if (entries[0].contentRect.width > 0) { obs.disconnect(); draw(); }
+      });
+      ro.observe(container);
+    } else {
+      requestAnimationFrame(draw);
+    }
+  },
+};
+
+/* ═══════════════════════════════════════════════════════════
+   RENDERER  — 負責所有 DOM 寫入
+   ═══════════════════════════════════════════════════════════ */
+const Renderer = {
+  fmt(v, dec = 2) { return (v > 0 ? '+' : '') + v.toFixed(dec); },
+
+  highlight(text, query) {
+    if (!query) return text;
+    const re = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
+    return text.replace(re, '<span class="highlight">$1</span>');
+  },
+
+  coverColor(pct) {
+    for (const t of CONFIG.coverThresholds) {
+      if (pct >= t.min) return t.color;
+    }
+    return '#ef4444';
+  },
+
+  macroGrid(items, loading = false) {
+    const el = document.getElementById('macroGrid');
+    if (loading) {
+      // skeleton 狀態
+      el.innerHTML = CONFIG.macroFallback.map(m => `
+        <div class="macro-cell">
+          <div class="macro-label">${m.label}</div>
+          <div class="macro-val macro-loading">${m.val} <span class="${m.dir}">${m.chg}</span></div>
+        </div>`).join('');
+      return;
+    }
+    const data = items || CONFIG.macroFallback;
+    el.innerHTML = data.map(m => `
+      <div class="macro-cell">
+        <div class="macro-label">${m.label}</div>
+        <div class="macro-val">${m.val} <span class="${m.dir}">${m.chg}</span></div>
+      </div>`).join('');
+  },
+
+  // null 值顯示為 —，有值才 fmt
+  fmtOrDash(v, suffix = '%', dec = 2) {
+    if (v === null || v === undefined) return '<span style="color:var(--text-6);">—</span>';
+    return `${v > 0 ? '+' : ''}${v.toFixed(dec)}${suffix}`;
+  },
+
+  qualityBadge(quality) {
+    const map = {
+      live:      { text:'即時', color:'var(--up)',   bg:'var(--up-bg)' },
+      partial:   { text:'部分', color:'var(--warn)', bg:'var(--warn-bg)' },
+      beta_only: { text:'β計算', color:'var(--accent-text)', bg:'var(--accent-dim)' },
+      fallback:  { text:'估算', color:'var(--text-5)', bg:'var(--bg-2)' },
+    };
+    const s = map[quality] || map.fallback;
+    return `<span style="font-size:9px;padding:1px 4px;border-radius:3px;background:${s.bg};color:${s.color};border:0.5px solid ${s.color}33;">${s.text}</span>`;
+  },
+
+  table(data, allData, query) {
+    const tbody = document.getElementById('tableBody');
+    if (!data.length) {
+      tbody.innerHTML = `<tr><td colspan="9"><div class="no-results">沒有符合條件的族群</div></td></tr>`;
+      return;
+    }
+    tbody.innerHTML = data.map((r, i) => {
+      const origIdx  = allData.indexOf(r);
+      const isActive = origIdx === STATE.selectedIdx;
+      const gap      = r.gap;
+      const gapBarW  = gap !== null ? Math.min(100, (Math.abs(gap) / 4) * 100).toFixed(0) : 0;
+      const s0       = r.stocks[0];
+      const prevP    = s0.chg !== null
+        ? DataLayer.genPrices(s0.seed, 10, s0.price / (1 + s0.chg / 100), s0.chg)
+        : DataLayer.genPrices(s0.seed, 10, s0.price, 0);
+      const miniSvg  = SparklineEngine.buildStatic(prevP, s0.chg ?? 0, 52, 20);
+      const coverC   = this.coverColor(r.cover);
+      const isJP     = r.market === 'JP';
+
+      // gap bar 顏色：正 gap（補漲空間）= 紅，負 gap（超漲）= 綠
+      const gapBarColor = (gap ?? 0) >= 0 ? 'var(--down)' : 'var(--up)';
+
+      return `<tr class="${isActive ? 'active-row' : ''}" onclick="UI.selectRow(${origIdx})" style="cursor:pointer;">
+        <td><div class="rank-badge ${i === 0 ? 'gold' : ''}">${i + 1}</div></td>
+        <td>
+          <div style="display:flex;align-items:center;gap:5px;">
+            <div class="sector-name">${this.highlight(r.sector, query)}</div>
+            ${this.qualityBadge(r._quality || 'fallback')}
+          </div>
+          <div style="font-size:10px;color:var(--text-6);margin-top:1px;">${r.stocks.length} 檔${r.beta !== null && r.beta !== undefined ? `・β ${r.beta.toFixed(2)}` : ''}</div>
+        </td>
+        <td><span class="pct ${(r.exp??0)>=0?'pct-up':'pct-down'}">${this.fmtOrDash(r.exp)}</span></td>
+        <td><span class="pct ${(r.act??0)>=0?'pct-up':'pct-down'}">${this.fmtOrDash(r.act)}</span></td>
+        <td>
+          <span class="pct ${(gap??0)>=0?'pct-down':'pct-up'}" style="font-weight:600;">${this.fmtOrDash(gap,'pp')}</span>
+          ${gap !== null ? `<div class="gap-bar" style="width:${gapBarW}%;background:${gapBarColor};"></div>` : ''}
+        </td>
+        <td>
+          <span class="overseas-tag ${isJP ? 'jp' : ''}">${r.market}</span>
+          <span style="color:var(--text-4);font-size:11px;">${this.highlight(r.driveName, query)}</span>
+          <span class="${(r.driveChg??0)>=0?'pct-up':'pct-down'}" style="font-size:10px;margin-left:3px;">${this.fmtOrDash(r.driveChg)}</span>
+        </td>
+        <td>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <div>${r.stocks.slice(0,2).map(s=>`
+              <div style="font-size:11px;">
+                <span style="color:var(--text-5);">${s.name}</span>
+                <span class="${(s.chg??0)>=0?'pct-up':'pct-down'}" style="font-size:10px;">${this.fmtOrDash(s.chg)}</span>
+              </div>`).join('')}
+            </div>
+            <div style="flex-shrink:0;">${miniSvg}</div>
+          </div>
+        </td>
+        <td>
+          <span style="width:7px;height:7px;border-radius:50%;background:${coverC};display:inline-block;"></span>
+          <span style="color:${coverC};font-size:11px;margin-left:2px;">${r.cover}%</span>
+        </td>
+      </tr>`;
+    }).join('');
+  },
+
+  sidebar(r) {
+    document.getElementById('sidebarTitle').textContent = r.sector;
+    document.getElementById('sidebarMeta').textContent  = `${r.stocks.length} 檔觀察股・覆蓋率 ${r.cover}%`;
+
+    const isJP = r.market === 'JP';
+    const betaStr = r.beta !== null && r.beta !== undefined
+      ? `<span style="font-size:10px;color:var(--text-5);">β = ${r.beta.toFixed(2)}</span>`
+      : `<span style="font-size:10px;color:var(--text-6);">β 計算中</span>`;
+
+    let html = `
+      <button class="compare-btn">+ 比較落差組合</button>
+      <div class="sidebar-metric" style="margin-top:14px;">
+        <div>
+          <div class="s-metric-label">預期 ${betaStr}</div>
+          <div class="s-metric-val ${(r.exp??0)>=0?'pct-up':'pct-down'}">${this.fmtOrDash(r.exp)}</div>
+        </div>
+        <div>
+          <div class="s-metric-label">實際</div>
+          <div class="s-metric-val ${(r.act??0)>=0?'pct-up':'pct-down'}">${this.fmtOrDash(r.act)}</div>
+        </div>
+        <div>
+          <div class="s-metric-label">落差</div>
+          <div class="s-metric-val">
+            ${r.gap !== null
+              ? `<span class="gap-pill">${this.fmt(r.gap)}pp</span>`
+              : `<span style="color:var(--text-6);">—</span>`}
+          </div>
+        </div>
+      </div>
+      <div class="driver-box">
+        <div class="driver-label">海外驅動（今日）</div>
+        <div class="driver-row">
+          <div><span class="overseas-tag ${isJP ? 'jp' : ''}">${r.market}</span><span style="font-size:12px;color:var(--text-2);">${r.driveName}</span></div>
+          <span class="pct ${(r.driveChg??0)>=0?'pct-up':'pct-down'}">${this.fmtOrDash(r.driveChg)}</span>
+        </div>
+      </div>
+      <div class="stocks-label">個股走勢（近 ${CONFIG.sparklineDays} 日）</div>`;
+
+    r.stocks.forEach((s, i) => {
+      html += `
+        <div class="stock-sparkline-card ${i === STATE.selectedStock ? 'selected' : ''}" onclick="UI.selectStock(${i})" id="ssc_${i}">
+          <div class="ssc-header">
+            <div>
+              <div class="ssc-id">${s.id}</div>
+              <div class="ssc-name">${s.name}</div>
+              <span class="ssc-role">${s.role}</span>
+            </div>
+            <div>
+              <div class="ssc-price">${s.price ? s.price.toLocaleString() : '—'}</div>
+              <div class="ssc-chg ${(s.chg??0) >= 0 ? 'pct-up' : 'pct-down'}">${this.fmtOrDash(s.chg)}</div>
+            </div>
+          </div>
+          <div class="sparkline-wrap" id="spark_${i}"></div>
+          <div class="vol-row" id="vol_${i}"></div>
+          <div class="ssc-footer">
+            <span>${s._live ? '即時資料 ✓' : '模擬走勢'}</span>
+            <span>${s.price ? s.price.toLocaleString() + ' TWD' : '—'}</span>
+          </div>
+        </div>`;
+    });
+
+    document.getElementById('sidebarBody').innerHTML = html;
+
+    // 畫 sparkline + volume（優先用真實 history，fallback mock）
+    r.stocks.forEach((s, i) => {
+      const useLive = async () => {
+        let prices, vols, labels;
+        const hist = await DataLayer.fetchStockHistory(s.id);
+        if (hist && hist.prices.length >= 5) {
+          prices = hist.prices;
+          vols   = hist.volumes.map(v => v / Math.max(...hist.volumes));  // normalize
+          labels = hist.labels;
+          // 補標記：live 資料來源
+          const footer = document.querySelector(`#ssc_${i} .ssc-footer span:last-child`);
+          if (footer) footer.textContent = '即時資料 ✓';
+        } else {
+          prices = DataLayer.genPrices(s.seed, CONFIG.sparklineDays, s.price / (1 + s.chg / 100), s.chg);
+          vols   = DataLayer.genVolume(s.seed, CONFIG.sparklineDays);
+          labels = CONFIG.sparklineLabels;
+        }
+
+        SparklineEngine.buildInteractive(`spark_${i}`, prices, s.chg, labels);
+
+        const volRow = document.getElementById(`vol_${i}`);
+        if (volRow) {
+          const rawVols = Array.isArray(vols[0]) ? vols : vols;
+          const maxVol = Math.max(...rawVols, 1);
+          volRow.innerHTML = '';
+          rawVols.forEach(v => {
+            const bar = document.createElement('div');
+            bar.className = 'vol-bar';
+            bar.style.height = Math.round((v / maxVol) * 18) + 'px';
+            volRow.appendChild(bar);
+          });
+        }
+      };
+      useLive();
+    });
+  },
+
+  sortButtons(sort, sortDir) {
+    document.querySelectorAll('[data-sort]').forEach(el => {
+      const key = el.dataset.sort;
+      const isActive = key === sort;
+      el.classList.toggle('active', isActive);
+      el.classList.toggle('sorted', isActive);
+      const arrow = isActive ? (sortDir === -1 ? '↓' : '↑') : '↕';
+      // th 欄位有 <span> 顯示箭頭，按鈕則直接改 textContent 前綴
+      if (el.tagName === 'TH') {
+        el.querySelector('span').textContent = arrow;
+      } else {
+        const labels = { gap:'落差', exp:'預期', act:'實際' };
+        el.textContent = `${arrow} ${labels[key]}`;
+      }
+    });
+  },
+
+  filterUI(filters) {
+    // 還原 input 值
+    document.getElementById('searchInput').value = filters.search || '';
+    document.getElementById('gapMin').value = filters.gapMin ?? '';
+    document.getElementById('gapMax').value = filters.gapMax ?? '';
+    document.getElementById('expMin').value = filters.expMin ?? '';
+
+    // 還原 chips
+    ['marketChips', 'coverChips'].forEach(groupId => {
+      const key = groupId === 'marketChips' ? 'market' : 'cover';
+      document.querySelectorAll(`#${groupId} .chip`).forEach(c => {
+        c.classList.toggle('active', c.dataset.val === String(filters[key]));
+      });
+    });
+  },
+
+  resultCount(shown, total) {
+    document.getElementById('resultCount').innerHTML = `顯示 <strong>${shown}</strong> / ${total} 個族群`;
+  },
+
+  filterBadge(count) {
+    const el = document.getElementById('filterBadge');
+    if (count > 0) {
+      el.textContent = `${count} 個條件`;
+      el.classList.add('visible');
+    } else {
+      el.classList.remove('visible');
+    }
+  },
+
+  lastUpdated(ts, status = 'live') {
+    const el  = document.getElementById('lastUpdatedTime');
+    const dot = document.getElementById('liveDot');
+    if (!ts) { el.textContent = '—'; return; }
+    const d = new Date(ts);
+    el.textContent = `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
+    if (dot) {
+      dot.className = 'live-dot' + (status !== 'live' ? ` ${status}` : '');
+    }
+  },
+
+  toast(msg, type = 'info', duration = 2500) {
+    const container = document.getElementById('toastContainer');
+    const el = document.createElement('div');
+    el.className = `toast ${type}`;
+    el.textContent = msg;
+    container.appendChild(el);
+    setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity 0.3s'; setTimeout(() => el.remove(), 300); }, duration);
+  },
+};
+
+/* ═══════════════════════════════════════════════════════════
+   UI  — 事件處理與編排（連接 STATE ↔ FilterEngine ↔ Renderer）
+   ═══════════════════════════════════════════════════════════ */
+const UI = {
+  // 主渲染循環
+  render() {
+    const allData = DataLayer.getAll();
+    const filtered = FilterEngine.apply(allData, STATE.filters, STATE.sort, STATE.sortDir);
+    const activeCount = FilterEngine.countActive(STATE.filters);
+
+    Renderer.table(filtered, allData, STATE.filters.search);
+    Renderer.sortButtons(STATE.sort, STATE.sortDir);
+    Renderer.resultCount(filtered.length, allData.length);
+    Renderer.filterBadge(activeCount);
+    Renderer.lastUpdated(STATE.lastUpdated);
+    document.getElementById('totalCount').textContent = allData.length;
+  },
+
+  selectRow(idx) {
+    setState({ selectedIdx: idx, selectedStock: 0 });
+    Renderer.sidebar(DataLayer.getAll()[idx]);
+    this.render();
+  },
+
+  selectStock(i) {
+    setState({ selectedStock: i });
+    document.querySelectorAll('.stock-sparkline-card').forEach((el, j) => {
+      el.classList.toggle('selected', j === i);
+    });
+  },
+
+  setSort(key) {
+    const newDir = STATE.sort === key ? STATE.sortDir * -1 : -1;
+    setState({ sort: key, sortDir: newDir });
+    this.render();
+  },
+
+  setFilter(patch) {
+    setState({ filters: patch });
+    this.render();
+  },
+
+  clearFilters() {
+    setState({
+      filters: { search:'', gapMin:null, gapMax:null, expMin:null, market:'all', cover:'all' }
+    });
+    Renderer.filterUI(STATE.filters);
+    this.render();
+    Renderer.toast('篩選條件已清除');
+  },
+
+  async refresh(silent = false) {
+    const btn = document.getElementById('refreshBtn');
+    btn.textContent = '⟳ 更新中…';
+    btn.disabled = true;
+
+    if (!silent) Renderer.macroGrid(null, true);
+
+    try {
+      // 1. 並行拉：宏觀 macro + beta 所需的所有 history / quote
+      const [macroItems, betaData] = await Promise.all([
+        DataLayer.fetchAllMacro(),
+        DataLayer.fetchAllForBeta(DataLayer.getAll()),
+      ]);
+
+      // 2. BetaEngine 計算 act / exp / gap / beta
+      const computed = BetaEngine.computeAll(
+        DataLayer.getAll(),
+        betaData
+      );
+
+      // 3. 寫回 CONFIG（讓 getAll() 拿到最新資料）
+      CONFIG.sectorData = computed;
+
+      // 4. 更新 macro grid
+      Renderer.macroGrid(macroItems);
+
+      // 5. 更新 state & 重新渲染
+      setState({ lastUpdated: Date.now() });
+      this.render();
+
+      // 6. 重新渲染 sidebar
+      if (STATE.selectedIdx !== null) {
+        Renderer.sidebar(DataLayer.getAll()[STATE.selectedIdx]);
+      }
+
+      // 7. 統計資料品質
+      const liveCount = computed.filter(r => r._quality === 'live' || r._quality === 'partial').length;
+      if (!silent) {
+        Renderer.toast(
+          `行情更新完成・${liveCount}/${computed.length} 族群有即時 beta`,
+          'success'
+        );
+      }
+    } catch (err) {
+      console.warn('refresh failed:', err);
+      Renderer.macroGrid(CONFIG.macroFallback);
+      if (!silent) Renderer.toast('無法連線，顯示快取資料', 'error');
+    } finally {
+      btn.textContent = '↻ 更新行情';
+      btn.disabled = false;
+    }
+  },
+
+  async init() {
+    // 1. 從 localStorage 還原狀態
+    Storage.load();
+
+    // 2. 先顯示 fallback macro（讓畫面立即有內容）
+    Renderer.macroGrid(CONFIG.macroFallback);
+
+    // 3. 還原 filter UI（inputs / chips）
+    Renderer.filterUI(STATE.filters);
+
+    // 4. 首次渲染表格（用靜態資料，速度快）
+    this.render();
+
+    // 5. 自動選中第一行
+    setTimeout(() => this.selectRow(0), 50);
+
+    // 6. 綁定所有事件
+    this._bindEvents();
+
+    // 7. 背景靜默拉 API（silent = true，不顯示 toast）
+    setTimeout(() => this.refresh(true), 200);
+  },
+
+  _bindEvents() {
+    // 文字 / 數值 inputs
+    ['searchInput', 'gapMin', 'gapMax', 'expMin'].forEach(id => {
+      document.getElementById(id).addEventListener('input', e => {
+        const val = e.target.value.trim();
+        const key = id === 'searchInput' ? 'search'
+                  : id === 'gapMin' ? 'gapMin'
+                  : id === 'gapMax' ? 'gapMax'
+                  : 'expMin';
+        const parsed = (key === 'search') ? val.toLowerCase()
+                     : (val === '' ? null : parseFloat(val));
+        this.setFilter({ [key]: parsed });
+      });
+    });
+
+    // chips（單選）
+    document.querySelectorAll('#marketChips .chip, #coverChips .chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const groupId = chip.closest('.chip-row').id;
+        const key = groupId === 'marketChips' ? 'market' : 'cover';
+        chip.closest('.chip-row').querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        this.setFilter({ [key]: chip.dataset.val });
+      });
+    });
+
+    // 排序按鈕
+    document.querySelectorAll('.sort-btn[data-sort]').forEach(btn => {
+      btn.addEventListener('click', () => this.setSort(btn.dataset.sort));
+    });
+
+    // 欄位 th 排序
+    document.querySelectorAll('th[data-sort]').forEach(th => {
+      th.addEventListener('click', () => this.setSort(th.dataset.sort));
+    });
+
+    // 清除
+    document.getElementById('clearBtn').addEventListener('click', () => this.clearFilters());
+  },
+};
+
+/* ══ 啟動 ══ */
+document.addEventListener('DOMContentLoaded', () => UI.init());
+</script>
+</body>
+</html>
