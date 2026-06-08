@@ -3053,7 +3053,7 @@ const Renderer = {
       const isStarred = STATE.starred.has(r.sector);
       const gap       = r.gap;
       const gapBarW   = gap !== null ? Math.min(100, (Math.abs(gap) / 4) * 100).toFixed(0) : 0;
-      const s0        = r.stocks[0];
+      const s0        = r.stocks?.[0] ?? { chg: null, seed: 0, price: 0, name: '—', symbol: '' };
       const prevP     = s0.chg !== null
         ? DataLayer.genPrices(s0.seed, 10, s0.price / (1 + s0.chg / 100), s0.chg)
         : DataLayer.genPrices(s0.seed, 10, s0.price, 0);
@@ -3064,12 +3064,12 @@ const Renderer = {
       const isAlert   = STATE.gapAlert !== null && gap !== null && Math.abs(gap) >= STATE.gapAlert;
       const alertDot  = isAlert ? `<span class="gap-alert-dot" title="Gap 超過警示閾值 ${STATE.gapAlert}pp"></span>` : '';
 
-      const betaCell = r.beta !== null
-        ? `<div style="font-size:12px;font-weight:500;color:var(--text-2);">${r.beta.toFixed(2)}</div>
-           ${r.r2 !== null ? `
+      const betaCell = (r.beta !== null && r.beta !== undefined)
+        ? `<div style="font-size:12px;font-weight:500;color:var(--text-2);">${(+r.beta).toFixed(2)}</div>
+           ${(r.r2 !== null && r.r2 !== undefined) ? `
            <div class="r2-wrap">
-             <div class="r2-bar-bg"><div class="r2-bar-fill" style="width:${(r.r2*100).toFixed(0)}%"></div></div>
-             <div class="r2-text">R² ${r.r2.toFixed(2)}</div>
+             <div class="r2-bar-bg"><div class="r2-bar-fill" style="width:${((+r.r2)*100).toFixed(0)}%"></div></div>
+             <div class="r2-text">R² ${(+r.r2).toFixed(2)}</div>
            </div>` : ''}`
         : `<span style="color:var(--text-6);">—</span>`;
 
