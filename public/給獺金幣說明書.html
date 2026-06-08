@@ -253,8 +253,10 @@ body {
     <a href="#formula"  class="toc-link">計算原理</a>
     <a href="#signals"  class="toc-link">訊號解讀</a>
     <a href="#workflow" class="toc-link">操作流程</a>
-    <a href="#features" class="toc-link">進階功能</a>
-    <a href="#strategy" class="toc-link">策略推薦</a>
+    <a href="#features"        class="toc-link">進階功能</a>
+    <a href="#gap-banner"      class="toc-link">Gap 方向警示</a>
+    <a href="#sidebar-advanced" class="toc-link">補漲排行 / 量能 / 均線</a>
+    <a href="#strategy"        class="toc-link">策略推薦</a>
     <a href="#limits"   class="toc-link">注意事項</a>
   </div>
 </nav>
@@ -811,6 +813,133 @@ body {
           <tr><td class="term">海外市場</td><td>美股休市時切到「🇯🇵 日股」，只看 N225 驅動的族群</td></tr>
         </tbody>
       </table>
+    </div>
+  </section>
+
+  <!-- 7.2 Gap 方向警示橫幅 -->
+  <section class="section" id="gap-banner">
+    <div class="section-num">07.2</div>
+    <h2>Gap 方向警示橫幅</h2>
+    <p class="section-intro">
+      表格上方會根據當日海外驅動狀況，自動出現彩色警示橫幅，幫你在開盤前快速判斷今日 Gap 的方向是「補漲」還是「補跌」。
+    </p>
+    <div class="term-wrap">
+      <table class="term-table">
+        <thead><tr><th>橫幅顏色</th><th>觸發條件</th><th>意義</th></tr></thead>
+        <tbody>
+          <tr>
+            <td class="term" style="color:#f87171;">🔴 紅色</td>
+            <td>海外驅動指數單日跌幅 &gt; 5%（如 SOX 暴跌）</td>
+            <td>正 Gap 是補跌壓力，不建議在確認止跌前進場</td>
+          </tr>
+          <tr>
+            <td class="term" style="color:#fbbf24;">🟡 橘色</td>
+            <td>海外驅動跌幅介於 -2% ~ -5%</td>
+            <td>Gap 方向不確定，需搭配量能與均線確認再進場</td>
+          </tr>
+          <tr>
+            <td class="term" style="color:#4ade80;">🟢 綠色</td>
+            <td>海外穩定且 60% 以上族群平均 Gap ≥ 1.5pp</td>
+            <td>補漲訊號明確，優先關注 Beta &gt; 0.8 且 R² &gt; 0.5 的族群</td>
+          </tr>
+          <tr>
+            <td class="term">無橫幅</td>
+            <td>市況平靜，無特殊訊號</td>
+            <td>正常使用篩選條件即可</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="info-box" style="margin-top:12px;">
+      ⚠️ 海外暴跌當日，大多數族群的正 Gap 代表「台股還沒跌夠」，而非補漲機會。紅色橫幅出現時，建議先觀望，等隔日開盤確認方向後再操作。
+    </div>
+  </section>
+
+  <!-- 7.3 個股補漲排行 + 量能 + 均線 -->
+  <section class="section" id="sidebar-advanced">
+    <div class="section-num">07.3</div>
+    <h2>側邊欄進階分析</h2>
+    <p class="section-intro">
+      點選任一族群後，側邊欄「個股詳情」tab 除了原有的 Sparkline 走勢圖，還新增三個進場輔助工具。
+    </p>
+
+    <div class="card-grid" style="margin-bottom:20px;">
+      <div class="card">
+        <div class="card-icon">📊</div>
+        <div class="card-title">個股補漲排行</div>
+        <div class="card-desc">族群內個股今日漲幅由低到高排列。綠色數字＝落後族群平均，是補漲候選；紅色＝已領先，要小心超漲。</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">📈</div>
+        <div class="card-title">量能趨勢</div>
+        <div class="card-desc">顯示近 5 日成交量長條圖，並計算今日量 vs 5 日均量比值。🔥 爆量（≥1.5x）代表資金進場，⚠️ 萎縮（≤0.7x）要小心假突破。</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">📉</div>
+        <div class="card-title">均線方向 ＋ 抵扣值</div>
+        <div class="card-desc">顯示 MA5 方向（上彎↑/下彎↓/持平）以及明日抵扣值高低。抵扣值偏高代表明日 MA5 可能下彎，是不利進場的訊號。</div>
+      </div>
+    </div>
+
+    <p style="font-size:13px;color:var(--t3);margin-bottom:12px;font-weight:600;">什麼是抵扣值？</p>
+    <p style="font-size:13px;color:var(--t2);line-height:1.8;margin-bottom:12px;">
+      均線是「最近 N 根 K 棒的平均值」，每新增一根 K 棒，就會把最舊的那根「抵扣掉」。<br>
+      <strong>明天的 MA5</strong> = 今日以後 4 根 + 明日收盤，同時移除掉 5 天前那根。<br>
+      如果明天要抵扣掉的那根是高點，均線就會下彎；是低點，均線就會上彎。
+    </p>
+    <div class="term-wrap">
+      <table class="term-table">
+        <thead><tr><th>抵扣值狀況</th><th>對均線的影響</th><th>進場參考</th></tr></thead>
+        <tbody>
+          <tr>
+            <td class="term" style="color:#f87171;">偏高（高於現價 1% 以上）</td>
+            <td>明日 MA5 可能下彎</td>
+            <td>⚠️ 不利進場，均線壓力增加</td>
+          </tr>
+          <tr>
+            <td class="term" style="color:var(--t3);">持平（±1% 以內）</td>
+            <td>均線方向維持不變</td>
+            <td>中性，看其他指標</td>
+          </tr>
+          <tr>
+            <td class="term" style="color:#4ade80;">偏低（低於現價 1% 以上）</td>
+            <td>明日 MA5 可能上彎</td>
+            <td>✅ 有利進場，均線支撐增強</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p style="font-size:13px;color:var(--t3);margin-top:16px;margin-bottom:12px;font-weight:600;">建議的進場確認流程：</p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div>
+          <div class="step-title">看補漲排行，找落後個股</div>
+          <div class="step-desc">族群有 Gap，但找出裡面「最沒漲的那隻」，補漲彈性最大</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div>
+          <div class="step-title">確認量能方向</div>
+          <div class="step-desc">爆量才有資金支撐。萎縮量的補漲通常是假的，容易拉高後回落</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div>
+          <div class="step-title">看抵扣值 + 均線方向</div>
+          <div class="step-desc">MA5 上彎 + 抵扣值偏低 = 技術面支撐，可以考慮進場。反之則等待</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div>
+          <div class="step-title">加入模擬倉位觀察</div>
+          <div class="step-desc">條件符合後先建模擬倉位，看 1-2 根 K 棒確認方向，再決定真實下單</div>
+        </div>
+      </div>
     </div>
   </section>
 
