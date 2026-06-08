@@ -185,6 +185,65 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
 
 .rank-badge { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; background: var(--bg-2); color: var(--text-4); border: 0.5px solid var(--border); }
 .rank-badge.gold { background: #2a1f06; border-color: #a16207; color: var(--warn); }
+
+/* ── Gap 方向警示橫幅 ── */
+.gap-direction-banner { display:none; margin: 0 0 10px 0; padding: 9px 14px; border-radius: 6px; font-size: 12px; line-height: 1.6; border: 0.5px solid; animation: fadeIn 0.3s ease; }
+.gap-direction-banner.warning  { background:#2a1500; border-color:#5a3500; color:#fbbf24; }
+.gap-direction-banner.danger   { background:#2a0d0d; border-color:#5a1515; color:#f87171; }
+.gap-direction-banner.positive { background:#0d2a18; border-color:#155a30; color:#4ade80; }
+.gap-direction-banner .banner-title { font-weight:600; margin-bottom:2px; }
+.gap-direction-banner .banner-sub   { color: inherit; opacity: 0.8; font-size: 11px; }
+
+/* ── 個股補漲排行 ── */
+.catchup-section { margin-top: 14px; }
+.catchup-title { font-size: 11px; color: var(--text-4); font-weight: 500; margin-bottom: 8px; letter-spacing: 0.5px; text-transform: uppercase; }
+.catchup-row { display: flex; align-items: center; justify-content: space-between; padding: 7px 10px; border-radius: 6px; background: var(--bg-2); border: 0.5px solid var(--border); margin-bottom: 5px; transition: 0.15s; }
+.catchup-row:hover { border-color: var(--border-hover); background: var(--bg-3); }
+.catchup-row.leader { border-color: #1a3060; background: var(--accent-dim); }
+.catchup-left { display: flex; align-items: center; gap: 8px; }
+.catchup-rank { width: 16px; font-size: 11px; color: var(--text-4); font-weight: 600; }
+.catchup-rank.lag { color: var(--up); }
+.catchup-info { display: flex; flex-direction: column; gap: 1px; }
+.catchup-id   { font-size: 12px; font-weight: 600; color: var(--text-1); }
+.catchup-name { font-size: 10px; color: var(--text-4); }
+.catchup-right { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.catchup-chg  { font-size: 12px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.catchup-badge { font-size: 10px; padding: 1px 5px; border-radius: 3px; }
+.catchup-badge.lag-badge { background: rgba(34,197,94,0.15); color: var(--up); }
+.catchup-badge.lead-badge { background: rgba(239,68,68,0.1); color: var(--down); }
+
+/* ── 量能趨勢 ── */
+.vol-section { margin-top: 14px; }
+.vol-title { font-size: 11px; color: var(--text-4); font-weight: 500; margin-bottom: 8px; letter-spacing: 0.5px; }
+.vol-trend-row { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 6px; background: var(--bg-2); border: 0.5px solid var(--border); margin-bottom: 5px; }
+.vol-bars-mini { display: flex; align-items: flex-end; gap: 2px; height: 22px; }
+.vol-bar-mini  { width: 6px; border-radius: 1px; background: var(--text-4); transition: 0.15s; }
+.vol-bar-mini.high { background: var(--up); }
+.vol-bar-mini.low  { background: var(--down); opacity: 0.7; }
+.vol-info { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.vol-stock-name { font-size: 11px; color: var(--text-2); font-weight: 500; }
+.vol-ratio-text { font-size: 10px; color: var(--text-4); }
+.vol-status { font-size: 10px; padding: 1px 6px; border-radius: 3px; font-weight: 500; }
+.vol-status.explode { background: rgba(34,197,94,0.15); color: var(--up); }
+.vol-status.shrink  { background: rgba(239,68,68,0.1);  color: var(--down); }
+.vol-status.normal  { background: var(--bg-3); color: var(--text-4); }
+
+/* ── 均線方向 + 抵扣值 ── */
+.ma-section { margin-top: 14px; }
+.ma-title { font-size: 11px; color: var(--text-4); font-weight: 500; margin-bottom: 8px; letter-spacing: 0.5px; }
+.ma-row { display: flex; align-items: center; justify-content: space-between; padding: 7px 10px; border-radius: 6px; background: var(--bg-2); border: 0.5px solid var(--border); margin-bottom: 5px; }
+.ma-left  { display: flex; flex-direction: column; gap: 2px; }
+.ma-stock { font-size: 11px; color: var(--text-2); font-weight: 500; }
+.ma-detail { font-size: 10px; color: var(--text-4); }
+.ma-right { display: flex; align-items: center; gap: 6px; }
+.ma-dir { font-size: 11px; font-weight: 600; }
+.ma-dir.up   { color: var(--up); }
+.ma-dir.down { color: var(--down); }
+.ma-dir.flat { color: var(--text-4); }
+.deduct-badge { font-size: 10px; padding: 1px 6px; border-radius: 3px; }
+.deduct-badge.high { background: rgba(239,68,68,0.1); color: var(--down); }
+.deduct-badge.low  { background: rgba(34,197,94,0.15); color: var(--up); }
+.deduct-badge.mid  { background: var(--bg-3); color: var(--text-4); }
 .sector-name { font-size: 12px; color: var(--text-2); }
 .gap-bar { height: 3px; border-radius: 2px; background: var(--down); opacity: 0.7; margin-top: 3px; transition: width 0.4s ease; }
 
@@ -757,6 +816,7 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
   <div class="main-layout">
     <div>
       <div class="table-wrap">
+        <div id="gapDirectionBanner" class="gap-direction-banner"></div>
         <div class="table-header">
           <div>
             <div class="table-title">補漲機會排行</div>
@@ -3179,7 +3239,108 @@ const Renderer = {
         </div>`;
     });
 
+    // ── 補漲排行 ──
+    const sortedByChg = [...r.stocks].filter(s => s.chg !== null).sort((a, b) => a.chg - b.chg);
+    const avgChg = r.stocks.filter(s => s.chg !== null).reduce((s, x) => s + x.chg, 0) / (r.stocks.filter(s => s.chg !== null).length || 1);
+    if (sortedByChg.length > 1) {
+      html += `<div class="catchup-section">
+        <div class="catchup-title">📊 個股補漲排行（今日漲幅由低到高）</div>`;
+      sortedByChg.forEach((s, i) => {
+        const diff = s.chg - avgChg;
+        const isLag = diff < -0.3;
+        const isLead = diff > 0.3;
+        html += `<div class="catchup-row ${isLead ? 'leader' : ''}">
+          <div class="catchup-left">
+            <div class="catchup-rank ${isLag ? 'lag' : ''}">${i + 1}</div>
+            <div class="catchup-info">
+              <div class="catchup-id">${s.id} <span style="font-size:10px;color:var(--text-4);font-weight:400;">${s.name}</span></div>
+              <div class="catchup-name">${s.role}</div>
+            </div>
+          </div>
+          <div class="catchup-right">
+            <div class="catchup-chg ${(s.chg??0)>=0?'pct-up':'pct-down'}">${s.chg >= 0 ? '+' : ''}${s.chg.toFixed(2)}%</div>
+            ${isLag  ? `<span class="catchup-badge lag-badge">落後 ${Math.abs(diff).toFixed(1)}%</span>` : ''}
+            ${isLead ? `<span class="catchup-badge lead-badge">領先 ${diff.toFixed(1)}%</span>` : ''}
+          </div>
+        </div>`;
+      });
+      html += `<div style="font-size:10px;color:var(--text-5);margin-top:4px;padding:0 2px;">族群平均：${avgChg >= 0 ? '+' : ''}${avgChg.toFixed(2)}%・落後股（綠色數字）為補漲候選</div></div>`;
+    }
+
     document.getElementById('sidebarBody').innerHTML = html;
+
+    // ── 非同步抓歷史資料，更新量能 + 均線 ──
+    (async () => {
+      const maResults = [];
+      for (const s of r.stocks) {
+        const hist = await DataLayer.fetchStockHistory(s.id);
+        if (!hist || hist.prices.length < 10) { maResults.push({ s, hist: null }); continue; }
+        maResults.push({ s, hist });
+      }
+
+      // 量能趨勢區塊
+      let volHtml = `<div class="vol-section"><div class="vol-title">📈 量能趨勢（近 5 日）</div>`;
+      maResults.forEach(({ s, hist }) => {
+        if (!hist) return;
+        const vols = hist.volumes.slice(-6);
+        const avg5 = vols.slice(0, 5).reduce((a, b) => a + b, 0) / 5;
+        const today = vols[vols.length - 1] ?? avg5;
+        const ratio = avg5 > 0 ? today / avg5 : 1;
+        const maxV = Math.max(...vols, 1);
+        const status = ratio >= 1.5 ? 'explode' : ratio <= 0.7 ? 'shrink' : 'normal';
+        const statusTxt = ratio >= 1.5 ? `🔥 爆量 ${ratio.toFixed(1)}x` : ratio <= 0.7 ? `⚠️ 萎縮 ${ratio.toFixed(1)}x` : `正常 ${ratio.toFixed(1)}x`;
+        const barsHtml = vols.map((v, i) => {
+          const h = Math.max(3, Math.round((v / maxV) * 22));
+          const cls = i === vols.length - 1 ? (ratio >= 1.5 ? 'high' : ratio <= 0.7 ? 'low' : '') : '';
+          return `<div class="vol-bar-mini ${cls}" style="height:${h}px"></div>`;
+        }).join('');
+        volHtml += `<div class="vol-trend-row">
+          <div class="vol-bars-mini">${barsHtml}</div>
+          <div class="vol-info">
+            <div class="vol-stock-name">${s.id} ${s.name}</div>
+            <div class="vol-ratio-text">今日量 vs 5日均量</div>
+          </div>
+          <span class="vol-status ${status}">${statusTxt}</span>
+        </div>`;
+      });
+      volHtml += `</div>`;
+
+      // 均線方向 + 抵扣值區塊
+      let maHtml = `<div class="ma-section"><div class="ma-title">📉 均線方向 ＋ 明日抵扣值</div>`;
+      maResults.forEach(({ s, hist }) => {
+        if (!hist || hist.prices.length < 6) return;
+        const prices = hist.prices;
+        const n = prices.length;
+        // MA5 方向
+        const ma5now  = prices.slice(-5).reduce((a,b)=>a+b,0) / 5;
+        const ma5prev = prices.slice(-6,-1).reduce((a,b)=>a+b,0) / 5;
+        const ma5dir  = ma5now > ma5prev * 1.001 ? 'up' : ma5now < ma5prev * 0.999 ? 'down' : 'flat';
+        const ma5txt  = ma5dir === 'up' ? '↑ 上彎' : ma5dir === 'down' ? '↓ 下彎' : '→ 平';
+        // 明日抵扣值（MA5 要抵扣掉 5天前那根）
+        const deductPrice = prices[n - 5];
+        const currentPrice = prices[n - 1];
+        const deductDiff = currentPrice > 0 ? ((currentPrice - deductPrice) / currentPrice * 100) : 0;
+        const deductLevel = deductPrice > currentPrice * 1.01 ? 'high' : deductPrice < currentPrice * 0.99 ? 'low' : 'mid';
+        const deductTxt = deductLevel === 'high' ? `⚠️ 明日抵扣值偏高 (${deductPrice.toFixed(0)})` :
+                          deductLevel === 'low'  ? `✅ 明日抵扣值偏低 (${deductPrice.toFixed(0)})` :
+                                                   `持平 (${deductPrice.toFixed(0)})`;
+        maHtml += `<div class="ma-row">
+          <div class="ma-left">
+            <div class="ma-stock">${s.id} ${s.name}</div>
+            <div class="ma-detail">現價 ${currentPrice.toFixed(1)}・MA5 ${ma5now.toFixed(1)}</div>
+          </div>
+          <div class="ma-right">
+            <span class="ma-dir ${ma5dir}">${ma5txt}</span>
+            <span class="deduct-badge ${deductLevel}">${deductTxt}</span>
+          </div>
+        </div>`;
+      });
+      maHtml += `<div style="font-size:10px;color:var(--text-5);margin-top:4px;padding:0 2px;">抵扣值偏高 = 明日 MA5 可能下彎，不利進場</div></div>`;
+
+      // 把量能 + 均線區塊追加到 sidebarBody
+      const body = document.getElementById('sidebarBody');
+      if (body) body.insertAdjacentHTML('beforeend', volHtml + maHtml);
+    })();
 
     // 畫 sparkline + volume（優先用真實 history，fallback mock）
     r.stocks.forEach((s, i) => {
@@ -3260,6 +3421,49 @@ const Renderer = {
     }
   },
 
+  gapDirectionBanner(computed) {
+    const el = document.getElementById('gapDirectionBanner');
+    if (!el || !computed || !computed.length) return;
+
+    // 取有 gap 資料的族群
+    const withGap = computed.filter(r => r.gap !== null);
+    if (!withGap.length) { el.style.display = 'none'; return; }
+
+    const avgGap = withGap.reduce((s, r) => s + r.gap, 0) / withGap.length;
+    const posCount = withGap.filter(r => r.gap > 0).length;
+    const posPct = Math.round(posCount / withGap.length * 100);
+
+    // 取海外驅動最大跌幅
+    const driveChgs = computed.map(r => r.driveChg).filter(v => v !== null);
+    const worstDrive = driveChgs.length ? Math.min(...driveChgs) : 0;
+
+    let type = '', title = '', sub = '';
+
+    if (worstDrive <= -5) {
+      // 海外暴跌（SOX -5% 以上）
+      type  = 'danger';
+      title = `⚠️ 海外驅動今日暴跌 ${worstDrive.toFixed(1)}%，Gap 為補跌方向`;
+      sub   = `${posPct}% 族群出現正 Gap，代表台股尚未充分反映跌幅，明日開盤留意補跌風險。不建議在確認止跌前進場。`;
+    } else if (worstDrive <= -2) {
+      // 海外明顯下跌
+      type  = 'warning';
+      title = `⚡ 海外驅動今日下跌 ${worstDrive.toFixed(1)}%，正 Gap 需確認方向`;
+      sub   = `正 Gap 可能是補漲空間，也可能是補跌壓力。建議搭配成交量與均線方向確認後再進場。`;
+    } else if (avgGap >= 1.5 && posPct >= 60) {
+      // 普遍補漲機會
+      type  = 'positive';
+      title = `✅ 今日 ${posPct}% 族群有正 Gap，海外表現穩定`;
+      sub   = `平均落差 +${avgGap.toFixed(2)}pp，補漲訊號明確。優先關注 Beta > 0.8 且 R² > 0.5 的族群。`;
+    } else {
+      el.style.display = 'none';
+      return;
+    }
+
+    el.className = `gap-direction-banner ${type}`;
+    el.style.display = 'block';
+    el.innerHTML = `<div class="banner-title">${title}</div><div class="banner-sub">${sub}</div>`;
+  },
+
   toast(msg, type = 'info', duration = 2500) {
     const container = document.getElementById('toastContainer');
     const el = document.createElement('div');
@@ -3282,6 +3486,7 @@ const UI = {
     const activeCount = FilterEngine.countActive(STATE.filters);
     Renderer.table(filtered, allData, STATE.filters.search);
     Renderer.sortButtons(STATE.sort, STATE.sortDir);
+    Renderer.gapDirectionBanner(allData);
     // 顯示：顯示X / 熱門20（或搜尋結果X / 全部52）
     const hotCount = DataLayer.getHot().length;
     const isSearching = STATE.filters.search && STATE.filters.search.trim();
