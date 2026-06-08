@@ -2259,10 +2259,11 @@ const AutoRefresh = {
       this._remaining = Math.max(0, this._remaining - 1);
       this._updateRing();
       if (this._remaining === 0) {
-        // 時間到：靜默更新，然後重設倒數
-        UI.refresh(true).then(() => {
-          this._remaining = this._total;
-        });
+        // 時間到：靜默更新，然後重設倒數（防止重疊執行）
+        if (!UI._refreshing) {
+          this._remaining = this._total; // 先重設，避免連續觸發
+          UI.refresh(true);
+        }
       }
     }, 1000);
   },
@@ -3370,9 +3371,10 @@ const UI = {
   },
 
   async refresh(silent = false) {
+    if (this._refreshing) return;
+    this._refreshing = true;
     const btn = document.getElementById('refreshBtn');
-    btn.textContent = '⟳ 更新中…';
-    btn.disabled = true;
+    if (btn) { btn.textContent = '⟳ 更新中…'; btn.disabled = true; }
 
     if (!silent) Renderer.macroGrid(null, true);
 
@@ -3422,8 +3424,8 @@ const UI = {
       Renderer.macroGrid(CONFIG.macroFallback);
       if (!silent) Renderer.toast('無法連線，顯示快取資料', 'error');
     } finally {
-      btn.textContent = '↻ 更新行情';
-      btn.disabled = false;
+      this._refreshing = false;
+      if (btn) { btn.textContent = '↻ 更新行情'; btn.disabled = false; }
     }
   },
 
