@@ -256,6 +256,7 @@ body {
     <a href="#features"        class="toc-link">進階功能</a>
     <a href="#gap-banner"      class="toc-link">Gap 方向警示</a>
     <a href="#sidebar-advanced" class="toc-link">補漲排行 / 量能 / 均線</a>
+    <a href="#ai-summary"      class="toc-link">AI 盤前摘要</a>
     <a href="#strategy"        class="toc-link">策略推薦</a>
     <a href="#limits"   class="toc-link">注意事項</a>
   </div>
@@ -940,6 +941,56 @@ body {
           <div class="step-desc">條件符合後先建模擬倉位，看 1-2 根 K 棒確認方向，再決定真實下單</div>
         </div>
       </div>
+    </div>
+  </section>
+
+  <!-- 7.4 AI 盤前摘要 -->
+  <section class="section" id="ai-summary">
+    <div class="section-num">07.4</div>
+    <h2>AI 盤前摘要</h2>
+    <p class="section-intro">
+      Macro 指數區塊下方有一個「✦ AI 盤前摘要」區塊，由 Claude AI 根據當日海外指數表現與 Gap 前五名族群，自動產生 2-3 句的盤前重點分析。
+    </p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div>
+          <div class="step-title">先按「↻ 更新行情」</div>
+          <div class="step-desc">確保行情資料已載入，AI 才能根據當日數據產生有意義的摘要，不要在資料載入前點摘要</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div>
+          <div class="step-title">點「✦ 點我產生今日盤前摘要」按鈕</div>
+          <div class="step-desc">不會自動觸發，需要手動點擊。這樣可以避免開網頁時自動消耗每日額度</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div>
+          <div class="step-title">查看摘要，右上角顯示使用次數</div>
+          <div class="step-desc">格式為「今日 X/5 次」，當天重新整理頁面不會重複呼叫，快取到午夜自動清除</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="term-wrap" style="margin-top:16px;">
+      <table class="term-table">
+        <thead><tr><th>項目</th><th>說明</th></tr></thead>
+        <tbody>
+          <tr><td class="term">每日上限</td><td>每人每天最多 5 次，達到上限後顯示最後一次的摘要，隔天自動重置</td></tr>
+          <tr><td class="term">快取機制</td><td>同一天產生過的摘要會存在瀏覽器，重新整理頁面直接顯示，不重複呼叫</td></tr>
+          <tr><td class="term">重新產生</td><td">右上角「重新產生」按鈕可強制刷新，會消耗一次每日額度</td></tr>
+          <tr><td class="term">建議使用時機</td><td>開盤前 30 分鐘，先更新行情後再產生摘要，一天看一次就夠</td></tr>
+          <tr><td class="term">資料來源</td><td>Macro 指數（SPX/SOX/VIX 等）+ Gap 排行前五名族群</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="info-box" style="margin-top:12px;">
+      💡 建議的使用節奏：開盤前更新行情 → 產生 AI 摘要 → 看補漲排行 → 決定今日觀察名單。一天用一次就足夠，不需要反覆重新產生。
     </div>
   </section>
 
