@@ -273,6 +273,8 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
 .gap-alert-row td { background:#150e00 !important; }
 .gap-alert-row td:nth-child(5) { background:#2a1500 !important; }
 .gap-alert-dot { display:inline-block; width:5px; height:5px; border-radius:50%; background:var(--warn); margin-left:3px; vertical-align:middle; animation:livePulse 1.5s ease-in-out infinite; }
+.portfolio-add-btn { display:inline-block; font-size:10px; padding:1px 6px; border-radius:3px; background:var(--accent-dim); color:var(--accent-text); border:0.5px solid #1a3060; text-decoration:none; cursor:pointer; transition:0.15s; white-space:nowrap; }
+.portfolio-add-btn:hover { background:#1a3a70; color:#90c0ff; }
 .r2-wrap { margin-top:2px; }
 .r2-bar-bg { height:2px; border-radius:1px; background:var(--border); }
 .r2-bar-fill { height:2px; border-radius:1px; background:var(--accent); transition:width 0.4s ease; }
@@ -3086,6 +3088,7 @@ const Renderer = {
         <td>
           <span class="pct ${(gap??0)>=0?'pct-down':'pct-up'}" style="font-weight:600;">${this.fmtOrDash(gap,'pp')}${alertDot}</span>
           ${gap !== null ? `<div class="gap-bar" style="width:${gapBarW}%;background:${gapBarColor};"></div>` : ''}
+          ${isAlert ? `<div style="margin-top:3px;"><a class="portfolio-add-btn" href="/portfolio.html?add=${encodeURIComponent(r.stocks[0]?.symbol||'')}&sector=${encodeURIComponent(r.sector)}&price=${r.stocks[0]?.price||''}" onclick="event.stopPropagation()" title="加入模擬倉位">＋ 模擬倉位</a></div>` : ''}
         </td>
         <td>${betaCell}</td>
         <td>
