@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>模擬倉位 — 給獺金幣</title>
+<style>
+:root {
+  --accent:       #1a6ef5;
+  --accent-dim:   #0e2040;
+  --accent-text:  #60a5fa;
+  --bg-0:   #0e1117;
+  --bg-1:   #0a0e14;
+  --bg-2:   #141922;
+  --bg-3:   #121820;
+  --border:       #1e2533;
+  --border-hover: #2a3344;
+  --text-1: #e2e8f0;
+  --text-2: #c8d8e8;
+  --text-3: #9aacbe;
+  --text-4: #6b7a8e;
+  --up:      #22c55e;
+  --up-bg:   #0d2a18;
+  --down:    #ef4444;
+  --down-bg: #2a0d0d;
+  --warn:    #f59e0b;
+  --warn-bg: #2a1e00;
+  --radius-sm: 4px;
+  --radius:    6px;
+  --radius-lg: 8px;
+  --transition: 0.15s ease;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 13px; }
+body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Neue', 'PingFang TC', 'Microsoft JhengHei', sans-serif; min-height: 100vh; }
+
+/* ── TOPBAR ── */
+.topbar {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(10,14,20,0.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 0.5px solid var(--border);
+  padding: 10px 16px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.topbar-left { display: flex; align-items: center; gap: 12px; }
+.logo { display: flex; align-items: center; gap: 7px; font-size: 14px; font-weight: 600; color: var(--text-1); text-decoration: none; }
+.logo-icon { width: 26px; height: 26px; background: var(--accent); border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+.page-title { font-size: 12px; color: var(--text-3); padding-left: 12px; border-left: 1px solid var(--border); }
+.topbar-right { display: flex; align-items: center; gap: 8px; }
+.btn { padding: 5px 12px; border-radius: var(--radius); border: 0.5px solid var(--border); background: var(--bg-2); color: var(--text-2); font-size: 12px; cursor: pointer; transition: var(--transition); text-decoration: none; display: inline-flex; align-items: center; gap: 4px; }
+.btn:hover { border-color: var(--border-hover); color: var(--text-1); background: var(--bg-3); }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn-primary:hover { background: #1560d0; }
+.btn-danger { background: var(--down-bg); border-color: #3a1515; color: var(--down); }
+.btn-danger:hover { background: #3a1515; }
+
+/* ── LAYOUT ── */
+.page { padding: 16px; max-width: 1200px; margin: 0 auto; }
+
+/* ── SUMMARY CARDS ── */
+.summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+.summary-card { background: var(--bg-1); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 12px 14px; }
+.summary-label { font-size: 11px; color: var(--text-4); margin-bottom: 5px; }
+.summary-value { font-size: 18px; font-weight: 600; color: var(--text-1); font-variant-numeric: tabular-nums; }
+.summary-value.up { color: var(--up); }
+.summary-value.down { color: var(--down); }
+.summary-sub { font-size: 11px; color: var(--text-4); margin-top: 3px; }
+
+/* ── SECTION HEADER ── */
+.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.section-title { font-size: 13px; font-weight: 600; color: var(--text-1); }
+.section-meta { font-size: 11px; color: var(--text-4); }
+
+/* ── TABLE ── */
+.table-wrap { background: var(--bg-1); border: 0.5px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: 16px; }
+.table-header-row { display: grid; padding: 8px 14px; border-bottom: 0.5px solid var(--border); background: var(--bg-0); }
+.table-header-row span { font-size: 11px; color: var(--text-4); font-weight: 500; }
+.position-row { display: grid; padding: 10px 14px; border-bottom: 0.5px solid var(--border); align-items: center; transition: background var(--transition); cursor: default; animation: rowIn 0.2s ease both; }
+.position-row:last-child { border-bottom: none; }
+.position-row:hover { background: var(--bg-3); }
+.position-row.exited { opacity: 0.5; }
+.position-row.hit-tp { background: rgba(34,197,94,0.06); border-left: 2px solid var(--up); }
+.position-row.hit-sl { background: rgba(239,68,68,0.06); border-left: 2px solid var(--down); }
+
+/* active positions: 代號 | 族群 | 買入價 | 現價 | 張數 | 成本 | 市值 | 損益% | 停利 | 停損 | 操作 */
+.active-grid { grid-template-columns: 64px 80px 68px 68px 44px 80px 80px 72px 64px 64px 80px; gap: 6px; }
+/* history: 代號 | 族群 | 進場價 | 出場價 | 張數 | 損益% | 損益額 | 進場日 | 出場日 | 出場原因 */
+.history-grid { grid-template-columns: 64px 80px 68px 68px 44px 72px 80px 90px 90px 80px; gap: 6px; }
+
+.cell { font-size: 12px; color: var(--text-2); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cell.sym { font-weight: 600; color: var(--text-1); }
+.cell.up { color: var(--up); }
+.cell.down { color: var(--down); }
+.cell.muted { color: var(--text-4); font-size: 11px; }
+.cell.tag { font-size: 10px; background: var(--bg-2); border: 0.5px solid var(--border); border-radius: 3px; padding: 1px 5px; color: var(--text-3); }
+.badge { display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 3px; font-weight: 500; }
+.badge.tp { background: var(--up-bg); color: var(--up); }
+.badge.sl { background: var(--down-bg); color: var(--down); }
+.badge.manual { background: var(--bg-2); color: var(--text-4); }
+.badge.gap { background: var(--accent-dim); color: var(--accent-text); }
+
+.row-actions { display: flex; gap: 4px; }
+.act-btn { padding: 3px 8px; border-radius: var(--radius-sm); border: 0.5px solid var(--border); background: var(--bg-2); color: var(--text-3); font-size: 11px; cursor: pointer; transition: var(--transition); }
+.act-btn:hover { color: var(--text-1); border-color: var(--border-hover); }
+.act-btn.exit { color: var(--warn); border-color: #3a2a00; background: var(--warn-bg); }
+.act-btn.exit:hover { color: #fbbf24; }
+.act-btn.del { color: var(--down); border-color: #3a1515; }
+
+/* ── EMPTY STATE ── */
+.empty { padding: 40px; text-align: center; color: var(--text-4); font-size: 12px; }
+.empty-icon { font-size: 28px; margin-bottom: 8px; }
+
+/* ── MODAL ── */
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.15s; }
+.overlay.open { opacity: 1; pointer-events: all; }
+.modal { background: var(--bg-1); border: 0.5px solid var(--border); border-radius: 10px; width: 400px; max-width: 95vw; overflow: hidden; transform: translateY(8px); transition: transform 0.15s; }
+.overlay.open .modal { transform: translateY(0); }
+.modal-header { padding: 14px 16px; border-bottom: 0.5px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+.modal-title { font-size: 13px; font-weight: 600; }
+.modal-close { background: none; border: none; color: var(--text-4); cursor: pointer; font-size: 16px; line-height: 1; padding: 2px; }
+.modal-close:hover { color: var(--text-1); }
+.modal-body { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.modal-footer { padding: 12px 16px; border-top: 0.5px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.form-group { display: flex; flex-direction: column; gap: 5px; }
+.form-group label { font-size: 11px; color: var(--text-3); }
+.form-group input, .form-group select { background: var(--bg-2); border: 0.5px solid var(--border); border-radius: var(--radius); color: var(--text-1); font-size: 12px; padding: 7px 10px; outline: none; transition: var(--transition); width: 100%; }
+.form-group input:focus, .form-group select:focus { border-color: var(--accent); }
+.form-group input::placeholder { color: var(--text-5); }
+.form-hint { font-size: 11px; color: var(--text-4); margin-top: -4px; }
+.source-tag { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; padding: 4px 8px; border-radius: var(--radius); }
+.source-tag.gap-source { background: var(--accent-dim); color: var(--accent-text); border: 0.5px solid #1a3060; }
+
+/* ── TABS ── */
+.tabs { display: flex; gap: 0; border-bottom: 0.5px solid var(--border); margin-bottom: 14px; }
+.tab { padding: 8px 14px; font-size: 12px; color: var(--text-4); cursor: pointer; border-bottom: 2px solid transparent; transition: var(--transition); }
+.tab:hover { color: var(--text-2); }
+.tab.active { color: var(--text-1); border-bottom-color: var(--accent); }
+
+/* ── REFRESH BAR ── */
+.refresh-bar { display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; background: var(--bg-1); border: 0.5px solid var(--border); border-radius: var(--radius-lg); margin-bottom: 14px; }
+.refresh-info { font-size: 11px; color: var(--text-4); }
+.refresh-info span { color: var(--text-2); }
+.auto-exit-notice { font-size: 11px; color: var(--text-3); }
+.dot-live { width: 6px; height: 6px; border-radius: 50%; background: var(--up); display: inline-block; margin-right: 4px; animation: pulse 2s infinite; }
+
+/* ── ANIMATIONS ── */
+@keyframes rowIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+@keyframes flash-up { 0% { background: rgba(34,197,94,0.2); } 100% { background: transparent; } }
+@keyframes flash-down { 0% { background: rgba(239,68,68,0.2); } 100% { background: transparent; } }
+.flash-up { animation: flash-up 0.8s ease; }
+.flash-down { animation: flash-down 0.8s ease; }
+
+/* ── TOAST ── */
+.toast { position: fixed; bottom: 24px; right: 24px; background: var(--bg-2); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 10px 16px; font-size: 12px; color: var(--text-1); z-index: 999; box-shadow: 0 4px 20px rgba(0,0,0,0.4); transform: translateY(8px); opacity: 0; transition: all 0.2s; pointer-events: none; }
+.toast.show { transform: translateY(0); opacity: 1; }
+.toast.tp { border-color: var(--up); color: var(--up); }
+.toast.sl { border-color: var(--down); color: var(--down); }
+
+/* ── MOBILE ── */
+@media (max-width: 900px) {
+  .summary-grid { grid-template-columns: repeat(2, 1fr); }
+  .active-grid, .history-grid { grid-template-columns: 56px 70px 60px 60px 40px 68px 68px 60px; }
+  /* hide last few columns on mobile */
+  .active-grid .col-tp, .active-grid .col-sl, .history-grid .col-reason { display: none; }
+  .table-wrap { overflow-x: auto; }
+  .active-grid, .history-grid { min-width: 620px; }
+}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-left">
+    <a class="logo" href="/">
+      <div class="logo-icon">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <circle cx="8" cy="8" r="6" stroke="#fff" stroke-width="1.5"/>
+          <line x1="8" y1="2" x2="8" y2="14" stroke="#fff" stroke-width="1"/>
+          <line x1="2" y1="8" x2="14" y2="8" stroke="#fff" stroke-width="1"/>
+          <circle cx="8" cy="5" r="1.5" fill="#fff"/>
+        </svg>
+      </div>
+      給獺金幣
+    </a>
+    <span class="page-title">📋 模擬倉位</span>
+  </div>
+  <div class="topbar-right">
+    <button class="btn btn-primary" onclick="openAddModal()">＋ 新增倉位</button>
+    <button class="btn" onclick="refreshPrices()">↻ 更新現價</button>
+  </div>
+</div>
+
+<!-- PAGE -->
+<div class="page">
+
+  <!-- SUMMARY -->
+  <div class="summary-grid" id="summaryGrid">
+    <div class="summary-card">
+      <div class="summary-label">總投入成本</div>
+      <div class="summary-value" id="sumCost">—</div>
+      <div class="summary-sub" id="sumPositions">0 筆持倉</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">目前市值</div>
+      <div class="summary-value" id="sumValue">—</div>
+      <div class="summary-sub" id="sumValueSub">即時估算</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">未實現損益</div>
+      <div class="summary-value" id="sumPnl">—</div>
+      <div class="summary-sub" id="sumPnlPct">—</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">已實現損益（本月）</div>
+      <div class="summary-value" id="sumRealized">—</div>
+      <div class="summary-sub" id="sumRealizedCount">0 筆已出場</div>
+    </div>
+  </div>
+
+  <!-- REFRESH STATUS -->
+  <div class="refresh-bar">
+    <div class="refresh-info">
+      <span class="dot-live" id="liveDot"></span>
+      現價更新：<span id="lastRefresh">尚未更新</span>
+    </div>
+    <div class="auto-exit-notice">⚡ 達到停利／停損價時自動出場</div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <div class="tab active" id="tabActive" onclick="switchTab('active')">持倉中 <span id="activeCount" style="color:var(--text-4)"></span></div>
+    <div class="tab" id="tabHistory" onclick="switchTab('history')">歷史出場 <span id="historyCount" style="color:var(--text-4)"></span></div>
+  </div>
+
+  <!-- ACTIVE POSITIONS -->
+  <div id="panelActive">
+    <div class="table-wrap">
+      <div class="table-header-row active-grid">
+        <span>代號</span><span>族群</span><span>買入價</span><span>現價</span>
+        <span>張數</span><span>成本</span><span>市值</span><span>損益%</span>
+        <span class="col-tp">停利</span><span class="col-sl">停損</span><span>操作</span>
+      </div>
+      <div id="activeList"></div>
+    </div>
+  </div>
+
+  <!-- HISTORY -->
+  <div id="panelHistory" style="display:none;">
+    <div class="table-wrap">
+      <div class="table-header-row history-grid">
+        <span>代號</span><span>族群</span><span>進場價</span><span>出場價</span>
+        <span>張數</span><span>損益%</span><span>損益額</span>
+        <span>進場日</span><span>出場日</span><span class="col-reason">出場原因</span>
+      </div>
+      <div id="historyList"></div>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<!-- ADD MODAL -->
+<div class="overlay" id="addOverlay" onclick="closeModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <span class="modal-title" id="modalTitle">新增模擬倉位</span>
+      <button class="modal-close" onclick="closeAddModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="gapSourceTag" style="display:none;">
+        <div class="source-tag gap-source">⚡ 由 Gap 警示自動帶入</div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>股票代號 *</label>
+          <input type="text" id="fSymbol" placeholder="例：2330" maxlength="10"/>
+        </div>
+        <div class="form-group">
+          <label>族群 / 備註</label>
+          <input type="text" id="fSector" placeholder="例：AI 伺服器"/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>買入價（元）*</label>
+          <input type="number" id="fEntryPrice" placeholder="0.00" step="0.01" min="0"/>
+        </div>
+        <div class="form-group">
+          <label>張數 *</label>
+          <input type="number" id="fLots" placeholder="1" min="1" step="1" value="1"/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>停利價（元）</label>
+          <input type="number" id="fTakeProfit" placeholder="留空=不設定" step="0.01" min="0"/>
+        </div>
+        <div class="form-group">
+          <label>停損價（元）</label>
+          <input type="number" id="fStopLoss" placeholder="留空=不設定" step="0.01" min="0"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>進場日期</label>
+        <input type="date" id="fDate"/>
+      </div>
+      <div class="form-hint">一張台股 = 1000 股。成本 = 買入價 × 張數 × 1000（未含手續費）</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeAddModal()">取消</button>
+      <button class="btn btn-primary" onclick="savePosition()">確認新增</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════
+// STORAGE
+// ═══════════════════════════════════════════
+const KEYS = {
+  active:  'stockRadar_portfolio_active',
+  history: 'stockRadar_portfolio_history',
+};
+
+const Storage = {
+  getActive()  { try { return JSON.parse(localStorage.getItem(KEYS.active)  || '[]'); } catch { return []; } },
+  getHistory() { try { return JSON.parse(localStorage.getItem(KEYS.history) || '[]'); } catch { return []; } },
+  saveActive(d)  { localStorage.setItem(KEYS.active,  JSON.stringify(d)); },
+  saveHistory(d) { localStorage.setItem(KEYS.history, JSON.stringify(d)); },
+};
+
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+let STATE = {
+  active:   Storage.getActive(),
+  history:  Storage.getHistory(),
+  prices:   {},   // symbol → current price
+  tab:      'active',
+  editId:   null,
+  prefill:  null, // for gap-trigger add
+};
+
+// ═══════════════════════════════════════════
+// PRICE FETCH (Yahoo Finance via proxy)
+// ═══════════════════════════════════════════
+function _isVercel() {
+  return location.hostname !== 'localhost' && !location.protocol.startsWith('file');
+}
+function proxyUrl(url) {
+  if (_isVercel()) return `/api/proxy?url=${encodeURIComponent(url)}`;
+  return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+}
+
+async function fetchPrice(symbol) {
+  // Add .TW suffix if pure digits
+  const sym = /^\d+$/.test(symbol) ? symbol + '.TW' : symbol;
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${sym}?interval=1d&range=1d`;
+  try {
+    const res = await fetch(proxyUrl(url));
+    const data = await res.json();
+    const q = data?.chart?.result?.[0]?.meta;
+    return q?.regularMarketPrice ?? null;
+  } catch { return null; }
+}
+
+async function refreshPrices() {
+  const positions = STATE.active;
+  if (!positions.length) { showToast('目前沒有持倉', ''); return; }
+  document.getElementById('liveDot').style.background = 'var(--warn)';
+  const symbols = [...new Set(positions.map(p => p.symbol))];
+  await Promise.all(symbols.map(async sym => {
+    const price = await fetchPrice(sym);
+    if (price !== null) STATE.prices[sym] = price;
+  }));
+  const now = new Date();
+  document.getElementById('lastRefresh').textContent =
+    `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
+  document.getElementById('liveDot').style.background = 'var(--up)';
+  checkAutoExit();
+  render();
+}
+
+// ═══════════════════════════════════════════
+// AUTO EXIT
+// ═══════════════════════════════════════════
+function checkAutoExit() {
+  let changed = false;
+  STATE.active = STATE.active.filter(pos => {
+    const price = STATE.prices[pos.symbol];
+    if (price == null) return true;
+    let reason = null;
+    if (pos.takeProfit && price >= pos.takeProfit) reason = 'tp';
+    else if (pos.stopLoss && price <= pos.stopLoss) reason = 'sl';
+    if (reason) {
+      exitPosition(pos, price, reason, false);
+      changed = true;
+      return false;
+    }
+    return true;
+  });
+  if (changed) Storage.saveActive(STATE.active);
+}
+
+function exitPosition(pos, exitPrice, reason, rerender = true) {
+  const pnlPct = ((exitPrice - pos.entryPrice) / pos.entryPrice * 100).toFixed(2);
+  const pnlAmt = ((exitPrice - pos.entryPrice) * pos.lots * 1000).toFixed(0);
+  const record = {
+    ...pos,
+    exitPrice,
+    exitReason: reason,
+    exitDate: new Date().toISOString().slice(0, 10),
+    pnlPct: parseFloat(pnlPct),
+    pnlAmt: parseInt(pnlAmt),
+  };
+  STATE.history.unshift(record);
+  Storage.saveHistory(STATE.history);
+  if (reason === 'tp') showToast(`🟢 ${pos.symbol} 停利出場 +${pnlPct}%`, 'tp');
+  else if (reason === 'sl') showToast(`🔴 ${pos.symbol} 停損出場 ${pnlPct}%`, 'sl');
+  else showToast(`${pos.symbol} 手動出場 ${pnlPct >= 0 ? '+' : ''}${pnlPct}%`, '');
+  if (rerender) {
+    STATE.active = STATE.active.filter(p => p.id !== pos.id);
+    Storage.saveActive(STATE.active);
+    render();
+  }
+}
+
+// ═══════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════
+function fmt(n, decimals = 0) {
+  if (n == null || isNaN(n)) return '—';
+  return n.toLocaleString('zh-TW', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+}
+function fmtPrice(n) { return n == null ? '—' : fmt(n, 2); }
+
+function renderSummary() {
+  const positions = STATE.active;
+  const history   = STATE.history;
+  let totalCost = 0, totalValue = 0, hasPrice = false;
+  positions.forEach(pos => {
+    const cost = pos.entryPrice * pos.lots * 1000;
+    totalCost += cost;
+    const price = STATE.prices[pos.symbol];
+    if (price != null) { totalValue += price * pos.lots * 1000; hasPrice = true; }
+    else totalValue += cost;
+  });
+  const pnl = totalValue - totalCost;
+  const pnlPct = totalCost > 0 ? (pnl / totalCost * 100) : 0;
+
+  // realized this month
+  const thisMonth = new Date().toISOString().slice(0,7);
+  const realized = history.filter(h => h.exitDate?.startsWith(thisMonth)).reduce((s,h) => s + (h.pnlAmt||0), 0);
+  const realizedCount = history.filter(h => h.exitDate?.startsWith(thisMonth)).length;
+
+  document.getElementById('sumCost').textContent = totalCost > 0 ? `$${fmt(totalCost)}` : '—';
+  document.getElementById('sumPositions').textContent = `${positions.length} 筆持倉`;
+  document.getElementById('sumValue').textContent = hasPrice ? `$${fmt(totalValue)}` : '—';
+  document.getElementById('sumValueSub').textContent = hasPrice ? '即時估算' : '尚未抓取現價';
+
+  const pnlEl = document.getElementById('sumPnl');
+  pnlEl.textContent = hasPrice ? `${pnl >= 0 ? '+' : ''}$${fmt(Math.abs(pnl))}` : '—';
+  pnlEl.className = 'summary-value' + (hasPrice ? (pnl >= 0 ? ' up' : ' down') : '');
+  document.getElementById('sumPnlPct').textContent = hasPrice ? `${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(2)}%` : '—';
+
+  const rEl = document.getElementById('sumRealized');
+  rEl.textContent = realizedCount > 0 ? `${realized >= 0 ? '+' : ''}$${fmt(Math.abs(realized))}` : '—';
+  rEl.className = 'summary-value' + (realized >= 0 ? ' up' : ' down');
+  document.getElementById('sumRealizedCount').textContent = `${realizedCount} 筆已出場（本月）`;
+
+  document.getElementById('activeCount').textContent = `(${positions.length})`;
+  document.getElementById('historyCount').textContent = `(${history.length})`;
+}
+
+function renderActive() {
+  const el = document.getElementById('activeList');
+  const positions = STATE.active;
+  if (!positions.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">📭</div>目前沒有持倉<br><span style="color:var(--text-5)">點右上角「新增倉位」開始追蹤</span></div>`;
+    return;
+  }
+  el.innerHTML = positions.map(pos => {
+    const price = STATE.prices[pos.symbol];
+    const cost  = pos.entryPrice * pos.lots * 1000;
+    const value = price != null ? price * pos.lots * 1000 : null;
+    const pnl   = value != null ? value - cost : null;
+    const pnlPct = pnl != null ? (pnl / cost * 100) : null;
+    const hitTP = price != null && pos.takeProfit && price >= pos.takeProfit;
+    const hitSL = price != null && pos.stopLoss  && price <= pos.stopLoss;
+    const rowClass = hitTP ? 'hit-tp' : hitSL ? 'hit-sl' : '';
+    const pnlClass = pnlPct == null ? '' : pnlPct >= 0 ? 'up' : 'down';
+    const sourceTag = pos.source === 'gap' ? '<span class="badge gap">Gap</span>' : '';
+    return `<div class="position-row active-grid ${rowClass}" data-id="${pos.id}">
+      <span class="cell sym">${pos.symbol}</span>
+      <span class="cell tag">${pos.sector || '—'}</span>
+      <span class="cell">${fmtPrice(pos.entryPrice)}</span>
+      <span class="cell ${pnlClass}" id="price_${pos.id}">${price != null ? fmtPrice(price) : '—'}</span>
+      <span class="cell">${pos.lots}</span>
+      <span class="cell muted">$${fmt(cost)}</span>
+      <span class="cell">${value != null ? '$'+fmt(value) : '—'}</span>
+      <span class="cell ${pnlClass}">${pnlPct != null ? (pnlPct>=0?'+':'')+pnlPct.toFixed(2)+'%' : '—'}</span>
+      <span class="cell col-tp">${pos.takeProfit ? fmtPrice(pos.takeProfit) : '—'}</span>
+      <span class="cell col-sl">${pos.stopLoss ? fmtPrice(pos.stopLoss) : '—'}</span>
+      <span class="cell">
+        <div class="row-actions">
+          ${sourceTag}
+          <button class="act-btn exit" onclick="manualExit('${pos.id}')">出場</button>
+          <button class="act-btn" onclick="editPosition('${pos.id}')">編輯</button>
+          <button class="act-btn del" onclick="deletePosition('${pos.id}')">刪</button>
+        </div>
+      </span>
+    </div>`;
+  }).join('');
+}
+
+function renderHistory() {
+  const el = document.getElementById('historyList');
+  const history = STATE.history;
+  if (!history.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">📜</div>尚無出場記錄</div>`;
+    return;
+  }
+  el.innerHTML = history.map(h => {
+    const pnlClass = h.pnlPct >= 0 ? 'up' : 'down';
+    const reasonMap = { tp: '<span class="badge tp">停利</span>', sl: '<span class="badge sl">停損</span>', manual: '<span class="badge manual">手動</span>' };
+    const reason = reasonMap[h.exitReason] || `<span class="badge manual">${h.exitReason||'—'}</span>`;
+    return `<div class="position-row history-grid">
+      <span class="cell sym">${h.symbol}</span>
+      <span class="cell tag">${h.sector || '—'}</span>
+      <span class="cell">${fmtPrice(h.entryPrice)}</span>
+      <span class="cell ${pnlClass}">${fmtPrice(h.exitPrice)}</span>
+      <span class="cell">${h.lots}</span>
+      <span class="cell ${pnlClass}">${h.pnlPct >= 0 ? '+' : ''}${h.pnlPct?.toFixed(2)}%</span>
+      <span class="cell ${pnlClass}">${h.pnlAmt >= 0 ? '+' : ''}$${fmt(Math.abs(h.pnlAmt))}</span>
+      <span class="cell muted">${h.entryDate || '—'}</span>
+      <span class="cell muted">${h.exitDate || '—'}</span>
+      <span class="cell col-reason">${reason}</span>
+    </div>`;
+  }).join('');
+}
+
+function render() {
+  renderSummary();
+  renderActive();
+  renderHistory();
+}
+
+// ═══════════════════════════════════════════
+// MODAL
+// ═══════════════════════════════════════════
+function openAddModal(prefill = null) {
+  STATE.editId = null;
+  STATE.prefill = prefill;
+  document.getElementById('modalTitle').textContent = '新增模擬倉位';
+  document.getElementById('fSymbol').value    = prefill?.symbol  || '';
+  document.getElementById('fSector').value    = prefill?.sector  || '';
+  document.getElementById('fEntryPrice').value = prefill?.price  || '';
+  document.getElementById('fLots').value      = 1;
+  document.getElementById('fTakeProfit').value = '';
+  document.getElementById('fStopLoss').value  = '';
+  document.getElementById('fDate').value      = new Date().toISOString().slice(0,10);
+  document.getElementById('gapSourceTag').style.display = prefill ? 'block' : 'none';
+  document.getElementById('addOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('fSymbol').focus(), 100);
+}
+
+function editPosition(id) {
+  const pos = STATE.active.find(p => p.id === id);
+  if (!pos) return;
+  STATE.editId = id;
+  document.getElementById('modalTitle').textContent = '編輯倉位';
+  document.getElementById('fSymbol').value     = pos.symbol;
+  document.getElementById('fSector').value     = pos.sector || '';
+  document.getElementById('fEntryPrice').value  = pos.entryPrice;
+  document.getElementById('fLots').value       = pos.lots;
+  document.getElementById('fTakeProfit').value  = pos.takeProfit || '';
+  document.getElementById('fStopLoss').value   = pos.stopLoss || '';
+  document.getElementById('fDate').value       = pos.entryDate || '';
+  document.getElementById('gapSourceTag').style.display = 'none';
+  document.getElementById('addOverlay').classList.add('open');
+}
+
+function closeAddModal() {
+  document.getElementById('addOverlay').classList.remove('open');
+}
+
+function closeModal(e) {
+  if (e.target === document.getElementById('addOverlay')) closeAddModal();
+}
+
+function savePosition() {
+  const symbol     = document.getElementById('fSymbol').value.trim().toUpperCase();
+  const sector     = document.getElementById('fSector').value.trim();
+  const entryPrice = parseFloat(document.getElementById('fEntryPrice').value);
+  const lots       = parseInt(document.getElementById('fLots').value) || 1;
+  const takeProfit = parseFloat(document.getElementById('fTakeProfit').value) || null;
+  const stopLoss   = parseFloat(document.getElementById('fStopLoss').value) || null;
+  const entryDate  = document.getElementById('fDate').value;
+
+  if (!symbol) { showToast('請輸入股票代號', ''); return; }
+  if (isNaN(entryPrice) || entryPrice <= 0) { showToast('請輸入正確的買入價', ''); return; }
+
+  if (STATE.editId) {
+    const idx = STATE.active.findIndex(p => p.id === STATE.editId);
+    if (idx >= 0) {
+      STATE.active[idx] = { ...STATE.active[idx], symbol, sector, entryPrice, lots, takeProfit, stopLoss, entryDate };
+      Storage.saveActive(STATE.active);
+      showToast('倉位已更新', '');
+    }
+  } else {
+    const pos = {
+      id: Date.now().toString(),
+      symbol, sector, entryPrice, lots, takeProfit, stopLoss, entryDate,
+      source: STATE.prefill ? 'gap' : 'manual',
+      createdAt: new Date().toISOString(),
+    };
+    STATE.active.unshift(pos);
+    Storage.saveActive(STATE.active);
+    showToast(`已新增 ${symbol}`, '');
+  }
+  closeAddModal();
+  render();
+}
+
+function manualExit(id) {
+  const pos = STATE.active.find(p => p.id === id);
+  if (!pos) return;
+  const price = STATE.prices[pos.symbol];
+  const exitPrice = price ?? pos.entryPrice;
+  exitPosition(pos, exitPrice, 'manual');
+}
+
+function deletePosition(id) {
+  if (!confirm('確定刪除這筆倉位記錄？')) return;
+  STATE.active = STATE.active.filter(p => p.id !== id);
+  Storage.saveActive(STATE.active);
+  render();
+}
+
+// ═══════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════
+function switchTab(tab) {
+  STATE.tab = tab;
+  document.getElementById('panelActive').style.display  = tab === 'active'  ? '' : 'none';
+  document.getElementById('panelHistory').style.display = tab === 'history' ? '' : 'none';
+  document.getElementById('tabActive').className  = 'tab' + (tab === 'active'  ? ' active' : '');
+  document.getElementById('tabHistory').className = 'tab' + (tab === 'history' ? ' active' : '');
+}
+
+// ═══════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════
+let _toastTimer = null;
+function showToast(msg, type = '') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show' + (type ? ' ' + type : '');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => { el.classList.remove('show'); }, 3000);
+}
+
+// ═══════════════════════════════════════════
+// GAP TRIGGER API（供 index.html 跨頁呼叫用）
+// 使用方式：在 index.html 的 Gap 警示按鈕上加：
+// window.open('/portfolio.html?add=SYMBOL&sector=名稱&price=現價', '_blank')
+// ═══════════════════════════════════════════
+function checkUrlPrefill() {
+  const params = new URLSearchParams(location.search);
+  if (params.has('add')) {
+    openAddModal({
+      symbol: params.get('add') || '',
+      sector: params.get('sector') || '',
+      price:  params.get('price') || '',
+    });
+    // clean URL
+    history.replaceState({}, '', '/portfolio.html');
+  }
+}
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+render();
+checkUrlPrefill();
+// auto-refresh every 5 min if there are active positions
+setInterval(() => { if (STATE.active.length) refreshPrices(); }, 5 * 60 * 1000);
+</script>
+</body>
+</html>
