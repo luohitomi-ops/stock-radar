@@ -2291,15 +2291,52 @@ const CustomSector = {
    AISummary  — 每次更新行情後呼叫 Anthropic API 產生盤前摘要
    ═══════════════════════════════════════════════════════════ */
 const AISummary = {
-  _lastGenTime: null,
-  _cache: null,
-  _MIN_INTERVAL: 10 * 60 * 1000, // 10 分鐘內不重複呼叫（除非手動刷新）
+  _CACHE_KEY:    'stockRadar_aiSummary',
+  _MAX_PER_DAY:  15,   // 每日最多呼叫次數
+  _MIN_INTERVAL: 10 * 60 * 1000, // 10 分鐘內不重複呼叫
+
+  _loadCache() {
+    try {
+      const raw = localStorage.getItem(this._CACHE_KEY);
+      if (!raw) return null;
+      const data = JSON.parse(raw);
+      // 超過今天就清掉
+      const today = new Date().toISOString().slice(0, 10);
+      if (data.date !== today) { localStorage.removeItem(this._CACHE_KEY); return null; }
+      return data;
+    } catch { return null; }
+  },
+
+  _saveCache(text) {
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      const existing = this._loadCache();
+      const count = (existing?.count || 0) + 1;
+      localStorage.setItem(this._CACHE_KEY, JSON.stringify({
+        date: today, text, time: Date.now(), count,
+      }));
+    } catch {}
+  },
 
   async generate(force = false) {
     const now = Date.now();
-    // 非強制時，10分鐘內有快取就直接用
-    if (!force && this._cache && this._lastGenTime && (now - this._lastGenTime < this._MIN_INTERVAL)) {
-      this._render(this._cache);
+    const cached = this._loadCache();
+
+    // 非強制時，有快取且未超過 10 分鐘就直接用
+    if (!force && cached && (now - cached.time < this._MIN_INTERVAL)) {
+      this._render(cached.text, cached.count);
+      return;
+    }
+
+    // 每日上限保護
+    if (cached && cached.count >= this._MAX_PER_DAY && !force) {
+      this._render(cached.text, cached.count, true);
+      return;
+    }
+    // 強制刷新也有上限（今日超過 20 次就擋住）
+    if (cached && cached.count >= 20) {
+      const bodyEl = document.getElementById('aiSummaryBody');
+      if (bodyEl) { bodyEl.className = 'ai-summary-body'; bodyEl.textContent = `今日 AI 摘要已達上限（${cached.count} 次），明天重置。最後摘要：${cached.text}`; }
       return;
     }
 
@@ -2337,27 +2374,23 @@ Gap 前五名族群：${topSectors || '資料載入中'}
 直接輸出摘要，不要加標題或編號。`;
 
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
+      const res = await fetch('/api/ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 300,
-          messages: [{ role: 'user', content: prompt }],
-        }),
+        body: JSON.stringify({ prompt }),
       });
       const data = await res.json();
-      const text = data?.content?.[0]?.text || '無法產生摘要，請稍後重試。';
-      this._cache = text;
-      this._lastGenTime = Date.now();
-      this._render(text);
+      const text = data?.text || '無法產生摘要，請稍後重試。';
+      this._saveCache(text);
+      const saved = this._loadCache();
+      this._render(text, saved?.count || 1);
     } catch (err) {
       bodyEl.className = 'ai-summary-body';
       bodyEl.textContent = '摘要暫時無法取得，請手動重試。';
     }
   },
 
-  _render(text) {
+  _render(text, count = 0, limitHit = false) {
     const bodyEl = document.getElementById('aiSummaryBody');
     const timeEl = document.getElementById('aiSummaryTime');
     if (!bodyEl) return;
@@ -2365,7 +2398,8 @@ Gap 前五名族群：${topSectors || '資料載入中'}
     bodyEl.textContent = text;
     if (timeEl) {
       const d = new Date();
-      timeEl.textContent = `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')} 更新`;
+      const limitTxt = limitHit ? ` ・已達今日上限` : '';
+      timeEl.textContent = `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')} 更新・今日 ${count}/${this._MAX_PER_DAY} 次${limitTxt}`;
     }
   },
 };
@@ -3773,6 +3807,10 @@ const UI = {
 
     // 8. 啟動自動更新計時器
     AutoRefresh.init();
+
+    // 9. 頁面載入時先顯示今日快取（如果有）
+    const cachedSummary = AISummary._loadCache();
+    if (cachedSummary) AISummary._render(cachedSummary.text, cachedSummary.count);
 
     // 9. 載入自訂族群並合併
     CustomSector.merge();
