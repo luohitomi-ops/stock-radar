@@ -307,7 +307,7 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
         <label>進場日期</label>
         <input type="date" id="fDate"/>
       </div>
-      <div class="form-hint">一張台股 = 1000 股。成本 = 買入價 × 張數 × 1000（未含手續費）</div>
+      <div class="form-hint">一張台股 = 1000 股。損益已含手續費（買 0.1425% + 賣 0.1425% + 交易稅 0.3%）</div>
     </div>
     <div class="modal-footer">
       <button class="btn" onclick="closeAddModal()">取消</button>
@@ -320,6 +320,33 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
 <div class="toast" id="toast"></div>
 
 <script>
+// ═══════════════════════════════════════════
+// 手續費常數（台股）
+// ═══════════════════════════════════════════
+const FEE = {
+  BUY_RATE:   0.001425,  // 買入手續費 0.1425%
+  SELL_RATE:  0.001425,  // 賣出手續費 0.1425%
+  TAX_RATE:   0.003,     // 交易稅 0.3%（賣出才收）
+};
+
+function calcFee(price, lots, side) {
+  const amount = price * lots * 1000;
+  if (side === 'buy')  return Math.round(amount * FEE.BUY_RATE);
+  if (side === 'sell') return Math.round(amount * (FEE.SELL_RATE + FEE.TAX_RATE));
+  return 0;
+}
+
+function calcNetPnl(entryPrice, exitPrice, lots) {
+  const entryAmt = entryPrice * lots * 1000;
+  const exitAmt  = exitPrice  * lots * 1000;
+  const buyFee   = calcFee(entryPrice, lots, 'buy');
+  const sellFee  = calcFee(exitPrice,  lots, 'sell');
+  const grossPnl = exitAmt - entryAmt;
+  const netPnl   = grossPnl - buyFee - sellFee;
+  const netPct   = (netPnl / (entryAmt + buyFee)) * 100;
+  return { grossPnl, netPnl, netPct, buyFee, sellFee, totalFee: buyFee + sellFee };
+}
+
 // ═══════════════════════════════════════════
 // STORAGE
 // ═══════════════════════════════════════════
@@ -409,21 +436,24 @@ function checkAutoExit() {
 }
 
 function exitPosition(pos, exitPrice, reason, rerender = true) {
-  const pnlPct = ((exitPrice - pos.entryPrice) / pos.entryPrice * 100).toFixed(2);
-  const pnlAmt = ((exitPrice - pos.entryPrice) * pos.lots * 1000).toFixed(0);
+  const { netPnl, netPct, grossPnl, totalFee } = calcNetPnl(pos.entryPrice, exitPrice, pos.lots);
+  const pnlPct = netPct.toFixed(2);
+  const pnlAmt = Math.round(netPnl);
   const record = {
     ...pos,
     exitPrice,
     exitReason: reason,
     exitDate: new Date().toISOString().slice(0, 10),
     pnlPct: parseFloat(pnlPct),
-    pnlAmt: parseInt(pnlAmt),
+    pnlAmt,
+    grossPnl: Math.round(grossPnl),
+    totalFee,
   };
   STATE.history.unshift(record);
   Storage.saveHistory(STATE.history);
-  if (reason === 'tp') showToast(`🟢 ${pos.symbol} 停利出場 +${pnlPct}%`, 'tp');
-  else if (reason === 'sl') showToast(`🔴 ${pos.symbol} 停損出場 ${pnlPct}%`, 'sl');
-  else showToast(`${pos.symbol} 手動出場 ${pnlPct >= 0 ? '+' : ''}${pnlPct}%`, '');
+  if (reason === 'tp') showToast(`🟢 ${pos.symbol} 停利出場 +${pnlPct}%（含費）`, 'tp');
+  else if (reason === 'sl') showToast(`🔴 ${pos.symbol} 停損出場 ${pnlPct}%（含費）`, 'sl');
+  else showToast(`${pos.symbol} 手動出場 ${pnlPct >= 0 ? '+' : ''}${pnlPct}%（含費）`, '');
   if (rerender) {
     STATE.active = STATE.active.filter(p => p.id !== pos.id);
     Storage.saveActive(STATE.active);
@@ -490,7 +520,10 @@ function renderActive() {
     const cost  = pos.entryPrice * pos.lots * 1000;
     const value = price != null ? price * pos.lots * 1000 : null;
     const pnl   = value != null ? value - cost : null;
-    const pnlPct = pnl != null ? (pnl / cost * 100) : null;
+    // 含手續費的預估損益
+    const feeEst = price != null ? calcFee(pos.entryPrice, pos.lots, 'buy') + calcFee(price, pos.lots, 'sell') : 0;
+    const netPnl = pnl != null ? pnl - feeEst : null;
+    const pnlPct = netPnl != null ? (netPnl / (cost + calcFee(pos.entryPrice, pos.lots, 'buy')) * 100) : null;
     const hitTP = price != null && pos.takeProfit && price >= pos.takeProfit;
     const hitSL = price != null && pos.stopLoss  && price <= pos.stopLoss;
     const rowClass = hitTP ? 'hit-tp' : hitSL ? 'hit-sl' : '';
@@ -536,8 +569,8 @@ function renderHistory() {
       <span class="cell">${fmtPrice(h.entryPrice)}</span>
       <span class="cell ${pnlClass}">${fmtPrice(h.exitPrice)}</span>
       <span class="cell">${h.lots}</span>
-      <span class="cell ${pnlClass}">${h.pnlPct >= 0 ? '+' : ''}${h.pnlPct?.toFixed(2)}%</span>
-      <span class="cell ${pnlClass}">${h.pnlAmt >= 0 ? '+' : ''}$${fmt(Math.abs(h.pnlAmt))}</span>
+      <span class="cell ${pnlClass}" title="含手續費 $${fmt(h.totalFee||0)}">${h.pnlPct >= 0 ? '+' : ''}${h.pnlPct?.toFixed(2)}%</span>
+      <span class="cell ${pnlClass}" title="毛利 ${h.grossPnl>=0?'+':''}$${fmt(Math.abs(h.grossPnl||0))}，手續費 $${fmt(h.totalFee||0)}">${h.pnlAmt >= 0 ? '+' : ''}$${fmt(Math.abs(h.pnlAmt))}</span>
       <span class="cell muted">${h.entryDate || '—'}</span>
       <span class="cell muted">${h.exitDate || '—'}</span>
       <span class="cell col-reason">${reason}</span>
