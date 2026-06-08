@@ -527,7 +527,37 @@ body {
           </tr>
           <tr>
             <td class="term">R²</td>
-            <td>Beta 回歸的決定係數，表示模型的解釋力。R² 越接近 1，說明該族群跟海外指數的連動越穩定</td>
+            <td>
+              Beta 回歸的決定係數，表示模型的解釋力。R² 越接近 1，說明該族群跟海外指數的連動越穩定。
+              <table style="margin-top:8px;width:100%;border-collapse:collapse;font-size:11px;">
+                <tr style="border-bottom:0.5px solid var(--border);">
+                  <th style="text-align:left;padding:4px 8px;color:var(--t3);font-weight:500;">R² 值</th>
+                  <th style="text-align:left;padding:4px 8px;color:var(--t3);font-weight:500;">Gap 可信度</th>
+                </tr>
+                <tr><td style="padding:4px 8px;color:var(--up);">&gt; 0.6</td><td style="padding:4px 8px;">連動穩定，Gap 訊號可信</td></tr>
+                <tr><td style="padding:4px 8px;color:var(--warn);">0.3 ~ 0.6</td><td style="padding:4px 8px;">連動普通，搭配其他指標</td></tr>
+                <tr><td style="padding:4px 8px;color:var(--down);">&lt; 0.3</td><td style="padding:4px 8px;">連動不穩定，Gap 訊號參考即可</td></tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td class="term">Beta 判讀</td>
+            <td>
+              <table style="width:100%;border-collapse:collapse;font-size:11px;">
+                <tr style="border-bottom:0.5px solid var(--border);">
+                  <th style="text-align:left;padding:4px 8px;color:var(--t3);font-weight:500;">Beta 值</th>
+                  <th style="text-align:left;padding:4px 8px;color:var(--t3);font-weight:500;">意思</th>
+                </tr>
+                <tr><td style="padding:4px 8px;color:var(--up);">&gt; 1.5</td><td style="padding:4px 8px;">高彈性，海外漲 1% 這族群預期漲 1.5%+</td></tr>
+                <tr><td style="padding:4px 8px;color:var(--up);">0.8 ~ 1.5</td><td style="padding:4px 8px;">正常跟漲</td></tr>
+                <tr><td style="padding:4px 8px;color:var(--t3);">0.3 ~ 0.8</td><td style="padding:4px 8px;">低彈性，反應慢</td></tr>
+                <tr><td style="padding:4px 8px;color:var(--down);">&lt; 0.3</td><td style="padding:4px 8px;">幾乎不跟，R² 通常也很低</td></tr>
+              </table>
+              <div style="margin-top:8px;padding:8px 10px;background:var(--bg-2);border-radius:6px;border-left:2px solid var(--accent);font-size:11px;line-height:1.6;">
+                💡 做補漲交易時，<span style="color:var(--up);font-weight:600;">Beta &gt; 0.8 ＋ R² &gt; 0.5</span> 是比較理想的組合，代表這個族群確實會跟著海外動，連動穩定，Gap 的預測是有根據的。<br>
+                即使 Gap 很大，若 Beta 和 R² 都偏低，訊號可信度就會大打折扣。
+              </div>
+            </td>
           </tr>
           <tr>
             <td class="term">海外驅動</td>
