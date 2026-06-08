@@ -2300,21 +2300,32 @@ const AISummary = {
   _DEV_MODE: location.hostname === 'localhost' || location.hostname === '127.0.0.1',
   _MIN_INTERVAL: 10 * 60 * 1000, // 10 分鐘內不重複呼叫
 
+  _localDateStr() {
+    // 用本地時間（台灣 UTC+8）避免跨午夜日期判斷錯誤
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  },
+
   _loadCache() {
     try {
       const raw = localStorage.getItem(this._CACHE_KEY);
       if (!raw) return null;
       const data = JSON.parse(raw);
-      // 超過今天就清掉
-      const today = new Date().toISOString().slice(0, 10);
-      if (data.date !== today) { localStorage.removeItem(this._CACHE_KEY); return null; }
+      // 超過今天就清掉（用本地時間比對）
+      if (data.date !== this._localDateStr()) {
+        localStorage.removeItem(this._CACHE_KEY);
+        return null;
+      }
       return data;
     } catch { return null; }
   },
 
   _saveCache(text) {
     try {
-      const today = new Date().toISOString().slice(0, 10);
+      const today = this._localDateStr();
       const existing = this._loadCache();
       const count = (existing?.count || 0) + 1;
       localStorage.setItem(this._CACHE_KEY, JSON.stringify({
