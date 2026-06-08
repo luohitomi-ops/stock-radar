@@ -2412,13 +2412,17 @@ Gap 前五名族群：${topSectors || '資料載入中'}
         body: JSON.stringify({ prompt }),
       });
       const data = await res.json();
-      const text = data?.text || '無法產生摘要，請稍後重試。';
+      const text = data?.text || '';
+      if (!text) throw new Error('empty response');
       this._saveCache(text);
       const saved = this._loadCache();
       this._render(text, saved?.count || 1);
     } catch (err) {
-      bodyEl.className = 'ai-summary-body';
-      bodyEl.textContent = '摘要暫時無法取得，請手動重試。';
+      // 失敗時不存快取，顯示錯誤並恢復按鈕
+      if (bodyEl) {
+        bodyEl.className = 'ai-summary-body';
+        bodyEl.innerHTML = `<button class="ai-trigger-btn" onclick="AISummary.generate(false, true)">✦ 重試（無法取得摘要）</button>`;
+      }
     }
   },
 
