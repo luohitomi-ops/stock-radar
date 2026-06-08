@@ -186,6 +186,18 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
 .rank-badge { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; background: var(--bg-2); color: var(--text-4); border: 0.5px solid var(--border); }
 .rank-badge.gold { background: #2a1f06; border-color: #a16207; color: var(--warn); }
 
+/* ── AI 盤前摘要 ── */
+.ai-summary-wrap { margin: 0 16px 10px; border-radius: var(--radius-lg); border: 0.5px solid #1a3060; background: var(--accent-dim); overflow: hidden; }
+.ai-summary-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; border-bottom: 0.5px solid #1a3060; }
+.ai-summary-label { font-size: 11px; font-weight: 600; color: var(--accent-text); display: flex; align-items: center; gap: 5px; }
+.ai-summary-body { padding: 10px 14px; font-size: 12px; color: var(--text-2); line-height: 1.7; min-height: 36px; }
+.ai-summary-body.loading { color: var(--text-4); font-style: italic; }
+.ai-summary-time { font-size: 10px; color: var(--text-4); }
+.ai-refresh-btn { background: none; border: 0.5px solid #1a3060; border-radius: var(--radius-sm); color: var(--accent-text); font-size: 10px; padding: 2px 7px; cursor: pointer; transition: 0.15s; }
+.ai-refresh-btn:hover { background: rgba(26,110,245,0.15); }
+.ai-typing::after { content: '▋'; animation: blink 0.8s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
 /* ── Gap 方向警示橫幅 ── */
 .gap-direction-banner { display:none; margin: 0 0 10px 0; padding: 9px 14px; border-radius: 6px; font-size: 12px; line-height: 1.6; border: 0.5px solid; animation: fadeIn 0.3s ease; }
 .gap-direction-banner.warning  { background:#2a1500; border-color:#5a3500; color:#fbbf24; }
@@ -719,6 +731,17 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
 
   <div class="macro-grid" id="macroGrid">
     <!-- 由 Renderer.macroGrid() 填入 -->
+  </div>
+
+  <div class="ai-summary-wrap" id="aiSummaryWrap">
+    <div class="ai-summary-header">
+      <div class="ai-summary-label">✦ AI 盤前摘要</div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="ai-summary-time" id="aiSummaryTime"></span>
+        <button class="ai-refresh-btn" onclick="AISummary.generate(true)">重新產生</button>
+      </div>
+    </div>
+    <div class="ai-summary-body loading" id="aiSummaryBody">等待行情資料載入…</div>
   </div>
 
   <div class="filter-panel">
@@ -2264,6 +2287,89 @@ const CustomSector = {
 /* ═══════════════════════════════════════════════════════════
    AUTO REFRESH  — 自動定時更新模組
    ═══════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════
+   AISummary  — 每次更新行情後呼叫 Anthropic API 產生盤前摘要
+   ═══════════════════════════════════════════════════════════ */
+const AISummary = {
+  _lastGenTime: null,
+  _cache: null,
+  _MIN_INTERVAL: 10 * 60 * 1000, // 10 分鐘內不重複呼叫（除非手動刷新）
+
+  async generate(force = false) {
+    const now = Date.now();
+    // 非強制時，10分鐘內有快取就直接用
+    if (!force && this._cache && this._lastGenTime && (now - this._lastGenTime < this._MIN_INTERVAL)) {
+      this._render(this._cache);
+      return;
+    }
+
+    const bodyEl = document.getElementById('aiSummaryBody');
+    if (!bodyEl) return;
+    bodyEl.className = 'ai-summary-body loading ai-typing';
+    bodyEl.textContent = 'AI 分析中';
+
+    // 收集宏觀資料
+    const macroItems = STATE.macroItems || [];
+    const macroText = macroItems.map(m =>
+      `${m.name} ${m.value} (${m.chg >= 0 ? '+' : ''}${m.chg?.toFixed ? m.chg.toFixed(2) : m.chg}%)`
+    ).join('、');
+
+    // 收集前五名 Gap 族群
+    const topSectors = (STATE.computed || [])
+      .filter(r => r.gap !== null)
+      .sort((a, b) => Math.abs(b.gap) - Math.abs(a.gap))
+      .slice(0, 5)
+      .map(r => `${r.sector}（Gap ${r.gap >= 0 ? '+' : ''}${r.gap}pp，Beta ${r.beta?.toFixed(2) ?? '—'}）`)
+      .join('；');
+
+    const today = new Date().toLocaleDateString('zh-TW', { month: 'long', day: 'numeric', weekday: 'short' });
+
+    const prompt = `你是一位台股盤前分析師，請根據以下資料，用繁體中文寫一段 2-3 句的今日盤前重點摘要，語氣簡潔專業，不要廢話。
+
+今天：${today}
+宏觀指數：${macroText || '資料載入中'}
+Gap 前五名族群：${topSectors || '資料載入中'}
+
+要求：
+1. 第一句說明今日整體市場氛圍（根據海外指數表現）
+2. 第二句點出最值得關注的 1-2 個補漲族群及原因
+3. 第三句給出一個操作提醒（注意事項或建議）
+直接輸出摘要，不要加標題或編號。`;
+
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 300,
+          messages: [{ role: 'user', content: prompt }],
+        }),
+      });
+      const data = await res.json();
+      const text = data?.content?.[0]?.text || '無法產生摘要，請稍後重試。';
+      this._cache = text;
+      this._lastGenTime = Date.now();
+      this._render(text);
+    } catch (err) {
+      bodyEl.className = 'ai-summary-body';
+      bodyEl.textContent = '摘要暫時無法取得，請手動重試。';
+    }
+  },
+
+  _render(text) {
+    const bodyEl = document.getElementById('aiSummaryBody');
+    const timeEl = document.getElementById('aiSummaryTime');
+    if (!bodyEl) return;
+    bodyEl.className = 'ai-summary-body';
+    bodyEl.textContent = text;
+    if (timeEl) {
+      const d = new Date();
+      timeEl.textContent = `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')} 更新`;
+    }
+  },
+};
+
 const AutoRefresh = {
   _timer:      null,   // setInterval handle
   _ticker:     null,   // setInterval handle（每秒更新倒數）
@@ -3604,7 +3710,11 @@ const UI = {
       // 4. 更新 macro grid
       Renderer.macroGrid(macroItems);
 
-      // 5. 更新 state & 重新渲染
+      // 5. 儲存到 STATE 供 AISummary 使用
+      STATE.computed   = computed;
+      STATE.macroItems = macroItems;
+
+      // 6. 更新 state & 重新渲染
       setState({ lastUpdated: Date.now() });
       this.render();
 
@@ -3626,6 +3736,9 @@ const UI = {
 
       // 記錄今日 gap 快照到歷史
       HistoryEngine.record(computed);
+
+      // AI 盤前摘要（資料更新後觸發）
+      AISummary.generate();
     } catch (err) {
       console.warn('refresh failed:', err);
       Renderer.macroGrid(CONFIG.macroFallback);
