@@ -197,6 +197,8 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
 .ai-refresh-btn:hover { background: rgba(26,110,245,0.15); }
 .ai-typing::after { content: '▋'; animation: blink 0.8s infinite; }
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+.ai-trigger-btn { background: none; border: 0.5px dashed #1a3060; border-radius: var(--radius); color: var(--accent-text); font-size: 12px; padding: 6px 14px; cursor: pointer; transition: 0.15s; width: 100%; text-align: center; }
+.ai-trigger-btn:hover { background: rgba(26,110,245,0.1); border-style: solid; }
 
 /* ── Gap 方向警示橫幅 ── */
 .gap-direction-banner { display:none; margin: 0 0 10px 0; padding: 9px 14px; border-radius: 6px; font-size: 12px; line-height: 1.6; border: 0.5px solid; animation: fadeIn 0.3s ease; }
@@ -741,7 +743,9 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
         <button class="ai-refresh-btn" onclick="AISummary.generate(true)">重新產生</button>
       </div>
     </div>
-    <div class="ai-summary-body loading" id="aiSummaryBody">等待行情資料載入…</div>
+    <div class="ai-summary-body" id="aiSummaryBody">
+      <button class="ai-trigger-btn" onclick="AISummary.generate(false, true)">✦ 點我產生今日盤前摘要</button>
+    </div>
   </div>
 
   <div class="filter-panel">
@@ -2292,7 +2296,8 @@ const CustomSector = {
    ═══════════════════════════════════════════════════════════ */
 const AISummary = {
   _CACHE_KEY:    'stockRadar_aiSummary',
-  _MAX_PER_DAY:  15,   // 每日最多呼叫次數
+  _MAX_PER_DAY:  5,    // 每日最多呼叫次數
+  _DEV_MODE: location.hostname === 'localhost' || location.hostname === '127.0.0.1',
   _MIN_INTERVAL: 10 * 60 * 1000, // 10 分鐘內不重複呼叫
 
   _loadCache() {
@@ -2318,11 +2323,21 @@ const AISummary = {
     } catch {}
   },
 
-  async generate(force = false) {
+  async generate(force = false, manual = false) {
     const now = Date.now();
     const cached = this._loadCache();
 
-    // 非強制時，有快取且未超過 10 分鐘就直接用
+    // 自動觸發（非手動點擊）時：有快取就直接顯示，沒有就顯示按鈕，不主動呼叫 API
+    if (!manual && !force) {
+      if (cached) {
+        this._render(cached.text, cached.count);
+      } else {
+        this._showTriggerBtn();
+      }
+      return;
+    }
+
+    // 有快取且未超過 10 分鐘，非強制就直接用
     if (!force && cached && (now - cached.time < this._MIN_INTERVAL)) {
       this._render(cached.text, cached.count);
       return;
@@ -2337,6 +2352,12 @@ const AISummary = {
     if (cached && cached.count >= 20) {
       const bodyEl = document.getElementById('aiSummaryBody');
       if (bodyEl) { bodyEl.className = 'ai-summary-body'; bodyEl.textContent = `今日 AI 摘要已達上限（${cached.count} 次），明天重置。最後摘要：${cached.text}`; }
+      return;
+    }
+
+    // 本地開發模式跳過 API 呼叫
+    if (this._DEV_MODE) {
+      this._render('[開發模式] AI 摘要已停用，部署到 Vercel 後才會啟動。', 0);
       return;
     }
 
@@ -2388,6 +2409,13 @@ Gap 前五名族群：${topSectors || '資料載入中'}
       bodyEl.className = 'ai-summary-body';
       bodyEl.textContent = '摘要暫時無法取得，請手動重試。';
     }
+  },
+
+  _showTriggerBtn() {
+    const bodyEl = document.getElementById('aiSummaryBody');
+    if (!bodyEl) return;
+    bodyEl.className = 'ai-summary-body';
+    bodyEl.innerHTML = `<button class="ai-trigger-btn" onclick="AISummary.generate(false, true)">✦ 點我產生今日盤前摘要</button>`;
   },
 
   _render(text, count = 0, limitHit = false) {
@@ -3808,9 +3836,10 @@ const UI = {
     // 8. 啟動自動更新計時器
     AutoRefresh.init();
 
-    // 9. 頁面載入時先顯示今日快取（如果有）
+    // 9. 頁面載入時：有快取就顯示，沒有就顯示觸發按鈕
     const cachedSummary = AISummary._loadCache();
     if (cachedSummary) AISummary._render(cachedSummary.text, cachedSummary.count);
+    else AISummary._showTriggerBtn();
 
     // 9. 載入自訂族群並合併
     CustomSector.merge();
