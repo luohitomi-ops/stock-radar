@@ -2230,7 +2230,9 @@ const AutoRefresh = {
     });
 
     // 初始啟動
-    this.start(parseInt(sel.value));
+    const initMinutes = parseInt(sel.value) || 0;
+    console.log('[AutoRefresh] init with', initMinutes, 'minutes, sel.value=', sel.value);
+    this.start(initMinutes);
   },
 
   start(minutes) {
@@ -3415,7 +3417,7 @@ const UI = {
         );
       }
       // 手動更新後重設倒數，避免剛更新完馬上又自動觸發
-      AutoRefresh.resetCountdown();
+      if (!silent) AutoRefresh.resetCountdown();
 
       // 記錄今日 gap 快照到歷史
       HistoryEngine.record(computed);
