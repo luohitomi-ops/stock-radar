@@ -477,7 +477,7 @@ function renderPending() {
     return `<div class="signal-row pending-grid">
       <span class="cell muted">${s.recordDate}</span>
       <span class="cell sym" title="${s.sector}">${s.sector.replace('台股 ','')}</span>
-      <span class="cell up">+${fmt(s.gap)}pp</span>
+      <span class="cell ${(s.gap??0)>=0?'up':'down'}">${(s.gap??0)>=0?'+':''}${fmt(s.gap)}pp</span>
       <span class="cell">${fmt(s.beta)}</span>
       <span class="cell muted">${fmt(s.r2)}</span>
       <span class="cell muted">${daysLabel}</span>
@@ -511,7 +511,7 @@ function renderDone() {
     return `<div class="signal-row done-grid">
       <span class="cell muted">${s.recordDate}</span>
       <span class="cell sym" title="${s.sector}">${s.sector.replace('台股 ','')}</span>
-      <span class="cell up">+${fmt(s.gap)}pp</span>
+      <span class="cell ${(s.gap??0)>=0?'up':'down'}">${(s.gap??0)>=0?'+':''}${fmt(s.gap)}pp</span>
       <span class="cell">${fmt(s.beta)}</span>
       <span class="cell ${gainCls}">${gainStr}</span>
       <span class="cell muted">${daysLabel}</span>
@@ -632,7 +632,7 @@ function saveSignal() {
   const note      = document.getElementById('fNote').value.trim();
 
   if (!sector) { showToast('請輸入族群名稱', ''); return; }
-  if (isNaN(gap) || gap <= 0) { showToast('請輸入正確的 Gap 值', ''); return; }
+  if (isNaN(gap)) { showToast('請輸入正確的 Gap 值', ''); return; }
 
   const today = localDateStr();
   const signal = {
