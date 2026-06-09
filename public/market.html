@@ -131,6 +131,7 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
   <!-- 最後更新 -->
   <div class="last-bar">
     <div style="font-size:12px;color:var(--text-3);">主要指數 <span style="color:var(--text-4);font-size:11px;">（15 分鐘延遲）</span></div>
+    <div id="marketTimeNote" style="font-size:11px;color:var(--warn);display:none;">⚠️ 美股盤中時段，資料可能為昨日收盤，建議 04:00 後重新更新</div>
   </div>
 
   <!-- 主要指數 -->
@@ -348,6 +349,11 @@ async function refresh() {
   document.getElementById('lastRefresh').textContent =
     `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
   dot.style.background = 'var(--up)';
+
+  // 美股盤中時段提示
+  const hour = new Date().getHours();
+  const noteEl = document.getElementById('marketTimeNote');
+  if (noteEl) noteEl.style.display = (hour >= 21 || hour < 4) ? 'block' : 'none';
 }
 
 // 初始載入
