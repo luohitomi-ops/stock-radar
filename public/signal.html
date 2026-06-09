@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>訊號追蹤簿 — 給獺金幣</title>
+<style>
+:root {
+  --accent:#1a6ef5; --accent-dim:#0e2040; --accent-text:#60a5fa;
+  --bg-0:#0e1117; --bg-1:#0a0e14; --bg-2:#141922; --bg-3:#121820;
+  --border:#1e2533; --border-hover:#2a3344;
+  --text-1:#e2e8f0; --text-2:#c8d8e8; --text-3:#9aacbe; --text-4:#6b7a8e;
+  --up:#22c55e; --up-bg:#0d2a18; --down:#ef4444; --down-bg:#2a0d0d;
+  --warn:#f59e0b; --warn-bg:#2a1e00;
+  --radius:6px; --radius-lg:8px; --transition:0.15s ease;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:13px;}
+body{background:var(--bg-0);color:var(--text-1);font-family:'Helvetica Neue','PingFang TC','Microsoft JhengHei',sans-serif;min-height:100vh;}
+
+/* TOPBAR */
+.topbar{position:sticky;top:0;z-index:100;background:rgba(10,14,20,0.85);backdrop-filter:blur(12px);border-bottom:0.5px solid var(--border);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;}
+.topbar-left{display:flex;align-items:center;gap:12px;}
+.logo{display:flex;align-items:center;gap:7px;font-size:14px;font-weight:600;color:var(--text-1);text-decoration:none;}
+.logo-icon{width:26px;height:26px;background:var(--accent);border-radius:6px;display:flex;align-items:center;justify-content:center;}
+.page-title{font-size:12px;color:var(--text-3);padding-left:12px;border-left:1px solid var(--border);}
+.btn{padding:5px 12px;border-radius:var(--radius);border:0.5px solid var(--border);background:var(--bg-2);color:var(--text-2);font-size:12px;cursor:pointer;transition:var(--transition);text-decoration:none;display:inline-flex;align-items:center;gap:4px;}
+.btn:hover{border-color:var(--border-hover);color:var(--text-1);}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+.btn-primary:hover{background:#1560d0;}
+.btn-warn{background:var(--warn-bg);border-color:#5a3500;color:var(--warn);}
+
+/* PAGE */
+.page{padding:16px;max-width:1200px;margin:0 auto;}
+
+/* SUMMARY CARDS */
+.summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;}
+.summary-card{background:var(--bg-1);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:12px 14px;}
+.summary-label{font-size:11px;color:var(--text-4);margin-bottom:5px;}
+.summary-value{font-size:20px;font-weight:600;color:var(--text-1);font-variant-numeric:tabular-nums;}
+.summary-value.up{color:var(--up);}
+.summary-value.down{color:var(--down);}
+.summary-sub{font-size:11px;color:var(--text-4);margin-top:3px;}
+
+/* PENDING REMINDER */
+.pending-banner{display:none;padding:10px 14px;background:var(--warn-bg);border:0.5px solid #5a3500;border-radius:var(--radius-lg);margin-bottom:14px;font-size:12px;color:var(--warn);line-height:1.6;}
+.pending-banner .pending-title{font-weight:600;margin-bottom:4px;}
+
+/* TABS */
+.tabs{display:flex;border-bottom:0.5px solid var(--border);margin-bottom:14px;}
+.tab{padding:8px 14px;font-size:12px;color:var(--text-4);cursor:pointer;border-bottom:2px solid transparent;transition:var(--transition);}
+.tab:hover{color:var(--text-2);}
+.tab.active{color:var(--text-1);border-bottom-color:var(--accent);}
+
+/* TABLE */
+.table-wrap{background:var(--bg-1);border:0.5px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:16px;}
+.signal-row{display:grid;padding:10px 14px;border-bottom:0.5px solid var(--border);align-items:center;gap:6px;animation:rowIn 0.2s ease both;}
+.signal-row:last-child{border-bottom:none;}
+.signal-row:hover{background:var(--bg-3);}
+/* 待回填: 日期/族群/Gap/Beta/R²/觀察天/到期/狀態/操作 */
+.pending-grid{grid-template-columns:80px 120px 60px 48px 48px 90px 80px 80px 120px;}
+/* 已完成: 日期/族群/Gap/Beta/實際漲幅/觀察天/結果/操作 */
+.done-grid{grid-template-columns:80px 120px 60px 48px 80px 90px 80px 80px;}
+.header-row{background:var(--bg-0)!important;cursor:default!important;}
+.header-row:hover{background:var(--bg-0)!important;}
+.cell{font-size:12px;color:var(--text-2);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cell.sym{font-weight:600;color:var(--text-1);}
+.cell.up{color:var(--up);}
+.cell.down{color:var(--down);}
+.cell.muted{color:var(--text-4);font-size:11px;}
+.cell.header{font-size:11px;color:var(--text-4);font-weight:500;}
+.badge{display:inline-block;font-size:10px;padding:1px 6px;border-radius:3px;font-weight:500;}
+.badge.hit{background:var(--up-bg);color:var(--up);}
+.badge.miss{background:var(--down-bg);color:var(--down);}
+.badge.pending{background:var(--warn-bg);color:var(--warn);}
+.badge.overdue{background:#3a0d0d;color:#f87171;animation:pulse 1.5s infinite;}
+.row-actions{display:flex;gap:4px;flex-wrap:wrap;}
+.act-btn{padding:3px 8px;border-radius:4px;border:0.5px solid var(--border);background:var(--bg-2);color:var(--text-3);font-size:11px;cursor:pointer;transition:var(--transition);}
+.act-btn:hover{color:var(--text-1);border-color:var(--border-hover);}
+.act-btn.hit{color:var(--up);border-color:#155a30;background:var(--up-bg);}
+.act-btn.miss{color:var(--down);border-color:#5a1515;background:var(--down-bg);}
+.act-btn.del{color:var(--down);}
+
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;}
+.stats-card{background:var(--bg-1);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:14px;}
+.stats-title{font-size:11px;color:var(--text-4);font-weight:500;margin-bottom:10px;letter-spacing:0.5px;}
+.stats-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.stats-bar-label{font-size:11px;color:var(--text-3);width:72px;flex-shrink:0;}
+.stats-bar-bg{flex:1;height:6px;background:var(--bg-3);border-radius:3px;overflow:hidden;}
+.stats-bar-fill{height:100%;border-radius:3px;background:var(--up);transition:width 0.4s ease;}
+.stats-bar-fill.low{background:var(--down);}
+.stats-bar-fill.mid{background:var(--warn);}
+.stats-pct{font-size:11px;color:var(--text-2);width:36px;text-align:right;font-variant-numeric:tabular-nums;}
+.stats-count{font-size:10px;color:var(--text-4);width:32px;text-align:right;}
+.stats-empty{font-size:11px;color:var(--text-4);text-align:center;padding:16px 0;}
+
+/* EMPTY */
+.empty{padding:40px;text-align:center;color:var(--text-4);font-size:12px;}
+.empty-icon{font-size:28px;margin-bottom:8px;}
+
+/* MODAL */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.15s;}
+.overlay.open{opacity:1;pointer-events:all;}
+.modal{background:var(--bg-1);border:0.5px solid var(--border);border-radius:10px;width:420px;max-width:95vw;overflow:hidden;transform:translateY(8px);transition:transform 0.15s;}
+.overlay.open .modal{transform:translateY(0);}
+.modal-header{padding:14px 16px;border-bottom:0.5px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+.modal-title{font-size:13px;font-weight:600;}
+.modal-close{background:none;border:none;color:var(--text-4);cursor:pointer;font-size:16px;}
+.modal-body{padding:16px;display:flex;flex-direction:column;gap:12px;}
+.modal-footer{padding:12px 16px;border-top:0.5px solid var(--border);display:flex;justify-content:flex-end;gap:8px;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.form-group{display:flex;flex-direction:column;gap:5px;}
+.form-group label{font-size:11px;color:var(--text-3);}
+.form-group input,.form-group select{background:var(--bg-2);border:0.5px solid var(--border);border-radius:var(--radius);color:var(--text-1);font-size:12px;padding:7px 10px;outline:none;transition:var(--transition);width:100%;}
+.form-group input:focus,.form-group select:focus{border-color:var(--accent);}
+.form-hint{font-size:11px;color:var(--text-4);}
+.fill-current-price{font-size:11px;color:var(--accent-text);margin-top:4px;cursor:pointer;text-decoration:underline;}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--bg-2);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:10px 16px;font-size:12px;color:var(--text-1);z-index:999;box-shadow:0 4px 20px rgba(0,0,0,0.4);transform:translateY(8px);opacity:0;transition:all 0.2s;pointer-events:none;}
+.toast.show{transform:translateY(0);opacity:1;}
+.toast.hit{border-color:var(--up);color:var(--up);}
+.toast.miss{border-color:var(--down);color:var(--down);}
+
+@keyframes rowIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+@media(max-width:900px){
+  .summary-grid{grid-template-columns:repeat(2,1fr);}
+  .stats-grid{grid-template-columns:1fr;}
+  .pending-grid,.done-grid{min-width:700px;}
+  .table-wrap{overflow-x:auto;}
+}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-left">
+    <a class="logo" href="/">
+      <div class="logo-icon">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <circle cx="8" cy="8" r="6" stroke="#fff" stroke-width="1.5"/>
+          <line x1="8" y1="2" x2="8" y2="14" stroke="#fff" stroke-width="1"/>
+          <line x1="2" y1="8" x2="14" y2="8" stroke="#fff" stroke-width="1"/>
+          <circle cx="8" cy="5" r="1.5" fill="#fff"/>
+        </svg>
+      </div>
+      給獺金幣
+    </a>
+    <span class="page-title">📓 訊號追蹤簿</span>
+  </div>
+  <button class="btn btn-primary" onclick="openAddModal()">＋ 記錄訊號</button>
+</div>
+
+<div class="page">
+
+  <!-- 待回填提醒 -->
+  <div class="pending-banner" id="pendingBanner">
+    <div class="pending-title">⏰ 有訊號到期待回填</div>
+    <div id="pendingBannerText"></div>
+  </div>
+
+  <!-- 統計卡 -->
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="summary-label">整體命中率</div>
+      <div class="summary-value" id="sumHitRate">—</div>
+      <div class="summary-sub" id="sumHitCount">0 筆已回填</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">總記錄筆數</div>
+      <div class="summary-value" id="sumTotal">0</div>
+      <div class="summary-sub" id="sumPending">0 筆待回填</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">平均補漲幅度</div>
+      <div class="summary-value up" id="sumAvgGain">—</div>
+      <div class="summary-sub">命中時的平均漲幅</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">最佳條件</div>
+      <div class="summary-value" id="sumBestCondition" style="font-size:13px;">—</div>
+      <div class="summary-sub" id="sumBestConditionSub">命中率最高的 Gap 範圍</div>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <div class="tab active" id="tabPending" onclick="switchTab('pending')">待回填 <span id="cntPending" style="color:var(--text-4);"></span></div>
+    <div class="tab" id="tabDone"    onclick="switchTab('done')">已完成 <span id="cntDone"    style="color:var(--text-4);"></span></div>
+    <div class="tab" id="tabStats"   onclick="switchTab('stats')">命中率分析</div>
+  </div>
+
+  <!-- 待回填列表 -->
+  <div id="panelPending">
+    <div class="table-wrap">
+      <div class="signal-row pending-grid header-row">
+        <span class="cell header">記錄日期</span>
+        <span class="cell header">族群</span>
+        <span class="cell header">Gap</span>
+        <span class="cell header">Beta</span>
+        <span class="cell header">R²</span>
+        <span class="cell header">觀察週期</span>
+        <span class="cell header">到期日</span>
+        <span class="cell header">狀態</span>
+        <span class="cell header">操作</span>
+      </div>
+      <div id="listPending"></div>
+    </div>
+  </div>
+
+  <!-- 已完成列表 -->
+  <div id="panelDone" style="display:none;">
+    <div class="table-wrap">
+      <div class="signal-row done-grid header-row">
+        <span class="cell header">記錄日期</span>
+        <span class="cell header">族群</span>
+        <span class="cell header">Gap</span>
+        <span class="cell header">Beta</span>
+        <span class="cell header">實際漲幅</span>
+        <span class="cell header">觀察週期</span>
+        <span class="cell header">結果</span>
+        <span class="cell header">操作</span>
+      </div>
+      <div id="listDone"></div>
+    </div>
+  </div>
+
+  <!-- 命中率分析 -->
+  <div id="panelStats" style="display:none;">
+    <div class="stats-grid">
+      <div class="stats-card">
+        <div class="stats-title">依 GAP 範圍</div>
+        <div id="statsByGap"><div class="stats-empty">尚無足夠數據</div></div>
+      </div>
+      <div class="stats-card">
+        <div class="stats-title">依 BETA 範圍</div>
+        <div id="statsByBeta"><div class="stats-empty">尚無足夠數據</div></div>
+      </div>
+      <div class="stats-card">
+        <div class="stats-title">依觀察週期</div>
+        <div id="statsByDays"><div class="stats-empty">尚無足夠數據</div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- 新增訊號 MODAL -->
+<div class="overlay" id="addOverlay" onclick="closeModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <span class="modal-title" id="modalTitle">記錄 Gap 訊號</span>
+      <button class="modal-close" onclick="closeAddModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>族群名稱 *</label>
+          <input type="text" id="fSector" placeholder="例：台股 AI 伺服器"/>
+        </div>
+        <div class="form-group">
+          <label>海外驅動</label>
+          <select id="fMarket">
+            <option value="US">US 美股</option>
+            <option value="JP">JP 日股</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Gap 落差（pp）*</label>
+          <input type="number" id="fGap" placeholder="例：2.5" step="0.1"/>
+        </div>
+        <div class="form-group">
+          <label>Beta</label>
+          <input type="number" id="fBeta" placeholder="例：0.85" step="0.01"/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>R²</label>
+          <input type="number" id="fR2" placeholder="例：0.62" step="0.01" min="0" max="1"/>
+        </div>
+        <div class="form-group">
+          <label>代表股參考價</label>
+          <input type="number" id="fRefPrice" placeholder="選填" step="0.01"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>觀察週期 *</label>
+        <select id="fDays">
+          <option value="1">1 天（短線，隔日開盤）</option>
+          <option value="3">3 天（波段短線）</option>
+          <option value="5" selected>5 天（最常用，一週）</option>
+          <option value="10">10 天（中線，兩週）</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>命中門檻（漲幅 % 以上算命中）</label>
+        <input type="number" id="fThreshold" placeholder="預設 2%" value="2" step="0.5" min="0"/>
+      </div>
+      <div class="form-group">
+        <label>備註</label>
+        <input type="text" id="fNote" placeholder="選填，例：配合 VIX 回落進場"/>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeAddModal()">取消</button>
+      <button class="btn btn-primary" onclick="saveSignal()">確認記錄</button>
+    </div>
+  </div>
+</div>
+
+<!-- 回填 MODAL -->
+<div class="overlay" id="fillOverlay" onclick="closeFillModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <span class="modal-title">回填結果</span>
+      <button class="modal-close" onclick="closeFillModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="fillInfo" style="background:var(--bg-2);border-radius:var(--radius);padding:10px 12px;font-size:12px;color:var(--text-2);line-height:1.8;"></div>
+      <div class="form-group">
+        <label>實際漲幅（% ）*</label>
+        <input type="number" id="fActualGain" placeholder="例：3.5（下跌填負數）" step="0.1"/>
+        <div class="fill-current-price" onclick="autoFillPrice()">⚡ 自動抓現價計算漲幅</div>
+      </div>
+      <div class="form-group">
+        <label>回填備註</label>
+        <input type="text" id="fFillNote" placeholder="選填"/>
+      </div>
+      <div id="fillThresholdHint" style="font-size:11px;color:var(--text-4);"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeFillModal()">取消</button>
+      <button class="btn btn-primary" onclick="confirmFill()">確認回填</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════
+// STORAGE
+// ═══════════════════════════════════════
+const KEY = 'stockRadar_signalJournal';
+const Storage = {
+  get()    { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch { return []; } },
+  save(d)  { localStorage.setItem(KEY, JSON.stringify(d)); },
+};
+
+// ═══════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════
+let STATE = {
+  signals: Storage.get(),
+  tab: 'pending',
+  fillId: null,
+};
+
+// ═══════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════
+function addDays(dateStr, days) {
+  const d = new Date(dateStr);
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+function localDateStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function isOverdue(signal) {
+  return signal.status === 'pending' && localDateStr() > signal.dueDate;
+}
+function daysLeft(signal) {
+  const today = new Date(localDateStr());
+  const due   = new Date(signal.dueDate);
+  return Math.ceil((due - today) / 86400000);
+}
+function fmt(n, d=2) { return n == null ? '—' : (+n).toFixed(d); }
+
+// ═══════════════════════════════════════
+// PROXY & PRICE
+// ═══════════════════════════════════════
+function proxyUrl(url) {
+  const isVercel = location.hostname !== 'localhost' && !location.protocol.startsWith('file');
+  return isVercel ? `/api/proxy?url=${encodeURIComponent(url)}` : `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+}
+async function fetchPrice(symbol) {
+  const sym = /^\d+$/.test(symbol) ? symbol + '.TW' : symbol;
+  try {
+    const res = await fetch(proxyUrl(`https://query1.finance.yahoo.com/v8/finance/chart/${sym}?interval=1d&range=1d`));
+    const data = await res.json();
+    return data?.chart?.result?.[0]?.meta?.regularMarketPrice ?? null;
+  } catch { return null; }
+}
+
+// ═══════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════
+function render() {
+  renderSummary();
+  renderPendingBanner();
+  renderPending();
+  renderDone();
+  renderStats();
+  document.getElementById('cntPending').textContent = `(${STATE.signals.filter(s=>s.status==='pending').length})`;
+  document.getElementById('cntDone').textContent    = `(${STATE.signals.filter(s=>s.status!=='pending').length})`;
+}
+
+function renderSummary() {
+  const done = STATE.signals.filter(s => s.status !== 'pending');
+  const hit  = done.filter(s => s.status === 'hit');
+  const pending = STATE.signals.filter(s => s.status === 'pending');
+  const hitRate = done.length ? Math.round(hit.length / done.length * 100) : null;
+  const avgGain = hit.length ? hit.reduce((s,x)=>s+(x.actualGain||0),0)/hit.length : null;
+
+  const hrEl = document.getElementById('sumHitRate');
+  hrEl.textContent = hitRate !== null ? `${hitRate}%` : '—';
+  hrEl.className   = 'summary-value' + (hitRate >= 60 ? ' up' : hitRate !== null ? ' down' : '');
+  document.getElementById('sumHitCount').textContent = `${done.length} 筆已回填`;
+  document.getElementById('sumTotal').textContent    = STATE.signals.length;
+  document.getElementById('sumPending').textContent  = `${pending.length} 筆待回填`;
+  document.getElementById('sumAvgGain').textContent  = avgGain !== null ? `+${avgGain.toFixed(2)}%` : '—';
+
+  // 最佳條件：找命中率最高的 Gap 範圍
+  const groups = { '1-2pp':[], '2-3pp':[], '3pp+':[] };
+  done.forEach(s => {
+    const g = s.gap;
+    if (g < 2) groups['1-2pp'].push(s);
+    else if (g < 3) groups['2-3pp'].push(s);
+    else groups['3pp+'].push(s);
+  });
+  let bestKey = null, bestRate = -1;
+  Object.entries(groups).forEach(([k,v]) => {
+    if (v.length >= 2) {
+      const r = v.filter(x=>x.status==='hit').length / v.length;
+      if (r > bestRate) { bestRate = r; bestKey = k; }
+    }
+  });
+  document.getElementById('sumBestCondition').textContent    = bestKey ? `Gap ${bestKey}` : '—';
+  document.getElementById('sumBestConditionSub').textContent = bestKey ? `命中率 ${Math.round(bestRate*100)}%（${groups[bestKey].length} 筆）` : '累積更多數據後顯示';
+}
+
+function renderPendingBanner() {
+  const overdue = STATE.signals.filter(s => isOverdue(s));
+  const banner  = document.getElementById('pendingBanner');
+  if (!overdue.length) { banner.style.display = 'none'; return; }
+  banner.style.display = 'block';
+  document.getElementById('pendingBannerText').textContent =
+    overdue.map(s => `${s.sector}（${s.recordDate} 記錄，已逾期）`).join('　');
+}
+
+function renderPending() {
+  const el  = document.getElementById('listPending');
+  const rows = STATE.signals.filter(s => s.status === 'pending')
+    .sort((a,b) => b.recordDate.localeCompare(a.recordDate));
+  if (!rows.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">📭</div>尚無待回填訊號<br><span style="color:var(--text-5)">點右上角「記錄訊號」開始追蹤</span></div>`;
+    return;
+  }
+  el.innerHTML = rows.map(s => {
+    const overdue = isOverdue(s);
+    const left    = daysLeft(s);
+    const statusBadge = overdue
+      ? `<span class="badge overdue">已逾期 ${Math.abs(left)} 天</span>`
+      : left <= 1
+        ? `<span class="badge pending">明日到期</span>`
+        : `<span class="badge pending">${left} 天後到期</span>`;
+    const daysLabel = DAYS_LABELS[s.days] || `${s.days}天`;
+    return `<div class="signal-row pending-grid">
+      <span class="cell muted">${s.recordDate}</span>
+      <span class="cell sym" title="${s.sector}">${s.sector.replace('台股 ','')}</span>
+      <span class="cell up">+${fmt(s.gap)}pp</span>
+      <span class="cell">${fmt(s.beta)}</span>
+      <span class="cell muted">${fmt(s.r2)}</span>
+      <span class="cell muted">${daysLabel}</span>
+      <span class="cell muted">${s.dueDate}</span>
+      <span class="cell">${statusBadge}</span>
+      <span class="cell">
+        <div class="row-actions">
+          <button class="act-btn hit"  onclick="openFill('${s.id}')">回填結果</button>
+          <button class="act-btn del"  onclick="deleteSignal('${s.id}')">刪</button>
+        </div>
+      </span>
+    </div>`;
+  }).join('');
+}
+
+function renderDone() {
+  const el   = document.getElementById('listDone');
+  const rows = STATE.signals.filter(s => s.status !== 'pending')
+    .sort((a,b) => b.fillDate?.localeCompare(a.fillDate||''));
+  if (!rows.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">📜</div>尚無已完成記錄</div>`;
+    return;
+  }
+  el.innerHTML = rows.map(s => {
+    const gainCls  = (s.actualGain ?? 0) >= 0 ? 'up' : 'down';
+    const gainStr  = s.actualGain != null ? `${s.actualGain>=0?'+':''}${s.actualGain.toFixed(2)}%` : '—';
+    const badge    = s.status === 'hit'
+      ? `<span class="badge hit">✅ 命中</span>`
+      : `<span class="badge miss">❌ 未中</span>`;
+    const daysLabel = DAYS_LABELS[s.days] || `${s.days}天`;
+    return `<div class="signal-row done-grid">
+      <span class="cell muted">${s.recordDate}</span>
+      <span class="cell sym" title="${s.sector}">${s.sector.replace('台股 ','')}</span>
+      <span class="cell up">+${fmt(s.gap)}pp</span>
+      <span class="cell">${fmt(s.beta)}</span>
+      <span class="cell ${gainCls}">${gainStr}</span>
+      <span class="cell muted">${daysLabel}</span>
+      <span class="cell">${badge}</span>
+      <span class="cell">
+        <div class="row-actions">
+          <button class="act-btn del" onclick="deleteSignal('${s.id}')">刪</button>
+        </div>
+      </span>
+    </div>`;
+  }).join('');
+}
+
+function renderStats() {
+  const done = STATE.signals.filter(s => s.status !== 'pending');
+  if (done.length < 2) return;
+
+  const makeGroups = (groups, getKey) => {
+    const map = {};
+    done.forEach(s => {
+      const k = getKey(s);
+      if (!k) return;
+      if (!map[k]) map[k] = { hit:0, total:0 };
+      map[k].total++;
+      if (s.status === 'hit') map[k].hit++;
+    });
+    return map;
+  };
+
+  const renderGroupHtml = (map, order) => {
+    const keys = order || Object.keys(map);
+    return keys.filter(k => map[k]).map(k => {
+      const { hit, total } = map[k];
+      const pct = Math.round(hit / total * 100);
+      const cls = pct >= 60 ? '' : pct >= 40 ? 'mid' : 'low';
+      return `<div class="stats-bar-row">
+        <div class="stats-bar-label">${k}</div>
+        <div class="stats-bar-bg"><div class="stats-bar-fill ${cls}" style="width:${pct}%"></div></div>
+        <div class="stats-pct">${pct}%</div>
+        <div class="stats-count">${total}筆</div>
+      </div>`;
+    }).join('') || `<div class="stats-empty">尚無足夠數據</div>`;
+  };
+
+  // Gap 分組
+  const gapMap = makeGroups({}, s => {
+    if (s.gap < 1) return null;
+    if (s.gap < 2) return '1-2 pp';
+    if (s.gap < 3) return '2-3 pp';
+    return '3pp 以上';
+  });
+  document.getElementById('statsByGap').innerHTML = renderGroupHtml(gapMap, ['1-2 pp','2-3 pp','3pp 以上']);
+
+  // Beta 分組
+  const betaMap = makeGroups({}, s => {
+    if (!s.beta) return null;
+    if (s.beta < 0.5) return 'Beta < 0.5';
+    if (s.beta < 1)   return 'Beta 0.5-1';
+    return 'Beta > 1';
+  });
+  document.getElementById('statsByBeta').innerHTML = renderGroupHtml(betaMap, ['Beta < 0.5','Beta 0.5-1','Beta > 1']);
+
+  // 觀察天數分組
+  const daysMap = makeGroups({}, s => DAYS_LABELS[s.days] || `${s.days}天`);
+  document.getElementById('statsByDays').innerHTML = renderGroupHtml(daysMap);
+}
+
+// ═══════════════════════════════════════
+// DAYS LABELS
+// ═══════════════════════════════════════
+const DAYS_LABELS = {
+  1:  '1天（短線）',
+  3:  '3天（波段短）',
+  5:  '5天（最常用）',
+  10: '10天（中線）',
+};
+
+// ═══════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════
+function switchTab(tab) {
+  STATE.tab = tab;
+  ['pending','done','stats'].forEach(t => {
+    document.getElementById(`panel${t.charAt(0).toUpperCase()+t.slice(1)}`).style.display = t===tab ? '' : 'none';
+    document.getElementById(`tab${t.charAt(0).toUpperCase()+t.slice(1)}`).className = 'tab' + (t===tab?' active':'');
+  });
+}
+
+// ═══════════════════════════════════════
+// ADD MODAL
+// ═══════════════════════════════════════
+function openAddModal(prefill = null) {
+  document.getElementById('fSector').value    = prefill?.sector   || '';
+  document.getElementById('fMarket').value    = prefill?.market   || 'US';
+  document.getElementById('fGap').value       = prefill?.gap      || '';
+  document.getElementById('fBeta').value      = prefill?.beta     || '';
+  document.getElementById('fR2').value        = prefill?.r2       || '';
+  document.getElementById('fRefPrice').value  = prefill?.refPrice || '';
+  document.getElementById('fDays').value      = '5';
+  document.getElementById('fThreshold').value = '2';
+  document.getElementById('fNote').value      = '';
+  document.getElementById('addOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('fSector').focus(), 100);
+}
+
+function closeAddModal() { document.getElementById('addOverlay').classList.remove('open'); }
+function closeModal(e)   { if (e.target.classList.contains('overlay')) { closeAddModal(); closeFillModal(); } }
+
+function saveSignal() {
+  const sector    = document.getElementById('fSector').value.trim();
+  const gap       = parseFloat(document.getElementById('fGap').value);
+  const beta      = parseFloat(document.getElementById('fBeta').value) || null;
+  const r2        = parseFloat(document.getElementById('fR2').value)   || null;
+  const refPrice  = parseFloat(document.getElementById('fRefPrice').value) || null;
+  const days      = parseInt(document.getElementById('fDays').value);
+  const threshold = parseFloat(document.getElementById('fThreshold').value) || 2;
+  const market    = document.getElementById('fMarket').value;
+  const note      = document.getElementById('fNote').value.trim();
+
+  if (!sector) { showToast('請輸入族群名稱', ''); return; }
+  if (isNaN(gap) || gap <= 0) { showToast('請輸入正確的 Gap 值', ''); return; }
+
+  const today = localDateStr();
+  const signal = {
+    id: Date.now().toString(),
+    sector, market, gap, beta, r2, refPrice,
+    days, threshold, note,
+    recordDate: today,
+    dueDate: addDays(today, days),
+    status: 'pending',
+    createdAt: new Date().toISOString(),
+  };
+
+  STATE.signals.unshift(signal);
+  Storage.save(STATE.signals);
+  closeAddModal();
+  render();
+  showToast(`已記錄「${sector}」訊號`, '');
+}
+
+// ═══════════════════════════════════════
+// FILL MODAL
+// ═══════════════════════════════════════
+function openFill(id) {
+  const s = STATE.signals.find(x => x.id === id);
+  if (!s) return;
+  STATE.fillId = id;
+  document.getElementById('fillInfo').innerHTML =
+    `<strong>${s.sector}</strong>　Gap +${fmt(s.gap)}pp　Beta ${fmt(s.beta)}　R² ${fmt(s.r2)}<br>
+     記錄日：${s.recordDate}　到期日：${s.dueDate}　命中門檻：漲幅 ≥ ${s.threshold}%`;
+  document.getElementById('fActualGain').value = '';
+  document.getElementById('fFillNote').value   = '';
+  document.getElementById('fillThresholdHint').textContent = `漲幅 ≥ ${s.threshold}% 自動判定為命中`;
+  document.getElementById('fillOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('fActualGain').focus(), 100);
+}
+
+function closeFillModal(e) {
+  if (!e || e.target === document.getElementById('fillOverlay'))
+    document.getElementById('fillOverlay').classList.remove('open');
+}
+
+async function autoFillPrice() {
+  const s = STATE.signals.find(x => x.id === STATE.fillId);
+  if (!s || !s.refPrice) { showToast('沒有參考價，請手動輸入漲幅', ''); return; }
+  showToast('抓取現價中…', '');
+  // 用族群名稱找不到 symbol，這裡提示用戶
+  showToast('請在族群側邊欄確認代表股現價後手動填入', '');
+}
+
+function confirmFill() {
+  const actualGain = parseFloat(document.getElementById('fActualGain').value);
+  if (isNaN(actualGain)) { showToast('請輸入實際漲幅', ''); return; }
+
+  const fillNote = document.getElementById('fFillNote').value.trim();
+  const idx = STATE.signals.findIndex(x => x.id === STATE.fillId);
+  if (idx < 0) return;
+
+  const s = STATE.signals[idx];
+  const isHit = actualGain >= s.threshold;
+
+  STATE.signals[idx] = {
+    ...s,
+    actualGain,
+    fillNote,
+    fillDate: localDateStr(),
+    status: isHit ? 'hit' : 'miss',
+  };
+
+  Storage.save(STATE.signals);
+  document.getElementById('fillOverlay').classList.remove('open');
+  render();
+
+  if (isHit) showToast(`✅ 命中！${s.sector} 實際漲幅 +${actualGain.toFixed(2)}%`, 'hit');
+  else        showToast(`❌ 未命中，${s.sector} 漲幅 ${actualGain.toFixed(2)}%`, 'miss');
+}
+
+// ═══════════════════════════════════════
+// DELETE
+// ═══════════════════════════════════════
+function deleteSignal(id) {
+  if (!confirm('確定刪除這筆訊號記錄？')) return;
+  STATE.signals = STATE.signals.filter(x => x.id !== id);
+  Storage.save(STATE.signals);
+  render();
+}
+
+// ═══════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════
+let _toastTimer = null;
+function showToast(msg, type = '') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show' + (type ? ' ' + type : '');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ═══════════════════════════════════════
+// URL PREFILL（從主頁 Gap 警示帶入）
+// 用法：/signal.html?sector=族群&gap=2.5&beta=0.8&r2=0.6&market=US
+// ═══════════════════════════════════════
+function checkUrlPrefill() {
+  const p = new URLSearchParams(location.search);
+  if (p.has('sector') || p.has('gap')) {
+    openAddModal({
+      sector:   p.get('sector') || '',
+      market:   p.get('market') || 'US',
+      gap:      p.get('gap')    || '',
+      beta:     p.get('beta')   || '',
+      r2:       p.get('r2')     || '',
+      refPrice: p.get('price')  || '',
+    });
+    history.replaceState({}, '', '/signal.html');
+  }
+}
+
+// ═══════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════
+render();
+checkUrlPrefill();
+</script>
+</body>
+</html>
