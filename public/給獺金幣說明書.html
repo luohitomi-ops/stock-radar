@@ -377,6 +377,65 @@ body {
       </li>
     </ul>
 
+    <!-- 各種盤後情況 -->
+    <p style="font-size:13px;color:var(--t2);font-weight:600;margin-bottom:14px;margin-top:28px;">📌 各種盤後情況，怎麼判斷？</p>
+    <p style="font-size:12px;color:var(--t3);margin-bottom:14px;line-height:1.8;">
+      懶人包的範例是「美股大漲」情境。但實際上每天都不一樣，以下是常見情況的判斷方式：
+    </p>
+    <div class="term-wrap" style="margin-bottom:24px;">
+      <table class="term-table">
+        <thead>
+          <tr><th>今晚盤後情況</th><th>Gap 方向解讀</th><th>操作建議</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="term" style="color:var(--up);">美股大漲（SOX/SPX +2% 以上）</td>
+            <td>正 Gap = 補漲空間<br><span style="font-size:10px;color:var(--t4);">台股還沒跟上，明天可能補漲</span></td>
+            <td>找正 Gap + Beta 高的族群，列入觀察名單</td>
+          </tr>
+          <tr>
+            <td class="term" style="color:var(--down);">美股大跌（SOX/SPX -2% 以上）</td>
+            <td>正 Gap = 補跌壓力<br><span style="font-size:10px;color:var(--t4);">台股還沒跌夠，明天可能繼續跌</span></td>
+            <td>⚠️ 觀望為主，等開盤確認止跌再看機會</td>
+          </tr>
+          <tr>
+            <td class="term" style="color:var(--down);">美股暴跌（SOX -5% 以上）</td>
+            <td>頁面會出現🔴紅色警示橫幅<br><span style="font-size:10px;color:var(--t4);">極端行情，Gap 模型誤差大</span></td>
+            <td>❌ 不建議進場，先確認海外是否止跌</td>
+          </tr>
+          <tr>
+            <td class="term" style="color:var(--t3);">美股小漲小跌（±1% 以內）</td>
+            <td>Gap 訊號不明顯<br><span style="font-size:10px;color:var(--t4);">漲跌幅太小，補漲動能不足</span></td>
+            <td>不需要特別研究，正常盤對待</td>
+          </tr>
+          <tr>
+            <td class="term" style="color:var(--warn);">美股漲但 SOX 跌（類股分化）</td>
+            <td>科技族群 Gap 方向反轉<br><span style="font-size:10px;color:var(--t4);">半導體族群跟 SOX 走，不跟 SPX</span></td>
+            <td>科技/半導體族群要特別注意方向，非科技族群看 SPX</td>
+          </tr>
+          <tr>
+            <td class="term" style="color:var(--accent-t);">日股大漲（N225 +2% 以上）</td>
+            <td>日股驅動族群正 Gap = 補漲<br><span style="font-size:10px;color:var(--t4);">篩選時選「JP 日股」海外市場</span></td>
+            <td>切換篩選到「JP 日股」，找 EV/機器人等日股連動族群</td>
+          </tr>
+          <tr>
+            <td class="term" style="color:var(--down);">VIX 恐慌指數大漲（+20% 以上）</td>
+            <td>市場恐慌情緒升高<br><span style="font-size:10px;color:var(--t4);">即使有正 Gap 也不可靠</span></td>
+            <td>不進場，等 VIX 回落確認情緒穩定</td>
+          </tr>
+          <tr>
+            <td class="term" style="color:var(--t3);">台股自行大漲（外資買超）</td>
+            <td>Gap 可能為負（台股跑在前面）<br><span style="font-size:10px;color:var(--t4);">負 Gap 族群已超漲</span></td>
+            <td>負 Gap 族群小心追高，找尚未反應的族群</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="info-box" style="margin-bottom:24px;">
+      💡 <strong>判斷優先順序：</strong>先看 VIX（市場情緒）→ 再看 SOX（科技動能）→ 再看 SPX（大盤方向）→ 最後看個別族群 Gap。出現🔴紅色警示橫幅時，當天不論 Gap 多大都建議觀望。
+    </div>
+
     <!-- 快速對照表 -->
     <p style="font-size:13px;color:var(--t2);font-weight:600;margin-bottom:14px;margin-top:8px;">快速判斷對照表：</p>
     <div class="term-wrap">
