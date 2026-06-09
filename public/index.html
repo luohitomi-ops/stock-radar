@@ -2461,7 +2461,13 @@ const MarketDetail = {
     if (spxChg >= 1.5)      summary += `${summary?' ':''}S&P500 ${spx.chg}，大盤偏多。`;
     else if (spxChg <= -1.5)summary += `${summary?' ':''}S&P500 ${spx.chg}，大盤偏空。`;
     if (vixChg >= 20)       summary += ` VIX 恐慌指數大漲 ${vix.chg}，市場情緒不穩，建議觀望。`;
-    summaryEl.textContent = summary || '指數數據已更新，請參考上方各指數漲跌幅判斷今日方向。';
+    // 美股盤中時段提示（台灣時間 21:30 ~ 隔日 04:00）
+    const hour = new Date().getHours();
+    const isUSMarketHours = hour >= 21 || hour < 4;
+    const timeNote = isUSMarketHours
+      ? ' ⚠️ 現在是美股盤中時段，資料可能為昨日收盤，建議收盤後（台灣時間 04:00 後）重新更新。'
+      : '';
+    summaryEl.textContent = (summary || '指數數據已更新，請參考上方各指數漲跌幅判斷今日方向。') + timeNote;
   },
 };
 
