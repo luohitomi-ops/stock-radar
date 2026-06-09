@@ -186,6 +186,32 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
 .rank-badge { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; background: var(--bg-2); color: var(--text-4); border: 0.5px solid var(--border); }
 .rank-badge.gold { background: #2a1f06; border-color: #a16207; color: var(--warn); }
 
+/* ── 美股詳情展開區塊 ── */
+.market-detail-wrap { margin: 0 16px 0; border-radius: var(--radius-lg); border: 0.5px solid var(--border); background: var(--bg-1); overflow: hidden; }
+.market-detail-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; cursor: pointer; user-select: none; transition: background 0.15s; }
+.market-detail-header:hover { background: var(--bg-3); }
+.market-detail-toggle { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: var(--text-2); }
+.market-detail-status { font-size: 11px; padding: 2px 8px; border-radius: 3px; font-weight: 600; }
+.market-detail-status.bull  { background: var(--up-bg);   color: var(--up);   }
+.market-detail-status.bear  { background: var(--down-bg); color: var(--down); }
+.market-detail-status.flat  { background: var(--bg-2);    color: var(--text-4); }
+.market-detail-arrow { font-size: 10px; color: var(--text-4); transition: transform 0.2s; }
+.market-detail-arrow.open { transform: rotate(180deg); }
+.market-detail-body { display: none; padding: 12px 14px 14px; border-top: 0.5px solid var(--border); }
+.market-detail-body.open { display: block; }
+.market-detail-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px; }
+.market-card { background: var(--bg-2); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 10px 12px; }
+.market-card-name { font-size: 10px; color: var(--text-4); margin-bottom: 4px; }
+.market-card-val  { font-size: 16px; font-weight: 600; color: var(--text-1); font-variant-numeric: tabular-nums; }
+.market-card-chg  { font-size: 11px; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.market-card-chg.up   { color: var(--up); }
+.market-card-chg.down { color: var(--down); }
+.market-detail-summary { font-size: 12px; color: var(--text-3); line-height: 1.7; padding: 10px 12px; background: var(--bg-2); border-radius: var(--radius); border: 0.5px solid var(--border); margin-bottom: 10px; }
+.market-detail-footer { display: flex; justify-content: flex-end; }
+.market-page-btn { font-size: 11px; color: var(--accent-text); text-decoration: none; padding: 4px 10px; border: 0.5px solid #1a3060; border-radius: var(--radius-sm); background: var(--accent-dim); transition: 0.15s; }
+.market-page-btn:hover { background: #1a3a70; }
+@media (max-width: 768px) { .market-detail-grid { grid-template-columns: repeat(2, 1fr); } }
+
 /* ── 比較族群 Modal ── */
 .compare-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.65); z-index:300; display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity 0.15s; }
 .compare-overlay.open { opacity:1; pointer-events:all; }
@@ -766,6 +792,29 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
 
   <div class="macro-grid" id="macroGrid">
     <!-- 由 Renderer.macroGrid() 填入 -->
+  </div>
+
+  <!-- 美股詳情展開區塊 -->
+  <div class="market-detail-wrap" id="marketDetailWrap">
+    <div class="market-detail-header" onclick="MarketDetail.toggle()">
+      <div class="market-detail-toggle">
+        🌐 美股詳情
+        <span class="market-detail-status flat" id="marketDetailStatus">載入中</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:10px;color:var(--text-4);">點擊展開</span>
+        <span class="market-detail-arrow" id="marketDetailArrow">▼</span>
+      </div>
+    </div>
+    <div class="market-detail-body" id="marketDetailBody">
+      <div class="market-detail-grid" id="marketDetailGrid">
+        <!-- 由 MarketDetail.render() 填入 -->
+      </div>
+      <div class="market-detail-summary" id="marketDetailSummary">資料載入中…</div>
+      <div class="market-detail-footer">
+        <a class="market-page-btn" href="/market.html">→ 完整行情頁</a>
+      </div>
+    </div>
   </div>
 
   <div class="ai-summary-wrap" id="aiSummaryWrap">
@@ -2352,6 +2401,87 @@ const CustomSector = {
 /* ═══════════════════════════════════════════════════════════
    CompareUI  — 族群比較 Modal
    ═══════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════
+   MarketDetail  — 主頁可展開美股詳情區塊
+   ═══════════════════════════════════════════════════════════ */
+const MarketDetail = {
+  _open: false,
+
+  toggle() {
+    this._open = !this._open;
+    document.getElementById('marketDetailBody').classList.toggle('open', this._open);
+    document.getElementById('marketDetailArrow').classList.toggle('open', this._open);
+    document.querySelector('.market-detail-header span:nth-child(2)').textContent = this._open ? '點擊收合' : '點擊展開';
+  },
+
+  // 由 Renderer.macroGrid() 更新後呼叫
+  update(macroItems) {
+    if (!macroItems || !macroItems.length) return;
+    const find = (name) => macroItems.find(m => m.name === name || m.id === name);
+
+    const spx  = find('SPX')  || find('S&P500');
+    const sox  = find('SOX');
+    const vix  = find('VIX');
+    const nas  = find('NASDAQ') || find('QQQ') || find('NDX');
+
+    // 用現有的 macroItems 找最接近的
+    const targets = ['SPX','SOX','VIX','TWII'];
+    const cards = macroItems.filter(m => targets.includes(m.name) || targets.includes(m.id));
+
+    // 狀態判斷（以 SOX 或 SPX 為主）
+    const mainChg = (sox?.chg ?? spx?.chg ?? 0);
+    const statusEl = document.getElementById('marketDetailStatus');
+    if (mainChg >= 2) {
+      statusEl.textContent = '🟢 大漲'; statusEl.className = 'market-detail-status bull';
+    } else if (mainChg >= 0.5) {
+      statusEl.textContent = '↑ 小漲'; statusEl.className = 'market-detail-status bull';
+    } else if (mainChg <= -2) {
+      statusEl.textContent = '🔴 大跌'; statusEl.className = 'market-detail-status bear';
+    } else if (mainChg <= -0.5) {
+      statusEl.textContent = '↓ 小跌'; statusEl.className = 'market-detail-status bear';
+    } else {
+      statusEl.textContent = '→ 平盤'; statusEl.className = 'market-detail-status flat';
+    }
+
+    // 卡片
+    const gridEl = document.getElementById('marketDetailGrid');
+    const showItems = macroItems.filter(m =>
+      ['SPX','SOX','VIX','NASDAQ','NDX','DXY','US10Y','TWII'].includes(m.name || m.id)
+    ).slice(0, 8);
+
+    gridEl.innerHTML = (showItems.length ? showItems : macroItems.slice(0, 8)).map(m => {
+      const chg = m.chg ?? 0;
+      const chgCls = chg >= 0 ? 'up' : 'down';
+      const chgStr = m.unit === 'pp'
+        ? `${chg >= 0 ? '+' : ''}${chg.toFixed(2)}pp`
+        : `${chg >= 0 ? '+' : ''}${chg.toFixed(2)}%`;
+      return `<div class="market-card">
+        <div class="market-card-name">${m.name}</div>
+        <div class="market-card-val">${m.value ?? '—'}</div>
+        <div class="market-card-chg ${chgCls}">${chgStr}</div>
+      </div>`;
+    }).join('');
+
+    // 摘要文字
+    const summaryEl = document.getElementById('marketDetailSummary');
+    const soxChg  = sox?.chg  ?? null;
+    const spxChg  = spx?.chg  ?? null;
+    const vixChg  = vix?.chg  ?? null;
+    let summary = '';
+    if (soxChg !== null) {
+      if (soxChg >= 2)       summary += `📈 SOX 費半今日大漲 +${soxChg.toFixed(1)}%，半導體族群補漲動能強。`;
+      else if (soxChg <= -5) summary += `⚠️ SOX 費半今日暴跌 ${soxChg.toFixed(1)}%，台股半導體明日面臨補跌壓力。`;
+      else if (soxChg <= -2) summary += `📉 SOX 費半今日下跌 ${soxChg.toFixed(1)}%，補漲方向需謹慎確認。`;
+    }
+    if (spxChg !== null) {
+      if (spxChg >= 1.5)     summary += `　S&P500 +${spxChg.toFixed(1)}%，大盤偏多。`;
+      else if (spxChg <= -1.5) summary += `　S&P500 ${spxChg.toFixed(1)}%，大盤偏空。`;
+    }
+    if (vixChg !== null && vix?.chg >= 20) summary += `　VIX 恐慌指數大漲 +${vixChg.toFixed(1)}%，市場情緒不穩，建議觀望。`;
+    summaryEl.textContent = summary || '指數數據已更新，請參考上方各指數漲跌幅判斷今日方向。';
+  },
+};
+
 const CompareUI = {
   _selected: new Set(),
   _MAX: 4,
@@ -3970,9 +4100,10 @@ const UI = {
       // 4. 更新 macro grid
       Renderer.macroGrid(macroItems);
 
-      // 5. 儲存到 STATE 供 AISummary 使用
+      // 5. 儲存到 STATE 供 AISummary / MarketDetail 使用
       STATE.computed   = computed;
       STATE.macroItems = macroItems;
+      MarketDetail.update(macroItems);
 
       // 6. 更新 state & 重新渲染
       setState({ lastUpdated: Date.now() });
