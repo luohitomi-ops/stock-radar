@@ -130,8 +130,8 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
 
   <!-- 最後更新 -->
   <div class="last-bar">
-    <div style="font-size:12px;color:var(--text-3);">主要指數 <span style="color:var(--text-4);font-size:11px;">（15 分鐘延遲）</span></div>
-    <div id="marketTimeNote" style="font-size:11px;color:var(--warn);display:none;">⚠️ 美股盤中時段，資料可能為昨日收盤，建議 04:00 後重新更新</div>
+    <div style="font-size:12px;color:var(--text-3);">主要指數 <span style="color:var(--text-4);font-size:11px;">（15 分鐘延遲）</span><span id="dataDateLabel" style="color:var(--text-4);font-size:11px;margin-left:8px;"></span></div>
+    <div id="marketTimeNote" style="font-size:11px;color:var(--warn);display:none;"></div>
   </div>
 
   <!-- 主要指數 -->
@@ -350,10 +350,29 @@ async function refresh() {
     `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
   dot.style.background = 'var(--up)';
 
-  // 美股盤中時段提示
-  const hour = new Date().getHours();
+  // 時段判斷 + 日期標示
+  const _now  = new Date();
+  const _hour = _now.getHours();
+  const _min  = _now.getMinutes();
+  const _dateStr = _now.toLocaleDateString('zh-TW', { month:'numeric', day:'numeric' });
+  const _isPreMarket  = _hour >= 17 && (_hour < 21 || (_hour === 21 && _min < 30));
+  const _isMarketOpen = _hour >= 21 || _hour < 4;
+  const _isAfterHours = _hour >= 4 && _hour < 6;
   const noteEl = document.getElementById('marketTimeNote');
-  if (noteEl) noteEl.style.display = (hour >= 21 || hour < 4) ? 'block' : 'none';
+  const dateEl = document.getElementById('dataDateLabel');
+  if (_isMarketOpen) {
+    if (noteEl) { noteEl.style.display='block'; noteEl.textContent=`⚠️ 美股盤中（${_dateStr}），部分數據可能延遲`; }
+    if (dateEl) dateEl.textContent = `· ${_dateStr} 盤中`;
+  } else if (_isPreMarket) {
+    if (noteEl) { noteEl.style.display='block'; noteEl.textContent=`⚠️ 美股盤前（${_dateStr}），數據以昨日收盤為主`; }
+    if (dateEl) dateEl.textContent = `· ${_dateStr} 盤前`;
+  } else if (_isAfterHours) {
+    if (noteEl) { noteEl.style.display='block'; noteEl.textContent=`📋 美股盤後（${_dateStr}），今日收盤價`; }
+    if (dateEl) dateEl.textContent = `· ${_dateStr} 收盤`;
+  } else {
+    if (noteEl) noteEl.style.display='none';
+    if (dateEl) dateEl.textContent = `· ${_dateStr} 收盤`;
+  }
 }
 
 // 初始載入
