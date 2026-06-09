@@ -84,7 +84,7 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
 .position-row.hit-sl { background: rgba(239,68,68,0.06); border-left: 2px solid var(--down); }
 
 /* active positions: 代號 | 族群 | 買入價 | 現價 | 張數 | 成本 | 市值 | 損益% | 停利 | 停損 | 操作 */
-.active-grid { grid-template-columns: 64px 80px 68px 68px 44px 80px 80px 72px 64px 64px 80px; gap: 6px; }
+.active-grid { grid-template-columns: 64px 80px 68px 68px 44px 80px 80px 72px 56px 56px 140px; gap: 6px; }
 /* history: 代號 | 族群 | 進場價 | 出場價 | 張數 | 損益% | 損益額 | 進場日 | 出場日 | 出場原因 */
 .history-grid { grid-template-columns: 64px 80px 68px 68px 44px 72px 80px 90px 90px 80px; gap: 6px; }
 
@@ -162,7 +162,8 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
 /* ── MOBILE ── */
 @media (max-width: 900px) {
   .summary-grid { grid-template-columns: repeat(2, 1fr); }
-  .active-grid, .history-grid { grid-template-columns: 56px 70px 60px 60px 40px 68px 68px 60px; }
+  .active-grid { grid-template-columns: 56px 70px 60px 60px 40px 68px 68px 120px; }
+  .history-grid { grid-template-columns: 56px 70px 60px 60px 40px 68px 68px 60px; }
   /* hide last few columns on mobile */
   .active-grid .col-tp, .active-grid .col-sl, .history-grid .col-reason { display: none; }
   .table-wrap { overflow-x: auto; }
