@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>美股行情 — 給獺金幣</title>
+<style>
+:root {
+  --accent: #1a6ef5; --accent-dim: #0e2040; --accent-text: #60a5fa;
+  --bg-0: #0e1117; --bg-1: #0a0e14; --bg-2: #141922; --bg-3: #121820;
+  --border: #1e2533; --border-hover: #2a3344;
+  --text-1: #e2e8f0; --text-2: #c8d8e8; --text-3: #9aacbe; --text-4: #6b7a8e;
+  --up: #22c55e; --up-bg: #0d2a18; --down: #ef4444; --down-bg: #2a0d0d;
+  --warn: #f59e0b; --warn-bg: #2a1e00;
+  --radius: 6px; --radius-lg: 8px; --transition: 0.15s ease;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 13px; }
+body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Neue','PingFang TC','Microsoft JhengHei',sans-serif; min-height: 100vh; }
+
+/* TOPBAR */
+.topbar { position:sticky; top:0; z-index:100; background:rgba(10,14,20,0.85); backdrop-filter:blur(12px); border-bottom:0.5px solid var(--border); padding:10px 16px; display:flex; align-items:center; justify-content:space-between; }
+.topbar-left { display:flex; align-items:center; gap:12px; }
+.logo { display:flex; align-items:center; gap:7px; font-size:14px; font-weight:600; color:var(--text-1); text-decoration:none; }
+.logo-icon { width:26px; height:26px; background:var(--accent); border-radius:6px; display:flex; align-items:center; justify-content:center; }
+.page-title { font-size:12px; color:var(--text-3); padding-left:12px; border-left:1px solid var(--border); }
+.btn { padding:5px 12px; border-radius:var(--radius); border:0.5px solid var(--border); background:var(--bg-2); color:var(--text-2); font-size:12px; cursor:pointer; transition:var(--transition); text-decoration:none; display:inline-flex; align-items:center; gap:4px; }
+.btn:hover { border-color:var(--border-hover); color:var(--text-1); }
+.btn-primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+.btn-primary:hover { background:#1560d0; }
+.refresh-info { font-size:11px; color:var(--text-4); }
+.refresh-info span { color:var(--text-2); }
+.dot-live { width:6px; height:6px; border-radius:50%; background:var(--up); display:inline-block; margin-right:4px; animation:pulse 2s infinite; }
+
+/* PAGE */
+.page { padding:16px; max-width:1200px; margin:0 auto; }
+
+/* DIRECTION BANNER */
+.direction-banner { padding:10px 16px; border-radius:var(--radius-lg); border:0.5px solid; margin-bottom:14px; font-size:12px; line-height:1.7; display:none; }
+.direction-banner.bull { background:var(--up-bg); border-color:#155a30; color:#4ade80; }
+.direction-banner.bear { background:var(--down-bg); border-color:#5a1515; color:#f87171; }
+.direction-banner.warn { background:var(--warn-bg); border-color:#5a3500; color:#fbbf24; }
+.direction-banner .banner-title { font-weight:600; margin-bottom:2px; }
+
+/* SECTION */
+.section-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; margin-top:20px; }
+.section-title { font-size:13px; font-weight:600; color:var(--text-1); }
+.section-sub { font-size:11px; color:var(--text-4); }
+
+/* INDEX GRID */
+.index-grid { display:grid; grid-template-columns:repeat(5, 1fr); gap:10px; margin-bottom:6px; }
+.index-card { background:var(--bg-1); border:0.5px solid var(--border); border-radius:var(--radius-lg); padding:12px 14px; transition:var(--transition); }
+.index-card:hover { border-color:var(--border-hover); }
+.index-card.up   { border-left:2px solid var(--up); }
+.index-card.down { border-left:2px solid var(--down); }
+.index-label { font-size:11px; color:var(--text-4); margin-bottom:5px; }
+.index-val   { font-size:17px; font-weight:600; color:var(--text-1); font-variant-numeric:tabular-nums; }
+.index-chg   { font-size:12px; margin-top:3px; font-variant-numeric:tabular-nums; font-weight:500; }
+.index-chg.up   { color:var(--up); }
+.index-chg.down { color:var(--down); }
+.index-chg.neu  { color:var(--text-4); }
+
+/* STOCK TABLE */
+.stock-table-wrap { background:var(--bg-1); border:0.5px solid var(--border); border-radius:var(--radius-lg); overflow:hidden; margin-bottom:16px; }
+.stock-table { width:100%; border-collapse:collapse; }
+.stock-table th { font-size:11px; color:var(--text-4); font-weight:500; padding:8px 14px; border-bottom:0.5px solid var(--border); text-align:left; background:var(--bg-0); }
+.stock-table td { font-size:12px; color:var(--text-2); padding:10px 14px; border-bottom:0.5px solid var(--border); font-variant-numeric:tabular-nums; }
+.stock-table tr:last-child td { border-bottom:none; }
+.stock-table tr:hover td { background:var(--bg-3); }
+.stock-name { font-weight:600; color:var(--text-1); }
+.stock-sym  { font-size:10px; color:var(--text-4); }
+.tag { font-size:10px; padding:1px 6px; border-radius:3px; background:var(--bg-2); border:0.5px solid var(--border); color:var(--text-3); }
+
+/* SIGNALS */
+.signal-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; margin-bottom:16px; }
+.signal-card { background:var(--bg-1); border:0.5px solid var(--border); border-radius:var(--radius-lg); padding:14px; }
+.signal-icon { font-size:20px; margin-bottom:6px; }
+.signal-title { font-size:12px; font-weight:600; color:var(--text-1); margin-bottom:4px; }
+.signal-desc  { font-size:11px; color:var(--text-3); line-height:1.6; }
+.signal-card.positive { border-color:#155a30; background:rgba(13,42,24,0.5); }
+.signal-card.negative { border-color:#5a1515; background:rgba(42,13,13,0.5); }
+.signal-card.neutral  { border-color:var(--border); }
+
+/* LAST UPDATED */
+.last-bar { display:flex; align-items:center; justify-content:space-between; padding:8px 0; margin-bottom:14px; }
+
+/* ANIMATIONS */
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+@keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
+.index-card { animation:fadeIn 0.2s ease both; }
+
+/* MOBILE */
+@media (max-width:768px) {
+  .index-grid   { grid-template-columns:repeat(2,1fr); }
+  .signal-grid  { grid-template-columns:1fr; }
+}
+@media (max-width:480px) {
+  .index-grid { grid-template-columns:repeat(2,1fr); }
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <a class="logo" href="/">
+      <div class="logo-icon">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <circle cx="8" cy="8" r="6" stroke="#fff" stroke-width="1.5"/>
+          <line x1="8" y1="2" x2="8" y2="14" stroke="#fff" stroke-width="1"/>
+          <line x1="2" y1="8" x2="14" y2="8" stroke="#fff" stroke-width="1"/>
+          <circle cx="8" cy="5" r="1.5" fill="#fff"/>
+        </svg>
+      </div>
+      給獺金幣
+    </a>
+    <span class="page-title">🌐 美股行情</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <div class="refresh-info"><span class="dot-live" id="liveDot"></span>更新：<span id="lastRefresh">—</span></div>
+    <button class="btn btn-primary" onclick="refresh()">↻ 更新</button>
+    <a class="btn" href="/">← 回主頁</a>
+  </div>
+</div>
+
+<div class="page">
+
+  <!-- 方向橫幅 -->
+  <div class="direction-banner" id="directionBanner"></div>
+
+  <!-- 最後更新 -->
+  <div class="last-bar">
+    <div style="font-size:12px;color:var(--text-3);">主要指數 <span style="color:var(--text-4);font-size:11px;">（15 分鐘延遲）</span></div>
+  </div>
+
+  <!-- 主要指數 -->
+  <div class="index-grid" id="indexGrid">
+    <!-- 填入 -->
+  </div>
+
+  <!-- 訊號解讀 -->
+  <div class="section-header" style="margin-top:20px;">
+    <div class="section-title">📡 今日訊號解讀</div>
+    <div class="section-sub" id="signalTime"></div>
+  </div>
+  <div class="signal-grid" id="signalGrid">
+    <div class="signal-card neutral"><div class="signal-icon">⏳</div><div class="signal-title">載入中</div><div class="signal-desc">請稍候…</div></div>
+  </div>
+
+  <!-- 關注個股 -->
+  <div class="section-header">
+    <div class="section-title">🔭 關鍵個股</div>
+    <div class="section-sub">台股相關美股 ADR / 直接掛牌</div>
+  </div>
+  <div class="stock-table-wrap">
+    <table class="stock-table">
+      <thead>
+        <tr><th>名稱</th><th>代號</th><th>現價</th><th>漲跌%</th><th>類別</th></tr>
+      </thead>
+      <tbody id="stockTableBody">
+        <tr><td colspan="5" style="text-align:center;color:var(--text-4);padding:20px;">載入中…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════
+const MACRO_SYMBOLS = [
+  { label:'TWII',    symbol:'^TWII',    decimals:0 },
+  { label:'SPX',     symbol:'^GSPC',    decimals:0 },
+  { label:'SOX',     symbol:'^SOX',     decimals:0 },
+  { label:'NASDAQ',  symbol:'^IXIC',    decimals:0 },
+  { label:'VIX',     symbol:'^VIX',     decimals:2 },
+  { label:'N225',    symbol:'^N225',    decimals:0 },
+  { label:'USD/TWD', symbol:'TWD=X',    decimals:3 },
+  { label:'USD/JPY', symbol:'JPY=X',    decimals:2 },
+  { label:'DXY',     symbol:'DX-Y.NYB', decimals:2 },
+  { label:'WTI',     symbol:'CL=F',     decimals:2 },
+];
+
+const KEY_STOCKS = [
+  { name:'台積電 ADR',  symbol:'TSM',   tag:'半導體' },
+  { name:'輝達',        symbol:'NVDA',  tag:'AI/GPU' },
+  { name:'超微',        symbol:'AMD',   tag:'半導體' },
+  { name:'博通',        symbol:'AVGO',  tag:'半導體' },
+  { name:'蘋果',        symbol:'AAPL',  tag:'科技' },
+  { name:'微軟',        symbol:'MSFT',  tag:'科技' },
+  { name:'特斯拉',      symbol:'TSLA',  tag:'EV' },
+  { name:'亞馬遜',      symbol:'AMZN',  tag:'科技' },
+];
+
+// ═══════════════════════════════════════
+// PROXY
+// ═══════════════════════════════════════
+function proxyUrl(url) {
+  const isVercel = location.hostname !== 'localhost' && !location.protocol.startsWith('file');
+  if (isVercel) return `/api/proxy?url=${encodeURIComponent(url)}`;
+  return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+}
+
+async function fetchQuote(symbol) {
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`;
+  try {
+    const res = await fetch(proxyUrl(url));
+    const data = await res.json();
+    const meta = data?.chart?.result?.[0]?.meta;
+    if (!meta) return null;
+    const price  = meta.regularMarketPrice;
+    const prev   = meta.chartPreviousClose || meta.previousClose;
+    const chgPct = prev ? ((price - prev) / prev * 100) : 0;
+    return { price, prev, chgPct };
+  } catch { return null; }
+}
+
+// ═══════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════
+let _macroData = {};
+let _stockData = {};
+
+function renderIndexGrid() {
+  const el = document.getElementById('indexGrid');
+  el.innerHTML = MACRO_SYMBOLS.map(m => {
+    const d = _macroData[m.symbol];
+    if (!d) return `<div class="index-card"><div class="index-label">${m.label}</div><div class="index-val">—</div><div class="index-chg neu">—</div></div>`;
+    const chg = d.chgPct;
+    const cls = chg > 0.1 ? 'up' : chg < -0.1 ? 'down' : 'neu';
+    const chgStr = `${chg >= 0 ? '+' : ''}${chg.toFixed(2)}%`;
+    return `<div class="index-card ${cls}">
+      <div class="index-label">${m.label}</div>
+      <div class="index-val">${d.price?.toLocaleString('en-US', {minimumFractionDigits: m.decimals, maximumFractionDigits: m.decimals}) ?? '—'}</div>
+      <div class="index-chg ${cls}">${chgStr}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderSignals() {
+  const sox  = _macroData['^SOX'];
+  const spx  = _macroData['^GSPC'];
+  const vix  = _macroData['^VIX'];
+  const nas  = _macroData['^IXIC'];
+
+  const soxChg = sox?.chgPct ?? 0;
+  const spxChg = spx?.chgPct ?? 0;
+  const vixChg = vix?.chgPct ?? 0;
+
+  const signals = [];
+
+  // SOX 訊號
+  if (soxChg >= 3)
+    signals.push({ icon:'🚀', title:`SOX 費半大漲 +${soxChg.toFixed(1)}%`, desc:'半導體族群補漲動能強，台股半導體族群明日有望補漲。Beta 高的族群優先關注。', type:'positive' });
+  else if (soxChg >= 1)
+    signals.push({ icon:'📈', title:`SOX 費半上漲 +${soxChg.toFixed(1)}%`, desc:'半導體族群補漲訊號，可觀察 Gap 落差較大的族群。', type:'positive' });
+  else if (soxChg <= -5)
+    signals.push({ icon:'⚠️', title:`SOX 費半暴跌 ${soxChg.toFixed(1)}%`, desc:'台股半導體明日面臨強力補跌壓力。建議觀望，等開盤確認止跌後再操作。', type:'negative' });
+  else if (soxChg <= -2)
+    signals.push({ icon:'📉', title:`SOX 費半下跌 ${soxChg.toFixed(1)}%`, desc:'補跌壓力存在，正 Gap 族群需確認是補漲還是補跌方向。', type:'negative' });
+  else
+    signals.push({ icon:'➡️', title:`SOX 費半平盤 ${soxChg.toFixed(1)}%`, desc:'半導體族群動能不明顯，Gap 訊號可信度中等。', type:'neutral' });
+
+  // SPX 訊號
+  if (spxChg >= 1.5)
+    signals.push({ icon:'🟢', title:`S&P500 大漲 +${spxChg.toFixed(1)}%`, desc:'大盤偏多，整體補漲氛圍良好，可積極尋找落後族群。', type:'positive' });
+  else if (spxChg <= -1.5)
+    signals.push({ icon:'🔴', title:`S&P500 大跌 ${spxChg.toFixed(1)}%`, desc:'大盤偏空，即使有正 Gap 也需謹慎，優先觀望。', type:'negative' });
+  else
+    signals.push({ icon:'⚖️', title:`S&P500 小幅波動 ${spxChg.toFixed(1)}%`, desc:'大盤方向不明，個別族群需看自身 Beta 和量能判斷。', type:'neutral' });
+
+  // VIX 訊號
+  const vixVal = vix?.price ?? 0;
+  if (vixVal >= 30)
+    signals.push({ icon:'😰', title:`VIX 恐慌指數 ${vixVal.toFixed(1)}（極度恐慌）`, desc:'市場極度不安，任何方向都存在風險。建議暫停操作，等 VIX 回落至 20 以下再評估。', type:'negative' });
+  else if (vixVal >= 20)
+    signals.push({ icon:'😟', title:`VIX 恐慌指數 ${vixVal.toFixed(1)}（偏高）`, desc:'市場情緒偏緊張，進場需謹慎，縮小部位規模。', type:'negative' });
+  else
+    signals.push({ icon:'😌', title:`VIX 恐慌指數 ${vixVal.toFixed(1)}（正常）`, desc:'市場情緒穩定，可正常評估補漲機會。', type:'positive' });
+
+  const el = document.getElementById('signalGrid');
+  el.innerHTML = signals.map(s =>
+    `<div class="signal-card ${s.type}">
+      <div class="signal-icon">${s.icon}</div>
+      <div class="signal-title">${s.title}</div>
+      <div class="signal-desc">${s.desc}</div>
+    </div>`
+  ).join('');
+
+  // 方向橫幅
+  const banner = document.getElementById('directionBanner');
+  if (soxChg <= -5 || spxChg <= -2) {
+    banner.className = 'direction-banner bear';
+    banner.innerHTML = `<div class="banner-title">⚠️ 今日海外大跌，正 Gap 為補跌壓力而非補漲機會</div><div>SOX ${soxChg.toFixed(1)}% / SPX ${spxChg.toFixed(1)}%，建議觀望至台股開盤確認止跌後再操作。</div>`;
+    banner.style.display = 'block';
+  } else if (soxChg >= 2 && spxChg >= 0.5) {
+    banner.className = 'direction-banner bull';
+    banner.innerHTML = `<div class="banner-title">✅ 今日海外表現強勁，補漲方向明確</div><div>SOX +${soxChg.toFixed(1)}% / SPX +${spxChg.toFixed(1)}%，回主頁查看 Gap 落差最大的族群。</div>`;
+    banner.style.display = 'block';
+  } else {
+    banner.style.display = 'none';
+  }
+
+  document.getElementById('signalTime').textContent = new Date().toLocaleTimeString('zh-TW', {hour:'2-digit', minute:'2-digit'}) + ' 更新';
+}
+
+function renderStocks() {
+  const el = document.getElementById('stockTableBody');
+  el.innerHTML = KEY_STOCKS.map(s => {
+    const d = _stockData[s.symbol];
+    if (!d) return `<tr><td><div class="stock-name">${s.name}</div></td><td class="stock-sym">${s.symbol}</td><td>—</td><td>—</td><td><span class="tag">${s.tag}</span></td></tr>`;
+    const chg = d.chgPct;
+    const cls = chg > 0.1 ? 'up' : chg < -0.1 ? 'down' : '';
+    return `<tr>
+      <td><div class="stock-name">${s.name}</div></td>
+      <td><span class="stock-sym">${s.symbol}</span></td>
+      <td style="color:var(--text-1);font-weight:500;">$${d.price?.toFixed(2) ?? '—'}</td>
+      <td class="${cls}" style="font-weight:500;">${chg >= 0 ? '+' : ''}${chg.toFixed(2)}%</td>
+      <td><span class="tag">${s.tag}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════
+// REFRESH
+// ═══════════════════════════════════════
+async function refresh() {
+  const dot = document.getElementById('liveDot');
+  dot.style.background = 'var(--warn)';
+
+  // 抓宏觀指數
+  await Promise.all(MACRO_SYMBOLS.map(async m => {
+    const d = await fetchQuote(m.symbol);
+    if (d) _macroData[m.symbol] = d;
+  }));
+  renderIndexGrid();
+  renderSignals();
+
+  // 抓關鍵個股
+  await Promise.all(KEY_STOCKS.map(async s => {
+    const d = await fetchQuote(s.symbol);
+    if (d) _stockData[s.symbol] = d;
+  }));
+  renderStocks();
+
+  const now = new Date();
+  document.getElementById('lastRefresh').textContent =
+    `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+  dot.style.background = 'var(--up)';
+}
+
+// 初始載入
+refresh();
+// 每 5 分鐘自動更新
+setInterval(refresh, 5 * 60 * 1000);
+</script>
+</body>
+</html>
