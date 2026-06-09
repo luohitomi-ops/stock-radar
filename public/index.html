@@ -2461,12 +2461,24 @@ const MarketDetail = {
     if (spxChg >= 1.5)      summary += `${summary?' ':''}S&P500 ${spx.chg}，大盤偏多。`;
     else if (spxChg <= -1.5)summary += `${summary?' ':''}S&P500 ${spx.chg}，大盤偏空。`;
     if (vixChg >= 20)       summary += ` VIX 恐慌指數大漲 ${vix.chg}，市場情緒不穩，建議觀望。`;
-    // 美股盤中時段提示（台灣時間 21:30 ~ 隔日 04:00）
-    const hour = new Date().getHours();
-    const isUSMarketHours = hour >= 21 || hour < 4;
-    const timeNote = isUSMarketHours
-      ? ' ⚠️ 現在是美股盤中時段，資料可能為昨日收盤，建議收盤後（台灣時間 04:00 後）重新更新。'
-      : '';
+    // 時段判斷（台灣時間）
+    const now = new Date();
+    const hour = now.getHours();
+    const min  = now.getMinutes();
+    const isPreMarket  = hour >= 17 && (hour < 21 || (hour === 21 && min < 30)); // 17:00~21:30 盤前
+    const isMarketOpen = hour >= 21 || hour < 4;  // 21:30~04:00 盤中
+    const isAfterHours = hour >= 4 && hour < 6;   // 04:00~06:00 盤後
+    
+    // 資料日期標示
+    const dateStr = now.toLocaleDateString('zh-TW', { month:'numeric', day:'numeric' });
+    let timeNote = '';
+    if (isMarketOpen || isPreMarket || isAfterHours) {
+      timeNote = isPreMarket  ? ` ⚠️ 美股盤前中（${dateStr}），數據可能尚未完整，以昨日收盤為主。` :
+                 isAfterHours ? ` 📋 美股已收盤（${dateStr} 盤後），數據為今日最終收盤價。` :
+                                ` ⚠️ 美股盤中（${dateStr}），主頁數據為昨日收盤，請至完整行情頁查看即時。`;
+    } else {
+      timeNote = ` 📋 數據為 ${dateStr} 收盤。`;
+    }
     summaryEl.textContent = (summary || '指數數據已更新，請參考上方各指數漲跌幅判斷今日方向。') + timeNote;
   },
 };
