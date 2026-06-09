@@ -82,12 +82,10 @@ body {
   padding: 0 24px;
 }
 .toc-inner {
-  max-width: 860px; margin: 0 auto;
+  max-width: 960px; margin: 0 auto;
   display: flex; align-items: center; gap: 4px;
-  overflow-x: auto; padding: 10px 0;
-  scrollbar-width: none;
+  flex-wrap: wrap; padding: 8px 0;
 }
-.toc-inner::-webkit-scrollbar { display: none; }
 .toc-link {
   white-space: nowrap; padding: 5px 12px;
   border-radius: 20px; font-size: 12px; color: var(--t4);
@@ -519,13 +517,13 @@ body {
   <section class="section" id="layout">
     <div class="section-num">02</div>
     <h2>頁面結構</h2>
-    <p class="section-intro">頁面從上到下分為五個區塊：</p>
+    <p class="section-intro">頁面從上到下分為七個區塊：</p>
     <ul class="step-list">
       <li>
         <div class="step-num">1</div>
         <div class="step-content">
           <div class="step-title">Topbar（頂部工具列）</div>
-          <div class="step-desc">顯示最後更新時間、自動更新倒數圓環、間隔選單、手動更新按鈕</div>
+          <div class="step-desc">更新時間、自動更新圓環、說明書 / 模擬倉位 / 訊號追蹤 / 比較族群 / 美股行情等快速連結，以及手動更新按鈕</div>
         </div>
       </li>
       <li>
@@ -538,22 +536,36 @@ body {
       <li>
         <div class="step-num">3</div>
         <div class="step-content">
-          <div class="step-title">篩選條件列</div>
-          <div class="step-desc">可折疊的篩選面板，提供族群搜尋、落差範圍、Beta、驅動指數、覆蓋率等多個維度過濾</div>
+          <div class="step-title">🌐 美股詳情（可展開）</div>
+          <div class="step-desc">點擊展開，顯示主要指數卡片和方向摘要，標示資料日期。右下角可連到完整行情頁 /market.html</div>
         </div>
       </li>
       <li>
         <div class="step-num">4</div>
         <div class="step-content">
-          <div class="step-title">補漲機會排行表（主表格）</div>
-          <div class="step-desc">核心區域，列出所有族群的預期、實際、落差、Beta、海外驅動等數值，預設依落差排序</div>
+          <div class="step-title">✦ AI 盤前摘要</div>
+          <div class="step-desc">手動點擊觸發，根據宏觀指數與 Gap 前五名族群產生 2-3 句盤前重點分析，每日 5 次上限</div>
         </div>
       </li>
       <li>
         <div class="step-num">5</div>
         <div class="step-content">
-          <div class="step-title">側邊欄（詳情 + 歷史）</div>
-          <div class="step-desc">點選任一族群後顯示個股 Sparkline 走勢圖、成交量條，以及歷史 Gap 折線圖</div>
+          <div class="step-title">篩選條件列</div>
+          <div class="step-desc">可折疊的篩選面板，提供族群搜尋、落差範圍、Beta、驅動指數、覆蓋率等多個維度過濾</div>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">6</div>
+        <div class="step-content">
+          <div class="step-title">補漲機會排行表（主表格）</div>
+          <div class="step-desc">核心區域，列出所有族群的預期、實際、落差、Beta、海外驅動等數值，預設依落差排序。Gap 超過警示閾值時出現橘點、＋模擬倉位、📓記錄訊號按鈕</div>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">7</div>
+        <div class="step-content">
+          <div class="step-title">側邊欄（個股詳情 / 歷史 Gap / 策略推薦）</div>
+          <div class="step-desc">點選任一族群後展開，包含 Sparkline 走勢圖、個股補漲排行、量能趨勢、均線/抵扣值分析、歷史 Gap 折線圖、策略推薦</div>
         </div>
       </li>
     </ul>
@@ -635,6 +647,30 @@ body {
           <tr>
             <td class="term">代表股</td>
             <td>族群內的龍頭或核心個股，旁邊附有近期走勢迷你折線圖（Sparkline）</td>
+          </tr>
+          <tr>
+            <td class="term">抵扣值</td>
+            <td>均線計算中明天要「移除掉」的那根 K 棒的價格。若抵扣值高於現價，明日 MA5 可能下彎，不利進場；低於現價則有利均線上彎</td>
+          </tr>
+          <tr>
+            <td class="term">模擬倉位</td>
+            <td>記錄假設進場的個股，追蹤損益變化。不需要真實下單，用來練習判斷和驗證進出場時機。損益計算含手續費（買 0.1425% + 賣 0.1425% + 交易稅 0.3%）</td>
+          </tr>
+          <tr>
+            <td class="term">訊號追蹤簿</td>
+            <td>記錄每次 Gap 警示觸發的族群訊號，幾天後回填實際結果，累積後統計命中率。追蹤族群層級，不需要真實建倉</td>
+          </tr>
+          <tr>
+            <td class="term">命中門檻</td>
+            <td>訊號追蹤簿的判定標準，漲幅達到設定值（預設 2%）即算「命中」。可依個人操作風格調整</td>
+          </tr>
+          <tr>
+            <td class="term">觀察週期</td>
+            <td>訊號追蹤簿的觀察天數設定：1天（短線）/ 3天（波段短）/ 5天（最常用）/ 10天（中線）。到期後系統提醒回填</td>
+          </tr>
+          <tr>
+            <td class="term">pp（百分點）</td>
+            <td>Gap 落差的單位。例如 +2pp 代表實際漲幅比預期少 2 個百分點，不是漲了 2%。pp 和 % 是不同的單位</td>
           </tr>
         </tbody>
       </table>
@@ -777,48 +813,62 @@ body {
   <section class="section" id="workflow">
     <div class="section-num">06</div>
     <h2>每日操作流程</h2>
-    <p class="section-intro">建議的日常使用流程：</p>
+    <p class="section-intro">建議的完整日常使用流程：</p>
     <ul class="step-list">
       <li>
         <div class="step-num">1</div>
         <div class="step-content">
-          <div class="step-title">開盤前（8:30–9:00）：看宏觀指數</div>
-          <div class="step-desc">先看 Macro Grid，確認昨晚美股（SPX、SOX）或今早日股（N225）的漲跌方向和幅度。幅度越大，Gap 訊號越有意義。</div>
+          <div class="step-title">前一晚 / 開盤前：確認海外方向</div>
+          <div class="step-desc">開 /market.html 或展開主頁「🌐 美股詳情」，確認 SOX / SPX / VIX 方向。SOX 大漲 → 補漲方向；SOX 大跌 → 注意補跌；VIX 高 → 先觀望。</div>
         </div>
       </li>
       <li>
         <div class="step-num">2</div>
         <div class="step-content">
-          <div class="step-title">開盤後（9:30 後）：更新行情</div>
-          <div class="step-desc">按「↻ 更新行情」等待 10–15 秒讓 API 拉取完畢。等個股開盤有一段時間後資料較準確，建議 9:30 後再更新。</div>
+          <div class="step-title">開盤前（8:30–9:00）：更新行情 + AI 摘要</div>
+          <div class="step-desc">按「↻ 更新行情」等資料載入完畢，再點「✦ 產生今日盤前摘要」取得 AI 一句話方向建議。Gap 方向警示橫幅會自動判斷今日是補漲還是補跌。</div>
         </div>
       </li>
       <li>
         <div class="step-num">3</div>
         <div class="step-content">
           <div class="step-title">看排行：找 Gap 正值且 Beta 高的族群</div>
-          <div class="step-desc">表格預設按落差降序排列。重點看前幾名：Gap 為正、Beta ≥ 0.5、標籤為「即時」或「部分」的族群，是優先研究對象。</div>
+          <div class="step-desc">表格預設按落差降序排列。重點看前幾名：Gap 為正、Beta ≥ 0.8、R² ≥ 0.5、標籤為「即時」或「部分」的族群，是優先研究對象。</div>
         </div>
       </li>
       <li>
         <div class="step-num">4</div>
         <div class="step-content">
-          <div class="step-title">點族群看個股走勢</div>
-          <div class="step-desc">點選感興趣的族群，右側側邊欄會顯示個股 Sparkline 和成交量。確認族群內的龍頭股走勢是否符合預期。</div>
+          <div class="step-title">比較候選族群</div>
+          <div class="step-desc">對 2-3 個候選族群有興趣時，點「⚖️ 比較族群」並排比較 Gap / Beta / R²，系統自動標示最佳選擇。</div>
         </div>
       </li>
       <li>
         <div class="step-num">5</div>
         <div class="step-content">
-          <div class="step-title">盤中：設定 Gap 警示 + 自動更新</div>
-          <div class="step-desc">在篩選條件設定「Gap 警示閾值」（如 2pp），超過的行會橘色高亮。搭配自動更新（5 或 10 分鐘），不用一直盯著頁面。</div>
+          <div class="step-title">點族群看側邊欄詳情</div>
+          <div class="step-desc">點選族群後確認：個股補漲排行（找落後最多的）、量能趨勢（要有爆量支撐）、均線方向 + 抵扣值（MA5 上彎 + 抵扣值偏低最佳）。</div>
         </div>
       </li>
       <li>
         <div class="step-num">6</div>
         <div class="step-content">
-          <div class="step-title">盤後：查看歷史回測</div>
-          <div class="step-desc">點「📊 回測總覽」，看各族群長期平均 Gap 和正值天數比例。找出哪些族群有規律性的補漲模式，作為下次的優先觀察名單。</div>
+          <div class="step-title">記錄訊號 + 加入模擬倉位</div>
+          <div class="step-desc">條件符合後：點「📓 記錄訊號」加入訊號追蹤簿（驗證策略），同時點「＋ 模擬倉位」建立模擬倉（練習操作）。兩個是互補工具。</div>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">7</div>
+        <div class="step-content">
+          <div class="step-title">盤中：自動更新 + Gap 警示</div>
+          <div class="step-desc">設定「Gap 警示閾值」（建議 1.5pp），搭配自動更新 3-5 分鐘，超過的行橘色高亮自動提示，不用一直盯著頁面。</div>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">8</div>
+        <div class="step-content">
+          <div class="step-title">盤後：回填訊號 + 查看歷史回測</div>
+          <div class="step-desc">到訊號追蹤簿回填到期訊號的實際結果，累積命中率數據。再看「📊 回測總覽」找有規律補漲模式的族群，建立下次觀察名單。</div>
         </div>
       </li>
     </ul>
