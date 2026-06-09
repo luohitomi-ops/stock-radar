@@ -104,13 +104,8 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
 <div class="topbar">
   <div class="topbar-left">
     <a class="logo" href="/">
-      <div class="logo-icon">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <circle cx="8" cy="8" r="6" stroke="#fff" stroke-width="1.5"/>
-          <line x1="8" y1="2" x2="8" y2="14" stroke="#fff" stroke-width="1"/>
-          <line x1="2" y1="8" x2="14" y2="8" stroke="#fff" stroke-width="1"/>
-          <circle cx="8" cy="5" r="1.5" fill="#fff"/>
-        </svg>
+      <div class="logo-icon" style="background:transparent;overflow:hidden;">
+        <img src="/otter-logo.png" width="26" height="26" style="object-fit:cover;border-radius:6px;">
       </div>
       給獺金幣
     </a>
@@ -380,5 +375,17 @@ refresh();
 // 每 5 分鐘自動更新
 setInterval(refresh, 5 * 60 * 1000);
 </script>
+<!-- FOOTER -->
+<div style="margin-top:40px;padding:20px 16px 30px;border-top:0.5px solid var(--border);text-align:center;">
+  <div style="max-width:600px;margin:0 auto;">
+    <div style="font-size:13px;color:var(--text-2);font-weight:600;margin-bottom:6px;">給獺金幣 Stock Radar</div>
+    <div style="font-size:11px;color:var(--text-4);line-height:1.8;margin-bottom:12px;">
+      作者：檸子　<a href="https://www.instagram.com/yuzukiluo" target="_blank" style="color:var(--accent-text);text-decoration:none;">IG @yuzukiluo</a>　<a href="mailto:luohitomi@gmail.com" style="color:var(--accent-text);text-decoration:none;">luohitomi@gmail.com</a>
+    </div>
+    <div style="font-size:11px;color:var(--text-4);background:var(--bg-1);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:10px 14px;line-height:1.7;">
+      ⚠️ 本工具提供之資訊僅供參考，不構成任何投資建議或推薦。投資有風險，請自行判斷並承擔相應責任。
+    </div>
+  </div>
+</div>
 </body>
 </html>
