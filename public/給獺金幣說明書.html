@@ -258,7 +258,10 @@ body {
     <a href="#sidebar-advanced" class="toc-link">補漲排行 / 量能 / 均線</a>
     <a href="#ai-summary"      class="toc-link">AI 盤前摘要</a>
     <a href="#strategy"        class="toc-link">策略推薦</a>
-    <a href="#limits"   class="toc-link">注意事項</a>
+    <a href="#compare"         class="toc-link">比較族群</a>
+    <a href="#market"          class="toc-link">美股行情</a>
+    <a href="#signal"          class="toc-link">訊號追蹤簿</a>
+    <a href="#limits"          class="toc-link">注意事項</a>
   </div>
 </nav>
 
@@ -1119,6 +1122,115 @@ body {
   </section>
 
   <!-- 8. 注意事項 -->
+  <!-- 比較族群 -->
+  <section class="section" id="compare">
+    <div class="section-num">07.6</div>
+    <h2>比較族群功能</h2>
+    <p class="section-intro">
+      topbar 的「⚖️ 比較族群」按鈕，可以選 2-4 個族群並排比較，快速決定哪個優先進場。
+    </p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div>
+          <div class="step-title">點擊 topbar「⚖️ 比較族群」</div>
+          <div class="step-desc">開啟比較 Modal，左側顯示所有族群清單</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div>
+          <div class="step-title">勾選 2-4 個族群</div>
+          <div class="step-desc">右側即時更新比較表，顯示 Gap / Beta / R² / 今日實際漲跌 / 覆蓋率</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div>
+          <div class="step-title">看底部自動建議</div>
+          <div class="step-desc">系統自動標示 Gap 最大（🥇金色）、Beta 最高的族群，並產生一句話建議</div>
+        </div>
+      </div>
+    </div>
+    <div class="info-box" style="margin-top:12px;">
+      💡 優先選 <strong>Gap 大 + Beta 高 + R² > 0.5</strong> 的族群，三個條件都符合代表訊號可信度最高。
+    </div>
+  </section>
+
+  <!-- 美股行情 -->
+  <section class="section" id="market">
+    <div class="section-num">07.7</div>
+    <h2>美股行情頁</h2>
+    <p class="section-intro">
+      給獺金幣提供兩種方式查看美股行情，幫助你在盤前快速判斷今日方向。
+    </p>
+    <div class="card-grid" style="margin-bottom:20px;">
+      <div class="card">
+        <div class="card-icon">📊</div>
+        <div class="card-title">主頁快速展開</div>
+        <div class="card-desc">Macro Grid 下方的「🌐 美股詳情」可展開，顯示主要指數卡片和一句話摘要，標示數據日期。</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🌐</div>
+        <div class="card-title">完整行情頁（/market.html）</div>
+        <div class="card-desc">獨立頁面，顯示 10 個宏觀指數、今日訊號解讀（SOX/SPX/VIX）、關鍵個股（NVDA/TSM/AAPL 等），每 5 分鐘自動更新。</div>
+      </div>
+    </div>
+    <div class="term-wrap">
+      <table class="term-table">
+        <thead><tr><th>台灣時間</th><th>顯示標示</th><th>說明</th></tr></thead>
+        <tbody>
+          <tr><td class="term">06:00 ~ 17:00</td><td>📋 X/X 收盤數據</td><td>正常使用時段，昨日完整收盤資料</td></tr>
+          <tr><td class="term">17:00 ~ 21:30</td><td>⚠️ 美股盤前</td><td>數據以昨日收盤為主，盤前波動不納入</td></tr>
+          <tr><td class="term">21:30 ~ 04:00</td><td>⚠️ 美股盤中</td><td>主頁仍顯示昨日收盤，完整行情頁有盤中即時</td></tr>
+          <tr><td class="term">04:00 ~ 06:00</td><td>📋 今日收盤</td><td>美股收盤後，今日最終數據</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 訊號追蹤簿 -->
+  <section class="section" id="signal">
+    <div class="section-num">07.8</div>
+    <h2>訊號追蹤簿</h2>
+    <p class="section-intro">
+      記錄每次 Gap 訊號，幾天後回填實際結果，累積後統計「哪種條件的命中率最高」，驗證你的 Gap 策略是否真的有效。
+    </p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div>
+          <div class="step-title">看到 Gap 警示 → 點「📓 記錄訊號」</div>
+          <div class="step-desc">Gap 警示觸發時，落差欄會出現橘色「📓 記錄訊號」按鈕，點擊自動帶入族群名稱、Gap 值、Beta、R²</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div>
+          <div class="step-title">設定觀察週期和命中門檻</div>
+          <div class="step-desc">選擇觀察幾天（1天短線 / 3天波段短 / 5天最常用 / 10天中線），設定漲幅達到幾 % 算命中（預設 2%）</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div>
+          <div class="step-title">到期後收到提醒 → 回填結果</div>
+          <div class="step-desc">到期日頁面會顯示橘色提醒橫幅，點「回填結果」填入實際漲幅，系統自動判定命中或未命中</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div>
+          <div class="step-title">看「命中率分析」tab</div>
+          <div class="step-desc">累積 5 筆以上後，可以看到依 Gap 範圍 / Beta 範圍 / 觀察週期分組的命中率長條圖</div>
+        </div>
+      </div>
+    </div>
+    <div class="info-box" style="margin-top:12px;">
+      💡 訊號追蹤簿追蹤的是<strong>族群層級</strong>的補漲訊號，不需要真的建倉。它的目的是驗證 Gap 策略有效性，跟模擬倉位（個股層級）是互補的工具。
+    </div>
+  </section>
+
   <section class="section" id="limits">
     <div class="section-num">08</div>
     <h2>注意事項與限制</h2>
