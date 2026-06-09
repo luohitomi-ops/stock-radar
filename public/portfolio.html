@@ -616,11 +616,18 @@ function editPosition(id) {
   document.getElementById('fStopLoss').value   = pos.stopLoss || '';
   document.getElementById('fDate').value       = pos.entryDate || '';
   document.getElementById('gapSourceTag').style.display = 'none';
+  // 編輯時顯示代號可修改提示
+  const symInput = document.getElementById('fSymbol');
+  symInput.style.borderColor = 'var(--warn)';
+  symInput.title = '可修改代號，修改後現價會重新抓取';
   document.getElementById('addOverlay').classList.add('open');
 }
 
 function closeAddModal() {
   document.getElementById('addOverlay').classList.remove('open');
+  const symInput = document.getElementById('fSymbol');
+  symInput.style.borderColor = '';
+  symInput.title = '';
 }
 
 function closeModal(e) {
@@ -642,9 +649,18 @@ function savePosition() {
   if (STATE.editId) {
     const idx = STATE.active.findIndex(p => p.id === STATE.editId);
     if (idx >= 0) {
+      const oldSymbol = STATE.active[idx].symbol;
       STATE.active[idx] = { ...STATE.active[idx], symbol, sector, entryPrice, lots, takeProfit, stopLoss, entryDate };
       Storage.saveActive(STATE.active);
-      showToast('倉位已更新', '');
+      // 代號改變時清掉舊現價，重新抓取
+      if (oldSymbol !== symbol) {
+        delete STATE.prices[oldSymbol];
+        delete STATE.prices[symbol];
+        showToast(`倉位已更新，重新抓取 ${symbol} 現價中…`, '');
+        refreshPrices();
+      } else {
+        showToast('倉位已更新', '');
+      }
     }
   } else {
     const pos = {
