@@ -2417,67 +2417,52 @@ const MarketDetail = {
   // 由 Renderer.macroGrid() 更新後呼叫
   update(macroItems) {
     if (!macroItems || !macroItems.length) return;
-    const find = (name) => macroItems.find(m => m.name === name || m.id === name);
+    // macroItems 欄位：{ label, val, chg（字串如'+1.99%'）, dir }
+    const find = (label) => macroItems.find(m => m.label === label);
+    const parseChg = (chgStr) => {
+      if (!chgStr) return 0;
+      return parseFloat(chgStr.replace('%','').replace('pp','')) || 0;
+    };
 
-    const spx  = find('SPX')  || find('S&P500');
-    const sox  = find('SOX');
-    const vix  = find('VIX');
-    const nas  = find('NASDAQ') || find('QQQ') || find('NDX');
+    const sox = find('SOX');
+    const spx = find('SPX');
+    const vix = find('VIX');
 
-    // 用現有的 macroItems 找最接近的
-    const targets = ['SPX','SOX','VIX','TWII'];
-    const cards = macroItems.filter(m => targets.includes(m.name) || targets.includes(m.id));
+    const soxChg = parseChg(sox?.chg);
+    const spxChg = parseChg(spx?.chg);
+    const vixChg = parseChg(vix?.chg);
 
-    // 狀態判斷（以 SOX 或 SPX 為主）
-    const mainChg = (sox?.chg ?? spx?.chg ?? 0);
+    // 狀態判斷（以 SOX 為主）
+    const mainChg = soxChg || spxChg;
     const statusEl = document.getElementById('marketDetailStatus');
-    if (mainChg >= 2) {
-      statusEl.textContent = '🟢 大漲'; statusEl.className = 'market-detail-status bull';
-    } else if (mainChg >= 0.5) {
-      statusEl.textContent = '↑ 小漲'; statusEl.className = 'market-detail-status bull';
-    } else if (mainChg <= -2) {
-      statusEl.textContent = '🔴 大跌'; statusEl.className = 'market-detail-status bear';
-    } else if (mainChg <= -0.5) {
-      statusEl.textContent = '↓ 小跌'; statusEl.className = 'market-detail-status bear';
-    } else {
-      statusEl.textContent = '→ 平盤'; statusEl.className = 'market-detail-status flat';
-    }
+    if (mainChg >= 2)       { statusEl.textContent = '🟢 大漲'; statusEl.className = 'market-detail-status bull'; }
+    else if (mainChg >= 0.5){ statusEl.textContent = '↑ 小漲'; statusEl.className = 'market-detail-status bull'; }
+    else if (mainChg <= -5) { statusEl.textContent = '🔴 暴跌'; statusEl.className = 'market-detail-status bear'; }
+    else if (mainChg <= -2) { statusEl.textContent = '🔴 大跌'; statusEl.className = 'market-detail-status bear'; }
+    else if (mainChg <= -0.5){ statusEl.textContent = '↓ 小跌'; statusEl.className = 'market-detail-status bear'; }
+    else                    { statusEl.textContent = '→ 平盤'; statusEl.className = 'market-detail-status flat'; }
 
-    // 卡片
+    // 卡片（顯示全部 10 個）
     const gridEl = document.getElementById('marketDetailGrid');
-    const showItems = macroItems.filter(m =>
-      ['SPX','SOX','VIX','NASDAQ','NDX','DXY','US10Y','TWII'].includes(m.name || m.id)
-    ).slice(0, 8);
-
-    gridEl.innerHTML = (showItems.length ? showItems : macroItems.slice(0, 8)).map(m => {
-      const chg = m.chg ?? 0;
-      const chgCls = chg >= 0 ? 'up' : 'down';
-      const chgStr = m.unit === 'pp'
-        ? `${chg >= 0 ? '+' : ''}${chg.toFixed(2)}pp`
-        : `${chg >= 0 ? '+' : ''}${chg.toFixed(2)}%`;
+    gridEl.innerHTML = macroItems.map(m => {
+      const chgNum = parseChg(m.chg);
+      const chgCls = chgNum >= 0 ? 'up' : 'down';
       return `<div class="market-card">
-        <div class="market-card-name">${m.name}</div>
-        <div class="market-card-val">${m.value ?? '—'}</div>
-        <div class="market-card-chg ${chgCls}">${chgStr}</div>
+        <div class="market-card-name">${m.label}</div>
+        <div class="market-card-val">${m.val ?? '—'}</div>
+        <div class="market-card-chg ${chgCls}">${m.chg ?? '—'}</div>
       </div>`;
     }).join('');
 
     // 摘要文字
     const summaryEl = document.getElementById('marketDetailSummary');
-    const soxChg  = sox?.chg  ?? null;
-    const spxChg  = spx?.chg  ?? null;
-    const vixChg  = vix?.chg  ?? null;
     let summary = '';
-    if (soxChg !== null) {
-      if (soxChg >= 2)       summary += `📈 SOX 費半今日大漲 +${soxChg.toFixed(1)}%，半導體族群補漲動能強。`;
-      else if (soxChg <= -5) summary += `⚠️ SOX 費半今日暴跌 ${soxChg.toFixed(1)}%，台股半導體明日面臨補跌壓力。`;
-      else if (soxChg <= -2) summary += `📉 SOX 費半今日下跌 ${soxChg.toFixed(1)}%，補漲方向需謹慎確認。`;
-    }
-    if (spxChg !== null) {
-      if (spxChg >= 1.5)     summary += `　S&P500 +${spxChg.toFixed(1)}%，大盤偏多。`;
-      else if (spxChg <= -1.5) summary += `　S&P500 ${spxChg.toFixed(1)}%，大盤偏空。`;
-    }
-    if (vixChg !== null && vix?.chg >= 20) summary += `　VIX 恐慌指數大漲 +${vixChg.toFixed(1)}%，市場情緒不穩，建議觀望。`;
+    if (soxChg >= 2)        summary += `📈 SOX 費半大漲 ${sox.chg}，半導體補漲動能強。`;
+    else if (soxChg <= -5)  summary += `⚠️ SOX 費半暴跌 ${sox.chg}，台股半導體明日面臨補跌壓力，建議觀望。`;
+    else if (soxChg <= -2)  summary += `📉 SOX 費半下跌 ${sox.chg}，補漲方向需確認。`;
+    if (spxChg >= 1.5)      summary += `${summary?' ':''}S&P500 ${spx.chg}，大盤偏多。`;
+    else if (spxChg <= -1.5)summary += `${summary?' ':''}S&P500 ${spx.chg}，大盤偏空。`;
+    if (vixChg >= 20)       summary += ` VIX 恐慌指數大漲 ${vix.chg}，市場情緒不穩，建議觀望。`;
     summaryEl.textContent = summary || '指數數據已更新，請參考上方各指數漲跌幅判斷今日方向。';
   },
 };
