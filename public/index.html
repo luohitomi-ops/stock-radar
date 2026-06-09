@@ -186,6 +186,39 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
 .rank-badge { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; background: var(--bg-2); color: var(--text-4); border: 0.5px solid var(--border); }
 .rank-badge.gold { background: #2a1f06; border-color: #a16207; color: var(--warn); }
 
+/* ── 比較族群 Modal ── */
+.compare-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.65); z-index:300; display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity 0.15s; }
+.compare-overlay.open { opacity:1; pointer-events:all; }
+.compare-modal { background:var(--bg-1); border:0.5px solid var(--border); border-radius:10px; width:880px; max-width:96vw; max-height:90vh; overflow:hidden; display:flex; flex-direction:column; transform:translateY(8px); transition:transform 0.15s; }
+.compare-overlay.open .compare-modal { transform:translateY(0); }
+.compare-modal-header { padding:14px 16px; border-bottom:0.5px solid var(--border); display:flex; justify-content:space-between; align-items:center; flex-shrink:0; }
+.compare-modal-title { font-size:13px; font-weight:600; color:var(--text-1); }
+.compare-modal-body { display:flex; flex:1; overflow:hidden; }
+.compare-picker { width:200px; flex-shrink:0; border-right:0.5px solid var(--border); overflow-y:auto; padding:10px 0; }
+.compare-picker-item { display:flex; align-items:center; gap:8px; padding:7px 14px; cursor:pointer; transition:background 0.1s; font-size:12px; color:var(--text-2); }
+.compare-picker-item:hover { background:var(--bg-3); }
+.compare-picker-item.selected { background:var(--accent-dim); color:var(--accent-text); }
+.compare-picker-item input[type=checkbox] { accent-color:var(--accent); width:13px; height:13px; cursor:pointer; flex-shrink:0; }
+.compare-picker-hint { font-size:10px; color:var(--text-4); padding:6px 14px 2px; }
+.compare-result { flex:1; overflow-y:auto; padding:16px; }
+.compare-empty { display:flex; align-items:center; justify-content:center; height:100%; color:var(--text-4); font-size:12px; flex-direction:column; gap:8px; }
+.compare-empty-icon { font-size:28px; }
+.compare-table { width:100%; border-collapse:collapse; }
+.compare-table th { font-size:11px; color:var(--text-4); font-weight:500; padding:7px 10px; border-bottom:0.5px solid var(--border); text-align:left; white-space:nowrap; }
+.compare-table td { font-size:12px; color:var(--text-2); padding:10px 10px; border-bottom:0.5px solid var(--border); vertical-align:middle; font-variant-numeric:tabular-nums; }
+.compare-table tr:last-child td { border-bottom:none; }
+.compare-table tr:hover td { background:var(--bg-3); }
+.compare-sector-name { font-weight:600; color:var(--text-1); font-size:12px; }
+.compare-sector-tag { font-size:10px; color:var(--text-4); margin-top:2px; }
+.compare-best { color:var(--up) !important; font-weight:600; }
+.compare-worst { color:var(--down) !important; }
+.compare-rank { display:inline-block; width:16px; height:16px; border-radius:50%; font-size:9px; font-weight:700; text-align:center; line-height:16px; margin-right:4px; }
+.compare-rank.r1 { background:#a16207; color:#fef3c7; }
+.compare-rank.r2 { background:#475569; color:#e2e8f0; }
+.compare-rank.r3 { background:#7c3d12; color:#fed7aa; }
+.compare-verdict { margin-top:14px; padding:10px 14px; background:var(--bg-2); border-radius:var(--radius-lg); border:0.5px solid var(--border); font-size:12px; color:var(--text-2); line-height:1.7; }
+.compare-verdict strong { color:var(--up); }
+
 /* ── AI 盤前摘要 ── */
 .ai-summary-wrap { margin: 0 16px 10px; border-radius: var(--radius-lg); border: 0.5px solid #1a3060; background: var(--accent-dim); overflow: hidden; }
 .ai-summary-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; border-bottom: 0.5px solid #1a3060; }
@@ -719,7 +752,7 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
       </div>
       <a class="btn" href="/給獺金幣說明書.html" target="_blank" style="text-decoration:none;">📖 說明書</a>
       <a class="btn" href="/portfolio.html" style="text-decoration:none;">📋 模擬倉位</a>
-      <button class="btn">比較族群</button>
+      <button class="btn" onclick="CompareUI.open()">⚖️ 比較族群</button>
       <button class="btn btn-primary" id="refreshBtn" onclick="UI.refresh()">↻ 更新行情</button>
     </div>
   </div>
@@ -893,6 +926,28 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
 </div>
 
 <div class="toast-container" id="toastContainer"></div>
+
+<!-- 比較族群 Modal -->
+<div class="compare-overlay" id="compareOverlay" onclick="CompareUI.closeOnBg(event)">
+  <div class="compare-modal">
+    <div class="compare-modal-header">
+      <span class="compare-modal-title">⚖️ 比較族群</span>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:11px;color:var(--text-4);" id="compareSelectedCount">請從左側勾選 2-4 個族群</span>
+        <button style="background:none;border:none;color:var(--text-4);cursor:pointer;font-size:16px;" onclick="CompareUI.close()">✕</button>
+      </div>
+    </div>
+    <div class="compare-modal-body">
+      <div class="compare-picker" id="comparePicker"></div>
+      <div class="compare-result" id="compareResult">
+        <div class="compare-empty">
+          <div class="compare-empty-icon">⚖️</div>
+          <div>從左側勾選族群，開始比較</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 <button class="sidebar-drawer-btn" id="drawerBtn" title="查看族群詳情">📊</button>
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
@@ -2294,6 +2349,134 @@ const CustomSector = {
 /* ═══════════════════════════════════════════════════════════
    AISummary  — 每次更新行情後呼叫 Anthropic API 產生盤前摘要
    ═══════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════
+   CompareUI  — 族群比較 Modal
+   ═══════════════════════════════════════════════════════════ */
+const CompareUI = {
+  _selected: new Set(),
+  _MAX: 4,
+
+  open() {
+    this._selected.clear();
+    this._renderPicker();
+    this._renderResult();
+    document.getElementById('compareOverlay').classList.add('open');
+  },
+
+  close() {
+    document.getElementById('compareOverlay').classList.remove('open');
+  },
+
+  closeOnBg(e) {
+    if (e.target === document.getElementById('compareOverlay')) this.close();
+  },
+
+  toggle(sectorName) {
+    if (this._selected.has(sectorName)) {
+      this._selected.delete(sectorName);
+    } else {
+      if (this._selected.size >= this._MAX) {
+        Renderer.toast(`最多比較 ${this._MAX} 個族群`, 'error');
+        return;
+      }
+      this._selected.add(sectorName);
+    }
+    this._renderPicker();
+    this._renderResult();
+  },
+
+  _renderPicker() {
+    const el = document.getElementById('comparePicker');
+    const countEl = document.getElementById('compareSelectedCount');
+    const allData = DataLayer.getAll();
+    const n = this._selected.size;
+    countEl.textContent = n < 2 ? `請再勾選 ${2 - n} 個族群` : `已選 ${n}/${this._MAX} 個族群`;
+
+    el.innerHTML = `<div class="compare-picker-hint">勾選 2-4 個族群比較</div>` +
+      allData.map(r => {
+        const sel = this._selected.has(r.sector);
+        return `<div class="compare-picker-item ${sel ? 'selected' : ''}" onclick="CompareUI.toggle('${r.sector.replace(/'/g,"\'")}')">
+          <input type="checkbox" ${sel ? 'checked' : ''} onclick="event.stopPropagation();CompareUI.toggle('${r.sector.replace(/'/g,"\'")}')">
+          <span>${r.sector.replace('台股 ', '')}</span>
+        </div>`;
+      }).join('');
+  },
+
+  _renderResult() {
+    const el = document.getElementById('compareResult');
+    const selected = [...this._selected];
+    if (selected.length < 2) {
+      el.innerHTML = `<div class="compare-empty"><div class="compare-empty-icon">⚖️</div><div>從左側勾選 2-4 個族群開始比較</div></div>`;
+      return;
+    }
+
+    const allData = DataLayer.getAll();
+    const rows = selected.map(name => allData.find(r => r.sector === name)).filter(Boolean);
+
+    // 計算排名（越高越好：gap、beta；越低越差）
+    const rank = (arr, key, higher = true) => {
+      const sorted = [...arr].sort((a, b) => higher ? (b[key] ?? -999) - (a[key] ?? -999) : (a[key] ?? 999) - (b[key] ?? 999));
+      return Object.fromEntries(sorted.map((r, i) => [r.sector, i]));
+    };
+    const gapRank  = rank(rows, 'gap', true);
+    const betaRank = rank(rows, 'beta', true);
+    const r2Rank   = rank(rows, 'r2', true);
+    const actRank  = rank(rows, 'act', false); // act 越接近0越中性，這裡用絕對值
+
+    const rankBadge = (i) => i < 3 ? `<span class="compare-rank r${i+1}">${i+1}</span>` : '';
+    const cls = (i) => i === 0 ? 'compare-best' : i === rows.length - 1 ? 'compare-worst' : '';
+
+    const tableHtml = `<table class="compare-table">
+      <thead>
+        <tr>
+          <th>族群</th>
+          <th>Gap 落差</th>
+          <th>Beta</th>
+          <th>R²</th>
+          <th>今日實際</th>
+          <th>海外驅動</th>
+          <th>覆蓋率</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows.map(r => {
+          const gap  = r.gap  != null ? r.gap.toFixed(2)  : '—';
+          const beta = r.beta != null ? r.beta.toFixed(2) : '—';
+          const r2   = r.r2   != null ? r.r2.toFixed(2)   : '—';
+          const act  = r.act  != null ? (r.act >= 0 ? '+' : '') + r.act.toFixed(2) + '%' : '—';
+          const gapCls  = r.gap  != null ? cls(gapRank[r.sector])  : '';
+          const betaCls = r.beta != null ? cls(betaRank[r.sector]) : '';
+          const r2Cls   = r.r2   != null ? cls(r2Rank[r.sector])   : '';
+          return `<tr>
+            <td>
+              <div class="compare-sector-name">${r.sector.replace('台股 ','')}</div>
+              <div class="compare-sector-tag">${r.driveName || r.market}</div>
+            </td>
+            <td class="${gapCls}">${rankBadge(gapRank[r.sector])}${gap}${r.gap != null ? 'pp' : ''}</td>
+            <td class="${betaCls}">${rankBadge(betaRank[r.sector])}${beta}</td>
+            <td class="${r2Cls}">${r2}</td>
+            <td class="${(r.act??0) >= 0 ? 'pct-up' : 'pct-down'}">${act}</td>
+            <td><span class="overseas-tag ${r.market==='JP'?'jp':''}">${r.market}</span></td>
+            <td>${r.cover}%</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+
+    // 自動產生建議
+    const best = rows.reduce((a, b) => (a.gap ?? -999) > (b.gap ?? -999) ? a : b);
+    const bestBeta = rows.filter(r => r.beta != null).reduce((a, b) => a.beta > b.beta ? a : b, rows[0]);
+    let verdict = `<div class="compare-verdict">`;
+    verdict += `📊 <strong>${best.sector.replace('台股 ','')}</strong> Gap 落差最大（${best.gap?.toFixed(2)}pp），補漲空間最明顯。`;
+    if (bestBeta && bestBeta.sector !== best.sector) {
+      verdict += `<br>⚡ <strong>${bestBeta.sector.replace('台股 ','')}</strong> Beta 最高（${bestBeta.beta?.toFixed(2)}），海外反彈時彈性最大。`;
+    }
+    verdict += `<br>💡 優先選 Gap 大 + Beta 高 + R² > 0.5 的族群，訊號可信度最高。</div>`;
+
+    el.innerHTML = tableHtml + verdict;
+  },
+};
+
 const AISummary = {
   _CACHE_KEY:    'stockRadar_aiSummary',
   _MAX_PER_DAY:  5,    // 每日最多呼叫次數
