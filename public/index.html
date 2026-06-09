@@ -802,7 +802,6 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
         <span class="market-detail-status flat" id="marketDetailStatus">載入中</span>
       </div>
       <div style="display:flex;align-items:center;gap:8px;">
-        <span style="font-size:10px;color:var(--text-4);">點擊展開</span>
         <span class="market-detail-arrow" id="marketDetailArrow">▼</span>
       </div>
     </div>
@@ -812,7 +811,7 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
       </div>
       <div class="market-detail-summary" id="marketDetailSummary">資料載入中…</div>
       <div class="market-detail-footer">
-        <a class="market-page-btn" href="/market.html">→ 完整行情頁</a>
+        <a class="market-page-btn" href="/market.html" target="_blank">→ 完整行情頁</a>
       </div>
     </div>
   </div>
@@ -2411,7 +2410,6 @@ const MarketDetail = {
     this._open = !this._open;
     document.getElementById('marketDetailBody').classList.toggle('open', this._open);
     document.getElementById('marketDetailArrow').classList.toggle('open', this._open);
-    document.querySelector('.market-detail-header span:nth-child(2)').textContent = this._open ? '點擊收合' : '點擊展開';
   },
 
   // 由 Renderer.macroGrid() 更新後呼叫
