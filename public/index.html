@@ -1197,27 +1197,27 @@ const CONFIG = {
     { label:'TWII',    sublabel:'台灣加權',   symbol:'^TWII',    fmt:'price', decimals:0 },
     { label:'SPX',     sublabel:'S&P 500',    symbol:'^GSPC',    fmt:'price', decimals:0 },
     { label:'SOX',     sublabel:'費城半導體', symbol:'^SOX',     fmt:'price', decimals:0 },
+    { label:'NASDAQ',  sublabel:'那斯達克',   symbol:'^IXIC',    fmt:'price', decimals:0 },
+    { label:'DJIA',    sublabel:'道瓊',       symbol:'^DJI',     fmt:'price', decimals:0 },
     { label:'VIX',     sublabel:'恐慌指數',   symbol:'^VIX',     fmt:'price', decimals:2 },
     { label:'USD/TWD', sublabel:'美元兌台幣', symbol:'TWD=X',    fmt:'price', decimals:3 },
     { label:'N225',    sublabel:'日經225',    symbol:'^N225',    fmt:'price', decimals:0 },
     { label:'USD/JPY', sublabel:'美元兌日圓', symbol:'JPY=X',    fmt:'price', decimals:2 },
     { label:'US10Y',   sublabel:'美債10年期', symbol:'^TNX',     fmt:'pct',   decimals:2 },
-    { label:'DXY',     sublabel:'美元指數',   symbol:'DX-Y.NYB', fmt:'price', decimals:2 },
-    { label:'WTI',     sublabel:'原油',       symbol:'CL=F',     fmt:'price', decimals:2 },
   ],
 
   // 宏觀指數 fallback（API 失敗時顯示，避免空白）
   macroFallback: [
-    { label:'TWII',    val:'42,268', chg:'+2.17%', dir:'up' },
-    { label:'SPX',     val:'7,473',  chg:'+0.37%', dir:'up' },
-    { label:'SOX',     val:'12,203', chg:'+1.99%', dir:'up' },
-    { label:'VIX',     val:'16.70',  chg:'-0.36%', dir:'down' },
-    { label:'USD/TWD', val:'31.438', chg:'-0.36%', dir:'down' },
-    { label:'N225',    val:'63,339', chg:'+2.68%', dir:'up' },
-    { label:'USD/JPY', val:'158.85', chg:'-0.11%', dir:'down' },
-    { label:'US10Y',   val:'4.56%',  chg:'-0.03pp',dir:'down' },
-    { label:'DXY',     val:'99.06',  chg:'-0.26%', dir:'down' },
-    { label:'WTI',     val:'96.60',  chg:'0.00%',  dir:'neu' },
+    { label:'TWII',    val:'43,226', chg:'-3.31%', dir:'down' },
+    { label:'SPX',     val:'7,387',  chg:'+0.04%', dir:'up' },
+    { label:'SOX',     val:'12,658', chg:'+3.58%', dir:'up' },
+    { label:'NASDAQ',  val:'19,215', chg:'+0.18%', dir:'up' },
+    { label:'DJIA',    val:'42,410', chg:'+0.13%', dir:'up' },
+    { label:'VIX',     val:'21.11',  chg:'+6.24%', dir:'up' },
+    { label:'USD/TWD', val:'31.625', chg:'+0.14%', dir:'up' },
+    { label:'N225',    val:'64,179', chg:'-1.89%', dir:'down' },
+    { label:'USD/JPY', val:'160.46', chg:'+0.18%', dir:'up' },
+    { label:'US10Y',   val:'4.53%',  chg:'-0.01pp',dir:'down' },
   ],
 
   // 個股 Yahoo symbol 對照（已逐一驗證 .TW = 上市, .TWO = 上櫃）
@@ -2513,16 +2513,20 @@ const MarketDetail = {
       return parseFloat(chgStr.replace('%','').replace('pp','')) || 0;
     };
 
-    const sox = find('SOX');
-    const spx = find('SPX');
-    const vix = find('VIX');
+    const sox    = find('SOX');
+    const spx    = find('SPX');
+    const vix    = find('VIX');
+    const nasdaq = find('NASDAQ');
+    const djia   = find('DJIA');
 
-    const soxChg = parseChg(sox?.chg);
-    const spxChg = parseChg(spx?.chg);
-    const vixChg = parseChg(vix?.chg);
+    const soxChg    = parseChg(sox?.chg);
+    const spxChg    = parseChg(spx?.chg);
+    const vixChg    = parseChg(vix?.chg);
+    const nasdaqChg = parseChg(nasdaq?.chg);
+    const djiaChg   = parseChg(djia?.chg);
 
-    // 狀態判斷（以 SOX 為主）
-    const mainChg = soxChg || spxChg;
+    // 狀態判斷（SOX + NASDAQ 雙指標）
+    const mainChg = soxChg || nasdaqChg || spxChg;
     const statusEl = document.getElementById('marketDetailStatus');
     if (mainChg >= 2)       { statusEl.textContent = '🟢 大漲'; statusEl.className = 'market-detail-status bull'; }
     else if (mainChg >= 0.5){ statusEl.textContent = '↑ 小漲'; statusEl.className = 'market-detail-status bull'; }
@@ -2546,12 +2550,21 @@ const MarketDetail = {
     // 摘要文字
     const summaryEl = document.getElementById('marketDetailSummary');
     let summary = '';
-    if (soxChg >= 2)        summary += `📈 SOX 費半大漲 ${sox.chg}，半導體補漲動能強。`;
-    else if (soxChg <= -5)  summary += `⚠️ SOX 費半暴跌 ${sox.chg}，台股半導體明日面臨補跌壓力，建議觀望。`;
-    else if (soxChg <= -2)  summary += `📉 SOX 費半下跌 ${sox.chg}，補漲方向需確認。`;
-    if (spxChg >= 1.5)      summary += `${summary?' ':''}S&P500 ${spx.chg}，大盤偏多。`;
-    else if (spxChg <= -1.5)summary += `${summary?' ':''}S&P500 ${spx.chg}，大盤偏空。`;
-    if (vixChg >= 20)       summary += ` VIX 恐慌指數大漲 ${vix.chg}，市場情緒不穩，建議觀望。`;
+    if (soxChg >= 2 && nasdaqChg >= 1)
+      summary += `📈 SOX ${sox?.chg} / NASDAQ ${nasdaq?.chg}，科技雙強，補漲動能充足。`;
+    else if (soxChg >= 2)
+      summary += `📈 SOX 費半大漲 ${sox?.chg}，半導體補漲動能強。`;
+    else if (soxChg <= -5)
+      summary += `⚠️ SOX 費半暴跌 ${sox?.chg}，台股半導體明日面臨補跌壓力，建議觀望。`;
+    else if (soxChg <= -2 && djiaChg > -0.5)
+      summary += `📉 SOX ${sox?.chg} 走弱，但道瓊相對穩（${djia?.chg}），科技賣壓但傳統產業撐盤。`;
+    else if (soxChg <= -2)
+      summary += `📉 SOX 費半下跌 ${sox?.chg}，補漲方向需確認。`;
+    if (spxChg >= 1.5)       summary += ` S&P500 ${spx?.chg}，大盤偏多。`;
+    else if (spxChg <= -1.5) summary += ` S&P500 ${spx?.chg}，大盤偏空。`;
+    if (djiaChg !== null && Math.abs(djiaChg - (nasdaqChg??0)) > 1.5)
+      summary += ` 道瓊 vs NASDAQ 分化（${djia?.chg} vs ${nasdaq?.chg}），留意資金輪動。`;
+    if (vixChg >= 20) summary += ` VIX 恐慌指數大漲 ${vix?.chg}，市場情緒不穩，建議觀望。`;
     // 時段判斷（台灣時間）
     const now = new Date();
     const hour = now.getHours();
@@ -2792,15 +2805,25 @@ const AISummary = {
 
     const today = new Date().toLocaleDateString('zh-TW', { month: 'long', day: 'numeric', weekday: 'short' });
 
+    // 找關鍵指數做分化判斷
+    const findMacro = label => (STATE.macroItems||[]).find(m => m.label === label);
+    const soxItem    = findMacro('SOX');
+    const nasdaqItem = findMacro('NASDAQ');
+    const djiaItem   = findMacro('DJIA');
+    const divergence = (soxItem && djiaItem)
+      ? `SOX ${soxItem.chg}，NASDAQ ${nasdaqItem?.chg||'—'}，道瓊 ${djiaItem.chg}`
+      : '';
+
     const prompt = `你是一位台股盤前分析師，請根據以下資料，用繁體中文寫一段 2-3 句的今日盤前重點摘要，語氣簡潔專業，不要廢話。
 
 今天：${today}
 宏觀指數：${macroText || '資料載入中'}
+科技vs傳統分化：${divergence || '資料載入中'}
 Gap 前五名族群：${topSectors || '資料載入中'}
 
 要求：
-1. 第一句說明今日整體市場氛圍（根據海外指數表現）
-2. 第二句點出最值得關注的 1-2 個補漲族群及原因
+1. 第一句說明今日整體市場氛圍，特別點出 SOX/NASDAQ/道瓊 是否有分化
+2. 第二句點出最值得關注的 1-2 個補漲族群及原因（考慮分化方向）
 3. 第三句給出一個操作提醒（注意事項或建議）
 直接輸出摘要，不要加標題或編號。`;
 
@@ -4110,24 +4133,48 @@ const Renderer = {
     const posCount = withGap.filter(r => r.gap > 0).length;
     const posPct = Math.round(posCount / withGap.length * 100);
 
-    // 取海外驅動最大跌幅
+    // 取海外驅動最大跌幅（含 NASDAQ / DJIA 分化判斷）
     const driveChgs = computed.map(r => r.driveChg).filter(v => v !== null);
     const worstDrive = driveChgs.length ? Math.min(...driveChgs) : 0;
+    const bestDrive  = driveChgs.length ? Math.max(...driveChgs) : 0;
+
+    // 從 macroItems 取 NASDAQ / DJIA / SOX 做分化判斷
+    const macroItems = STATE.macroItems || [];
+    const findChg = label => {
+      const m = macroItems.find(x => x.label === label);
+      return m ? parseFloat((m.chg||'0').replace('%','')) : null;
+    };
+    const soxChg    = findChg('SOX');
+    const nasdaqChg = findChg('NASDAQ');
+    const djiaChg   = findChg('DJIA');
+    const spxChg    = findChg('SPX');
+
+    // 科技 vs 傳統分化偵測
+    const techStrong = soxChg !== null && nasdaqChg !== null && soxChg > 1 && nasdaqChg > 0.5;
+    const techWeak   = soxChg !== null && soxChg < -2;
+    const djiaOk     = djiaChg !== null && djiaChg > -1;
 
     let type = '', title = '', sub = '';
 
     if (worstDrive <= -5) {
-      // 海外暴跌（SOX -5% 以上）
       type  = 'danger';
       title = `⚠️ 海外驅動今日暴跌 ${worstDrive.toFixed(1)}%，Gap 為補跌方向`;
       sub   = `${posPct}% 族群出現正 Gap，代表台股尚未充分反映跌幅，明日開盤留意補跌風險。不建議在確認止跌前進場。`;
+    } else if (techWeak && djiaOk) {
+      // SOX 跌但道瓊撐住 = 科技賣壓、資金輪傳統
+      type  = 'warning';
+      title = `⚡ 科技指數走弱（SOX ${soxChg?.toFixed(1)}%），道瓊相對撐盤`;
+      sub   = `科技族群補跌壓力大，傳統產業族群相對穩定。建議迴避半導體族群，可觀察連動 SPX 的非科技族群。`;
     } else if (worstDrive <= -2) {
-      // 海外明顯下跌
       type  = 'warning';
       title = `⚡ 海外驅動今日下跌 ${worstDrive.toFixed(1)}%，正 Gap 需確認方向`;
       sub   = `正 Gap 可能是補漲空間，也可能是補跌壓力。建議搭配成交量與均線方向確認後再進場。`;
+    } else if (techStrong && avgGap >= 1.5) {
+      // SOX + NASDAQ 雙強 = 科技補漲訊號最強
+      type  = 'positive';
+      title = `✅ SOX +${soxChg?.toFixed(1)}% ／ NASDAQ +${nasdaqChg?.toFixed(1)}%，科技補漲訊號強`;
+      sub   = `半導體與科技大盤雙強，${posPct}% 族群有正 Gap。優先關注 SOX 連動族群（Beta > 0.8，R² > 0.5）。`;
     } else if (avgGap >= 1.5 && posPct >= 60) {
-      // 普遍補漲機會
       type  = 'positive';
       title = `✅ 今日 ${posPct}% 族群有正 Gap，海外表現穩定`;
       sub   = `平均落差 +${avgGap.toFixed(2)}pp，補漲訊號明確。優先關注 Beta > 0.8 且 R² > 0.5 的族群。`;
