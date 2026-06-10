@@ -1194,16 +1194,16 @@ const CONFIG = {
   // TWD=X = USD/TWD、^N225 = 日經、JPY=X = USD/JPY
   // ^TNX = US 10Y殖利率、DX-Y.NYB = DXY、CL=F = WTI原油
   macroSymbols: [
-    { label:'TWII',    symbol:'^TWII',    fmt:'price', decimals:0 },
-    { label:'SPX',     symbol:'^GSPC',    fmt:'price', decimals:0 },
-    { label:'SOX',     symbol:'^SOX',     fmt:'price', decimals:0 },
-    { label:'VIX',     symbol:'^VIX',     fmt:'price', decimals:2 },
-    { label:'USD/TWD', symbol:'TWD=X',    fmt:'price', decimals:3 },
-    { label:'N225',    symbol:'^N225',    fmt:'price', decimals:0 },
-    { label:'USD/JPY', symbol:'JPY=X',    fmt:'price', decimals:2 },
-    { label:'US10Y',   symbol:'^TNX',     fmt:'pct',   decimals:2 },
-    { label:'DXY',     symbol:'DX-Y.NYB', fmt:'price', decimals:2 },
-    { label:'WTI',     symbol:'CL=F',     fmt:'price', decimals:2 },
+    { label:'TWII',    sublabel:'台灣加權',   symbol:'^TWII',    fmt:'price', decimals:0 },
+    { label:'SPX',     sublabel:'S&P 500',    symbol:'^GSPC',    fmt:'price', decimals:0 },
+    { label:'SOX',     sublabel:'費城半導體', symbol:'^SOX',     fmt:'price', decimals:0 },
+    { label:'VIX',     sublabel:'恐慌指數',   symbol:'^VIX',     fmt:'price', decimals:2 },
+    { label:'USD/TWD', sublabel:'美元兌台幣', symbol:'TWD=X',    fmt:'price', decimals:3 },
+    { label:'N225',    sublabel:'日經225',    symbol:'^N225',    fmt:'price', decimals:0 },
+    { label:'USD/JPY', sublabel:'美元兌日圓', symbol:'JPY=X',    fmt:'price', decimals:2 },
+    { label:'US10Y',   sublabel:'美債10年期', symbol:'^TNX',     fmt:'pct',   decimals:2 },
+    { label:'DXY',     sublabel:'美元指數',   symbol:'DX-Y.NYB', fmt:'price', decimals:2 },
+    { label:'WTI',     sublabel:'原油',       symbol:'CL=F',     fmt:'price', decimals:2 },
   ],
 
   // 宏觀指數 fallback（API 失敗時顯示，避免空白）
@@ -1281,6 +1281,28 @@ const CONFIG = {
     '6488': '6488.TWO',  // 環球晶
     '3450': '3450.TW',   // 聯鈞
     '2376': '2376.TW',   // 技嘉
+      '3324': '3324.TW',   // 雙鴻
+      '3017': '3017.TW',   // 奇鋐
+      '2421': '2421.TW',   // 建準
+      '3536': '3536.TW',   // 台晶科
+      '3664': '3664.TWO',  // 波若威
+      '3630': '3630.TWO',  // 新鉅科
+      '2634': '2634.TW',   // 漢翔
+      '8048': '8048.TWO',  // 雷虎
+      '1568': '1568.TW',   // 倫飛
+      '6510': '6510.TWO',  // 精測
+      '4707': '4707.TWO',  // 雃博
+      '4107': '4107.TWO',  // 邦特
+      '6814': '6814.TWO',  // 昇達科
+      '2441': '2441.TW',   // 超豐
+      '3023': '3023.TW',   // 信邦
+      '6643': '6643.TWO',  // M31
+      '3661': '3661.TW',   // 世芯-KY
+      '3051': '3051.TW',   // 智原
+      '2383': '2383.TW',   // 台光電
+      '6213': '6213.TW',   // 聯茂
+      '8046': '8046.TWO',  // 南電
+      '2049': '2049.TW',   // 上銀
     '3231': '3231.TW',   // 緯創
     '2618': '2618.TW',   // 長榮航
     '2610': '2610.TW',   // 華航
@@ -1586,6 +1608,62 @@ const CONFIG = {
       stocks:[
         {id:'2376',name:'技嘉', price:320, chg:null, role:'龍頭', seed:4301},
         {id:'2357',name:'華碩', price:580, chg:null, role:'核心', seed:4302},
+      ]},
+    { hot:false, sector:'台股 液態冷卻 / 冷板', exp:null, act:null, gap:null,
+      market:'US', driveName:'美股 費城半導體', driveIndex:'SOX', driveChg:null, cover:100,
+      stocks:[
+        {id:'3324',name:'雙鴻', price:280, chg:null, role:'龍頭', seed:5001},
+        {id:'3017',name:'奇鋐', price:320, chg:null, role:'核心', seed:5002},
+        {id:'2421',name:'建準', price:110, chg:null, role:'核心', seed:5003},
+      ]},
+    { hot:false, sector:'台股 高速傳輸 / 光纖模組', exp:null, act:null, gap:null,
+      market:'US', driveName:'美股 費城半導體', driveIndex:'SOX', driveChg:null, cover:75,
+      stocks:[
+        {id:'3536',name:'台晶科', price:180, chg:null, role:'龍頭', seed:5011},
+        {id:'3664',name:'波若威', price:95,  chg:null, role:'核心', seed:5012},
+        {id:'3630',name:'新鉅科', price:75,  chg:null, role:'核心', seed:5013},
+      ]},
+    { hot:false, sector:'台股 軍工 / 國防', exp:null, act:null, gap:null,
+      market:'US', driveName:'美股 S&P500', driveIndex:'SPX', driveChg:null, cover:75,
+      stocks:[
+        {id:'2634',name:'漢翔', price:48,  chg:null, role:'龍頭', seed:5021},
+        {id:'8048',name:'雷虎', price:95,  chg:null, role:'核心', seed:5022},
+        {id:'1568',name:'倫飛', price:32,  chg:null, role:'核心', seed:5023},
+      ]},
+    { hot:false, sector:'台股 醫療器材 / 生技', exp:null, act:null, gap:null,
+      market:'US', driveName:'美股 S&P500', driveIndex:'SPX', driveChg:null, cover:75,
+      stocks:[
+        {id:'6510',name:'精測', price:450, chg:null, role:'龍頭', seed:5031},
+        {id:'4707',name:'雃博', price:125, chg:null, role:'核心', seed:5032},
+        {id:'4107',name:'邦特', price:180, chg:null, role:'核心', seed:5033},
+      ]},
+    { hot:false, sector:'台股 低軌衛星 / 天線', exp:null, act:null, gap:null,
+      market:'US', driveName:'美股 S&P500', driveIndex:'SPX', driveChg:null, cover:75,
+      stocks:[
+        {id:'6814',name:'昇達科', price:220, chg:null, role:'龍頭', seed:5041},
+        {id:'2441',name:'超豐', price:85,  chg:null, role:'核心', seed:5042},
+        {id:'3023',name:'信邦', price:195, chg:null, role:'核心', seed:5043},
+      ]},
+    { hot:false, sector:'台股 IP 授權 / 矽智財', exp:null, act:null, gap:null,
+      market:'US', driveName:'美股 費城半導體', driveIndex:'SOX', driveChg:null, cover:75,
+      stocks:[
+        {id:'6643',name:'M31', price:380, chg:null, role:'龍頭', seed:5051},
+        {id:'3661',name:'世芯-KY', price:2200, chg:null, role:'核心', seed:5052},
+        {id:'3051',name:'智原', price:320, chg:null, role:'核心', seed:5053},
+      ]},
+    { hot:false, sector:'台股 玻璃基板 / 先進封裝材料', exp:null, act:null, gap:null,
+      market:'US', driveName:'美股 費城半導體', driveIndex:'SOX', driveChg:null, cover:75,
+      stocks:[
+        {id:'2383',name:'台光電', price:320, chg:null, role:'龍頭', seed:5061},
+        {id:'6213',name:'聯茂', price:155, chg:null, role:'核心', seed:5062},
+        {id:'8046',name:'南電', price:290, chg:null, role:'核心', seed:5063},
+      ]},
+    { hot:false, sector:'台股 工業自動化 / 機器手臂', exp:null, act:null, gap:null,
+      market:'JP', driveName:'日股 日經225', driveIndex:'N225', driveChg:null, cover:75,
+      stocks:[
+        {id:'2049',name:'上銀', price:380, chg:null, role:'龍頭', seed:5071},
+        {id:'1590',name:'亞德客', price:680, chg:null, role:'核心', seed:5072},
+        {id:'2308',name:'台達電', price:320, chg:null, role:'核心', seed:5073},
       ]},
   ],
 };
@@ -3645,11 +3723,16 @@ const Renderer = {
     const data = items || CONFIG.macroFallback;
     // 取舊值比較，決定閃爍方向
     const oldCells = el.querySelectorAll('.macro-val');
-    el.innerHTML = data.map((m, i) => `
-      <div class="macro-cell">
-        <div class="macro-label">${m.label}</div>
+    // 建立 sublabel 對照表
+    const sublabelMap = {};
+    CONFIG.macroSymbols.forEach(m => { if (m.sublabel) sublabelMap[m.label] = m.sublabel; });
+    el.innerHTML = data.map((m, i) => {
+      const sub = sublabelMap[m.label] || '';
+      return `<div class="macro-cell">
+        <div class="macro-label">${m.label}${sub ? `<span style="font-size:10px;color:var(--text-5);margin-left:4px;">${sub}</span>` : ''}</div>
         <div class="macro-val">${m.val} <span class="${m.dir}">${m.chg}</span></div>
-      </div>`).join('');
+      </div>`;
+    }).join('');
     // 觸發閃爍
     el.querySelectorAll('.macro-cell').forEach((cell, i) => {
       const dir = data[i]?.dir;
