@@ -259,6 +259,13 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
 .ai-trigger-btn { background: none; border: 0.5px dashed #1a3060; border-radius: var(--radius); color: var(--accent-text); font-size: 12px; padding: 6px 14px; cursor: pointer; transition: 0.15s; width: 100%; text-align: center; }
 .ai-trigger-btn:hover { background: rgba(26,110,245,0.1); border-style: solid; }
 
+/* ── 板塊狀態標籤 ── */
+.sector-state { display:inline-flex; align-items:center; gap:3px; font-size:10px; padding:1px 6px; border-radius:3px; font-weight:600; white-space:nowrap; margin-left:4px; vertical-align:middle; }
+.sector-state.bull    { background:rgba(34,197,94,0.12);  color:var(--up);   border:0.5px solid rgba(34,197,94,0.3); }
+.sector-state.rotate  { background:rgba(96,165,250,0.12); color:#60a5fa;     border:0.5px solid rgba(96,165,250,0.3); }
+.sector-state.watch   { background:rgba(107,122,142,0.12);color:var(--text-4);border:0.5px solid var(--border); }
+.sector-state.retreat { background:rgba(239,68,68,0.1);   color:var(--down); border:0.5px solid rgba(239,68,68,0.3); }
+
 /* ── Gap 方向警示橫幅 ── */
 .gap-direction-banner { display:none; margin: 0 0 10px 0; padding: 9px 14px; border-radius: 6px; font-size: 12px; line-height: 1.6; border: 0.5px solid; animation: fadeIn 0.3s ease; }
 .gap-direction-banner.warning  { background:#2a1500; border-color:#5a3500; color:#fbbf24; }
@@ -896,6 +903,16 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
         <div class="chip-row" id="starChips">
           <div class="chip active" data-val="all">全部</div>
           <div class="chip" data-val="starred">⭐ 收藏</div>
+        </div>
+      </div>
+      <div class="filter-group">
+        <div class="filter-label">板塊狀態</div>
+        <div class="chip-row" id="stateChips">
+          <div class="chip active" data-val="all">全部</div>
+          <div class="chip" data-val="bull">🔥 主力</div>
+          <div class="chip" data-val="rotate">🔄 輪動</div>
+          <div class="chip" data-val="watch">👀 觀望</div>
+          <div class="chip" data-val="retreat">🌊 退潮</div>
         </div>
       </div>
       <div style="margin-left:auto;display:flex;gap:6px;align-items:center;">
@@ -2870,6 +2887,7 @@ const STATE = {
     betaMin:     null,        // beta 最小值篩選
     driveChgMin: null,        // 驅動指數漲跌最小值篩選
     starOnly:    false,       // 只看收藏
+    sectorState: 'all',      // 板塊狀態篩選
   },
   lastUpdated: null,
 };
@@ -3351,6 +3369,21 @@ const BetaEngine = {
       // ── gap = exp - act ──
       const gap = (exp !== null && act !== null) ? exp - act : null;
 
+      // ── 量能比：族群內個股今日量 vs 5日均量的平均 ──
+      let volRatioSum = 0, volRatioCount = 0;
+      r.stocks.forEach(s => {
+        const hist = stockHistories.get(s.id);
+        if (!hist || !hist.volumes || hist.volumes.length < 6) return;
+        const vols = hist.volumes.slice(-6);
+        const avg5 = vols.slice(0, 5).reduce((a, b) => a + b, 0) / 5;
+        const today = vols[vols.length - 1];
+        if (avg5 > 0 && today != null) {
+          volRatioSum += today / avg5;
+          volRatioCount++;
+        }
+      });
+      const volRatio = volRatioCount > 0 ? volRatioSum / volRatioCount : null;
+
       // ── 資料品質標記 ──
       let quality = 'live';
       if (beta === null || driveChgToday === null) quality = 'beta_only';
@@ -3371,6 +3404,7 @@ const BetaEngine = {
         driveChg:  driveChgToday !== null ? parseFloat(driveChgToday.toFixed(2)) : null,
         beta:      beta  !== null ? parseFloat(beta.toFixed(3))  : null,
         r2:        r2    !== null ? parseFloat(r2.toFixed(3))    : null,
+        volRatio:  volRatio !== null ? parseFloat(volRatio.toFixed(2)) : null,
         _quality:  quality,
         _liveCover: liveCover,
         stocks:    updatedStocks,
@@ -3382,6 +3416,51 @@ const BetaEngine = {
 /* ═══════════════════════════════════════════════════════════
    FILTER ENGINE  — 純函數，不碰 DOM
    ═══════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════
+   SectorState  — 根據 Gap / Beta / R² 判斷板塊狀態
+   ═══════════════════════════════════════════════════════════ */
+const SectorState = {
+  get(r) {
+    const gap      = r.gap      ?? null;
+    const beta     = r.beta     ?? null;
+    const r2       = r.r2       ?? null;
+    const volRatio = r.volRatio ?? null;
+
+    if (gap === null) return { key:'watch', label:'👀 觀望', cls:'watch' };
+
+    const hasVol     = volRatio !== null;
+    const volHigh    = hasVol && volRatio >= 1.3;   // 量能放大 30%+
+    const volLow     = hasVol && volRatio <= 0.7;   // 量能萎縮 30%+
+    const volNormal  = hasVol && !volHigh && !volLow;
+
+    // 主力：Gap 大 + Beta 高 + R² 有支撐 + 量能放大（或無量能資料時放寬）
+    const mainCondition = gap >= 2 && beta !== null && beta >= 0.8 && r2 !== null && r2 >= 0.4;
+    if (mainCondition && (!hasVol || volHigh || volNormal))
+      return { key:'bull', label:'🔥 主力', cls:'bull' };
+
+    // 退潮：Gap 負值 + 量能萎縮，或 Gap 很負
+    if (gap <= -1.5 && (!hasVol || volLow))
+      return { key:'retreat', label:'🌊 退潮', cls:'retreat' };
+    if (gap <= -2.5)
+      return { key:'retreat', label:'🌊 退潮', cls:'retreat' };
+
+    // 觀望：量能萎縮（不論 Gap），或 Gap 接近 0
+    if (volLow || (gap > -1 && gap < 0.5))
+      return { key:'watch', label:'👀 觀望', cls:'watch' };
+
+    // 輪動：Gap 正值
+    if (gap >= 0.5)
+      return { key:'rotate', label:'🔄 輪動', cls:'rotate' };
+
+    return { key:'watch', label:'👀 觀望', cls:'watch' };
+  },
+
+  badge(r) {
+    const s = this.get(r);
+    return `<span class="sector-state ${s.cls}" title="板塊狀態">${s.label}</span>`;
+  },
+};
+
 const FilterEngine = {
   apply(data, filters, sort, sortDir, starred) {
     const f = filters;
@@ -3396,6 +3475,7 @@ const FilterEngine = {
       if (f.betaMin     !== null && (r.beta ?? -Infinity) < f.betaMin) return false;
       if (f.driveChgMin !== null && Math.abs(r.driveChg ?? 0) < f.driveChgMin) return false;
       if (f.starOnly    && !starred.has(r.sector)) return false;
+      if (f.sectorState !== 'all' && SectorState.get(r).key !== f.sectorState) return false;
       return true;
     });
 
@@ -3420,7 +3500,8 @@ const FilterEngine = {
     if (filters.cover   !== 'all') n++;
     if (filters.betaMin !== null)  n++;
     if (filters.driveChgMin !== null) n++;
-    if (filters.starOnly)  n++;
+    if (filters.starOnly)    n++;
+    if (filters.sectorState !== 'all') n++;
     return n;
   },
 };
@@ -3626,10 +3707,11 @@ const Renderer = {
         </td>
         <td><div class="rank-badge ${i === 0 && !isStarred ? 'gold' : ''}">${i + 1}</div></td>
         <td>
-          <div style="display:flex;align-items:center;gap:5px;">
+          <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
             <div class="sector-name">${this.highlight(r.sector, query)}</div>
             ${this.qualityBadge(r._quality || 'fallback')}
             ${r._custom ? '<span class="custom-tag">自訂</span>' : ''}
+            ${SectorState.badge(r)}
           </div>
           <div style="font-size:10px;color:var(--text-6);margin-top:1px;">${r.stocks.length} 檔</div>
         </td>
@@ -4059,7 +4141,7 @@ const UI = {
 
   clearFilters() {
     setState({
-      filters: { search:'', gapMin:null, gapMax:null, expMin:null, market:'all', cover:'all', betaMin:null, driveChgMin:null, starOnly:false },
+      filters: { search:'', gapMin:null, gapMax:null, expMin:null, market:'all', cover:'all', betaMin:null, driveChgMin:null, starOnly:false, sectorState:'all' },
       gapAlert: null,
     });
     this.filterUI(STATE.filters);
@@ -4189,6 +4271,10 @@ const UI = {
         }
       });
     });
+    // 板塊狀態 chips
+    document.querySelectorAll('#stateChips .chip').forEach(c => {
+      c.classList.toggle('active', c.dataset.val === (filters.sectorState || 'all'));
+    });
   },
 
   _bindEvents() {
@@ -4215,13 +4301,15 @@ const UI = {
     });
 
     // chips（單選）
-    document.querySelectorAll('#marketChips .chip, #coverChips .chip, #starChips .chip').forEach(chip => {
+    document.querySelectorAll('#marketChips .chip, #coverChips .chip, #starChips .chip, #stateChips .chip').forEach(chip => {
       chip.addEventListener('click', () => {
         const groupId = chip.closest('.chip-row').id;
         chip.closest('.chip-row').querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
         chip.classList.add('active');
         if (groupId === 'starChips') {
           this.setFilter({ starOnly: chip.dataset.val === 'starred' });
+        } else if (groupId === 'stateChips') {
+          this.setFilter({ sectorState: chip.dataset.val });
         } else {
           const key = groupId === 'marketChips' ? 'market' : 'cover';
           this.setFilter({ [key]: chip.dataset.val });
