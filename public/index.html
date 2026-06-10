@@ -3457,7 +3457,13 @@ const SectorState = {
 
   badge(r) {
     const s = this.get(r);
-    return `<span class="sector-state ${s.cls}" title="板塊狀態">${s.label}</span>`;
+    const tooltips = {
+      bull:    '🔥 主力：Gap 大＋Beta 高＋量能放大，補漲動能最強',
+      rotate:  '🔄 輪動：有正 Gap 但條件普通，資金輪動中',
+      watch:   '👀 觀望：Gap 接近 0 或量能萎縮，方向不明',
+      retreat: '🌊 退潮：Gap 為負值，已超漲或資金退出',
+    };
+    return `<span class="sector-state ${s.cls}" title="${tooltips[s.key] || s.label}">${s.label}</span>`;
   },
 };
 
