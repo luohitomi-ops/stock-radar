@@ -3726,33 +3726,7 @@ const Renderer = {
         <td>
           <span class="pct ${(gap??0)>=0?'pct-down':'pct-up'}" style="font-weight:600;">${this.fmtOrDash(gap,'pp')}${alertDot}</span>
           ${gap !== null ? `<div class="gap-bar" style="width:${gapBarW}%;background:${gapBarColor};"></div>` : ''}
-          ${isAlert ? `<div style="margin-top:3px;display:flex;gap:4px;flex-wrap:wrap;">
-            ${(() => {
-              const dc = r.driveChg ?? 0;
-              const gv = gap ?? 0;
-              // 判斷入場情況
-              const bullSignal  = dc >= 0 && gv > 0;   // 海外漲 + 正Gap = 補漲
-              const reboundSignal = dc < 0 && gv < 0;  // 海外跌 + 負Gap = 跌超反彈
-              const overBought  = dc >= 0 && gv < 0;   // 海外漲 + 負Gap = 已超漲
-              const dropRisk    = dc < 0  && gv > 0;   // 海外跌 + 正Gap = 補跌風險
-
-              const portfolioUrl = \`/portfolio.html?add=\${encodeURIComponent(r.stocks[0]?.symbol||'')}&sector=\${encodeURIComponent(r.sector)}&price=\${r.stocks[0]?.price||''}\`;
-              const signalUrl    = \`/signal.html?sector=\${encodeURIComponent(r.sector)}&gap=\${gap?.toFixed(2)||''}&beta=\${r.beta?.toFixed(2)||''}&r2=\${r.r2?.toFixed(2)||''}&market=\${r.market}\`;
-
-              let btn = '';
-              if (bullSignal) {
-                btn = \`<a class="portfolio-add-btn" href="\${portfolioUrl}" onclick="event.stopPropagation()" title="海外上漲＋正 Gap，補漲機會">＋ 模擬倉位</a>\`;
-              } else if (reboundSignal) {
-                btn = \`<a class="portfolio-add-btn" href="\${portfolioUrl}" onclick="event.stopPropagation()" title="跌幅超過預期，可能反彈" style="background:rgba(139,92,246,0.15);border-color:#5b21b6;color:#a78bfa;">＋ 模擬倉位（反彈）</a>\`;
-              } else if (overBought) {
-                btn = \`<span class="portfolio-add-btn" style="background:rgba(107,122,142,0.1);border-color:var(--border);color:var(--text-4);cursor:default;" title="台股已超漲，不建議追">⚠️ 已超漲</span>\`;
-              } else if (dropRisk) {
-                btn = \`<span class="portfolio-add-btn" style="background:rgba(239,68,68,0.1);border-color:#5a1515;color:var(--down);cursor:default;" title="海外下跌＋正 Gap，補跌壓力，不建議入場">⚠️ 補跌風險</span>\`;
-              }
-              return btn;
-            })()}
-            <a class="portfolio-add-btn" href="/signal.html?sector=${encodeURIComponent(r.sector)}&gap=${gap?.toFixed(2)||''}&beta=${r.beta?.toFixed(2)||''}&r2=${r.r2?.toFixed(2)||''}&market=${r.market}" onclick="event.stopPropagation()" title="記錄訊號" style="background:rgba(245,158,11,0.1);border-color:#5a3500;color:var(--warn);">📓 記錄訊號</a>
-          </div>` : ''}
+          ${isAlert ? '<div style="margin-top:3px;display:flex;gap:4px;flex-wrap:wrap;">' + Renderer._entryBtn(r, gap) + '<a class="portfolio-add-btn" href="/signal.html?sector=' + encodeURIComponent(r.sector) + '&gap=' + (gap?.toFixed(2)||'') + '&beta=' + (r.beta?.toFixed(2)||'') + '&r2=' + (r.r2?.toFixed(2)||'') + '&market=' + r.market + '" onclick="event.stopPropagation()" style="background:rgba(245,158,11,0.1);border-color:#5a3500;color:var(--warn);">📓 記錄訊號</a></div>' : ''}
         </td>
         <td>${betaCell}</td>
         <td>
@@ -4020,6 +3994,25 @@ const Renderer = {
     if (dot) {
       dot.className = 'live-dot' + (status !== 'live' ? ` ${status}` : '');
     }
+  },
+
+  _entryBtn(r, gap) {
+    const dc = r.driveChg ?? 0;
+    const gv = gap ?? 0;
+    const sym   = encodeURIComponent(r.stocks[0]?.symbol || '');
+    const sec   = encodeURIComponent(r.sector);
+    const price = r.stocks[0]?.price || '';
+    const url   = '/portfolio.html?add=' + sym + '&sector=' + sec + '&price=' + price;
+
+    if (dc >= 0 && gv > 0)
+      return '<a class="portfolio-add-btn" href="' + url + '" onclick="event.stopPropagation()" title="海外上漲＋正 Gap，補漲機會">＋ 模擬倉位</a>';
+    if (dc < 0 && gv < 0)
+      return '<a class="portfolio-add-btn" href="' + url + '" onclick="event.stopPropagation()" title="跌幅超過預期，可能反彈" style="background:rgba(139,92,246,0.15);border-color:#5b21b6;color:#a78bfa;">＋ 模擬倉位（反彈）</a>';
+    if (dc >= 0 && gv < 0)
+      return '<span class="portfolio-add-btn" style="background:rgba(107,122,142,0.1);border-color:var(--border);color:var(--text-4);cursor:default;" title="台股已超漲，不建議追">⚠️ 已超漲</span>';
+    if (dc < 0 && gv > 0)
+      return '<span class="portfolio-add-btn" style="background:rgba(239,68,68,0.1);border-color:#5a1515;color:var(--down);cursor:default;" title="海外下跌＋正 Gap，補跌壓力">⚠️ 補跌風險</span>';
+    return '';
   },
 
   gapDirectionBanner(computed) {
