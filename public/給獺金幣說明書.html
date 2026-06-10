@@ -262,6 +262,8 @@ body {
     <a href="#compare"         class="toc-link">比較族群</a>
     <a href="#market"          class="toc-link">美股行情</a>
     <a href="#signal"          class="toc-link">訊號追蹤簿</a>
+    <a href="#sector-state"    class="toc-link">板塊狀態標籤</a>
+    <a href="#entry-logic"     class="toc-link">入場判斷邏輯</a>
     <a href="#limits"          class="toc-link">注意事項</a>
   </div>
 </nav>
@@ -441,7 +443,21 @@ body {
     </div>
 
     <!-- 快速對照表 -->
-    <p style="font-size:13px;color:var(--t2);font-weight:600;margin-bottom:14px;margin-top:8px;">快速判斷對照表：</p>
+    <p style="font-size:13px;color:var(--t2);font-weight:600;margin-bottom:8px;margin-top:8px;">主要參考指數（主頁 Macro Grid）：</p>
+    <div class="term-wrap" style="margin-bottom:20px;">
+      <table class="term-table">
+        <thead><tr><th>指數</th><th>用途</th><th>台股關聯</th></tr></thead>
+        <tbody>
+          <tr><td class="term">SOX 費城半導體</td><td>半導體族群主要驅動</td><td>最高，台股半導體直接跟</td></tr>
+          <tr><td class="term">NASDAQ 那斯達克</td><td>科技大盤</td><td>高，科技/AI 族群參考</td></tr>
+          <tr><td class="term">SPX S&P500</td><td>美股整體大盤</td><td>中，整體氛圍參考</td></tr>
+          <tr><td class="term">DJIA 道瓊</td><td>傳統產業</td><td>低，分化判斷用</td></tr>
+          <tr><td class="term">VIX 恐慌指數</td><td>市場情緒</td><td>VIX > 25 建議觀望</td></tr>
+          <tr><td class="term">N225 日經225</td><td>日股，連動 EV/機器人族群</td><td>JP 市場族群參考</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:13px;color:var(--t2);font-weight:600;margin-bottom:14px;">快速判斷對照表：</p>
     <div class="term-wrap">
       <table class="term-table">
         <thead>
@@ -674,6 +690,14 @@ body {
           <tr>
             <td class="term">pp（百分點）</td>
             <td>Gap 落差的單位。例如 +2pp 代表實際漲幅比預期少 2 個百分點，不是漲了 2%。pp 和 % 是不同的單位</td>
+          </tr>
+          <tr>
+            <td class="term">量能比（volRatio）</td>
+            <td>族群內個股今日成交量 vs 近 5 日均量的比值。≥ 1.3 為爆量（🔥），≤ 0.7 為萎縮（⚠️），介於中間為正常。用於判斷板塊狀態和補漲可信度</td>
+          </tr>
+          <tr>
+            <td class="term">板塊狀態</td>
+            <td>根據 Gap、Beta、R² 和量能比自動判斷的族群狀態標籤：🔥 主力 / 🔄 輪動 / 👀 觀望 / 🌊 退潮</td>
           </tr>
         </tbody>
       </table>
@@ -1281,6 +1305,88 @@ body {
     </div>
     <div class="info-box" style="margin-top:12px;">
       💡 訊號追蹤簿追蹤的是<strong>族群層級</strong>的補漲訊號，不需要真的建倉。它的目的是驗證 Gap 策略有效性，跟模擬倉位（個股層級）是互補的工具。
+    </div>
+  </section>
+
+  <!-- 板塊狀態標籤 -->
+  <section class="section" id="sector-state">
+    <div class="section-num">07.9</div>
+    <h2>板塊狀態標籤</h2>
+    <p class="section-intro">
+      每個族群名稱旁邊會顯示一個狀態標籤，根據 Gap 值、Beta、R² 和量能比自動判斷，幫你快速篩選最值得關注的族群。
+    </p>
+    <div class="term-wrap">
+      <table class="term-table">
+        <thead><tr><th>標籤</th><th>判斷條件</th><th>操作建議</th></tr></thead>
+        <tbody>
+          <tr>
+            <td class="term" style="color:#22c55e;">🔥 主力</td>
+            <td>Gap ≥ 2pp ＋ Beta ≥ 0.8 ＋ R² ≥ 0.4 ＋ 量能正常或放大</td>
+            <td>補漲動能最強，優先關注</td>
+          </tr>
+          <tr>
+            <td class="term" style="color:#60a5fa;">🔄 輪動</td>
+            <td>Gap ≥ 0.5pp ＋ 量能非萎縮</td>
+            <td>有補漲動能，條件普通，可觀察</td>
+          </tr>
+          <tr>
+            <td class="term" style="color:var(--t4);">👀 觀望</td>
+            <td>Gap 接近 0，或量能萎縮</td>
+            <td>方向不明，等待更明確訊號</td>
+          </tr>
+          <tr>
+            <td class="term" style="color:#ef4444;">🌊 退潮</td>
+            <td>Gap ≤ -1.5pp ＋ 量能萎縮，或 Gap ≤ -2.5pp</td>
+            <td>已超漲或資金退出，小心追高</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="info-box" style="margin-top:12px;">
+      💡 標籤可以用篩選條件列的「板塊狀態」chips 快速過濾。滑鼠移到標籤上會顯示完整說明。量能資料需要歷史 K 棒，首次更新行情後才會完整計算。
+    </div>
+  </section>
+
+  <!-- 入場判斷邏輯 -->
+  <section class="section" id="entry-logic">
+    <div class="section-num">07.10</div>
+    <h2>入場判斷邏輯</h2>
+    <p class="section-intro">
+      Gap 警示觸發時（Gap 超過你設定的閾值），系統會根據「海外方向 ＋ Gap 方向」自動判斷今天適不適合入場，顯示不同的按鈕和顏色提示。
+    </p>
+    <div class="term-wrap" style="margin-bottom:16px;">
+      <table class="term-table">
+        <thead><tr><th>海外方向</th><th>Gap 方向</th><th>顯示按鈕</th><th>意義</th></tr></thead>
+        <tbody>
+          <tr>
+            <td class="term" style="color:var(--up);">海外上漲</td>
+            <td style="color:var(--up);">正 Gap（還沒跟上）</td>
+            <td><span style="background:rgba(26,110,245,0.15);border:0.5px solid #1a3060;color:#60a5fa;padding:2px 8px;border-radius:3px;font-size:11px;">＋ 模擬倉位</span></td>
+            <td>✅ 補漲機會，可考慮入場</td>
+          </tr>
+          <tr>
+            <td class="term" style="color:var(--down);">海外下跌</td>
+            <td style="color:var(--down);">負 Gap（跌超預期）</td>
+            <td><span style="background:rgba(139,92,246,0.15);border:0.5px solid #5b21b6;color:#a78bfa;padding:2px 8px;border-radius:3px;font-size:11px;">＋ 模擬倉位（反彈）</span></td>
+            <td>🟣 跌幅超過預期，可能反彈</td>
+          </tr>
+          <tr>
+            <td class="term" style="color:var(--up);">海外上漲</td>
+            <td style="color:var(--down);">負 Gap（台股超漲）</td>
+            <td><span style="background:rgba(107,122,142,0.1);border:0.5px solid var(--border);color:var(--t4);padding:2px 8px;border-radius:3px;font-size:11px;">⚠️ 已超漲</span></td>
+            <td>⬜ 台股已跑在前面，不建議追</td>
+          </tr>
+          <tr>
+            <td class="term" style="color:var(--down);">海外下跌</td>
+            <td style="color:var(--up);">正 Gap（補跌壓力）</td>
+            <td><span style="background:rgba(239,68,68,0.1);border:0.5px solid #5a1515;color:#ef4444;padding:2px 8px;border-radius:3px;font-size:11px;">⚠️ 補跌風險</span></td>
+            <td>🔴 台股還沒跌夠，明天可能補跌</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="info-box">
+      ⚠️ 「補跌風險」和「已超漲」按鈕無法點擊，只有「＋ 模擬倉位」和「＋ 模擬倉位（反彈）」可以點擊加入模擬倉位。這個判斷是基於當下的海外漲跌方向，盤中方向可能改變，請搭配 Gap 方向警示橫幅一起判斷。
     </div>
   </section>
 
