@@ -166,16 +166,16 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
 // CONFIG
 // ═══════════════════════════════════════
 const MACRO_SYMBOLS = [
-  { label:'TWII',    symbol:'^TWII',    decimals:0 },
-  { label:'SPX',     symbol:'^GSPC',    decimals:0 },
-  { label:'SOX',     symbol:'^SOX',     decimals:0 },
-  { label:'NASDAQ',  symbol:'^IXIC',    decimals:0 },
-  { label:'VIX',     symbol:'^VIX',     decimals:2 },
-  { label:'N225',    symbol:'^N225',    decimals:0 },
-  { label:'USD/TWD', symbol:'TWD=X',    decimals:3 },
-  { label:'USD/JPY', symbol:'JPY=X',    decimals:2 },
-  { label:'DXY',     symbol:'DX-Y.NYB', decimals:2 },
-  { label:'WTI',     symbol:'CL=F',     decimals:2 },
+  { label:'TWII',    sublabel:'台灣加權',   symbol:'^TWII',    decimals:0 },
+  { label:'SPX',     sublabel:'S&P 500',    symbol:'^GSPC',    decimals:0 },
+  { label:'SOX',     sublabel:'費城半導體', symbol:'^SOX',     decimals:0 },
+  { label:'NASDAQ',  sublabel:'那斯達克',   symbol:'^IXIC',    decimals:0 },
+  { label:'DJIA',    sublabel:'道瓊',       symbol:'^DJI',     decimals:0 },
+  { label:'VIX',     sublabel:'恐慌指數',   symbol:'^VIX',     decimals:2 },
+  { label:'USD/TWD', sublabel:'美元兌台幣', symbol:'TWD=X',    decimals:3 },
+  { label:'N225',    sublabel:'日經225',    symbol:'^N225',    decimals:0 },
+  { label:'USD/JPY', sublabel:'美元兌日圓', symbol:'JPY=X',    decimals:2 },
+  { label:'US10Y',   sublabel:'美債10年期', symbol:'^TNX',     decimals:2 },
 ];
 
 const KEY_STOCKS = [
@@ -235,14 +235,17 @@ function renderIndexGrid() {
 }
 
 function renderSignals() {
-  const sox  = _macroData['^SOX'];
-  const spx  = _macroData['^GSPC'];
-  const vix  = _macroData['^VIX'];
-  const nas  = _macroData['^IXIC'];
+  const sox    = _macroData['^SOX'];
+  const spx    = _macroData['^GSPC'];
+  const vix    = _macroData['^VIX'];
+  const nasdaq = _macroData['^IXIC'];
+  const djia   = _macroData['^DJI'];
 
-  const soxChg = sox?.chgPct ?? 0;
-  const spxChg = spx?.chgPct ?? 0;
-  const vixChg = vix?.chgPct ?? 0;
+  const soxChg    = sox?.chgPct    ?? 0;
+  const spxChg    = spx?.chgPct    ?? 0;
+  const vixChg    = vix?.chgPct    ?? 0;
+  const nasdaqChg = nasdaq?.chgPct ?? 0;
+  const djiaChg   = djia?.chgPct   ?? 0;
 
   const signals = [];
 
@@ -265,6 +268,14 @@ function renderSignals() {
     signals.push({ icon:'🔴', title:`S&P500 大跌 ${spxChg.toFixed(1)}%`, desc:'大盤偏空，即使有正 Gap 也需謹慎，優先觀望。', type:'negative' });
   else
     signals.push({ icon:'⚖️', title:`S&P500 小幅波動 ${spxChg.toFixed(1)}%`, desc:'大盤方向不明，個別族群需看自身 Beta 和量能判斷。', type:'neutral' });
+
+  // NASDAQ vs DJIA 分化訊號
+  if (Math.abs(nasdaqChg - djiaChg) >= 1.5) {
+    if (nasdaqChg > djiaChg)
+      signals.push({ icon:'⚡', title:`科技 vs 傳統分化：NASDAQ +${nasdaqChg.toFixed(1)}% / 道瓊 ${djiaChg.toFixed(1)}%`, desc:'科技股強於傳統產業，資金集中在科技板塊。台股半導體和 AI 相關族群優先。', type:'positive' });
+    else
+      signals.push({ icon:'🔄', title:`資金輪動：道瓊 +${djiaChg.toFixed(1)}% / NASDAQ ${nasdaqChg.toFixed(1)}%`, desc:'傳統產業強於科技，可能有資金從科技轉移。留意連動 SPX 的非科技族群。', type:'neutral' });
+  }
 
   // VIX 訊號
   const vixVal = vix?.price ?? 0;
