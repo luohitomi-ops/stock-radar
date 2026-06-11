@@ -212,6 +212,26 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
 .market-page-btn:hover { background: #1a3a70; }
 @media (max-width: 768px) { .market-detail-grid { grid-template-columns: repeat(2, 1fr); } }
 
+/* ── 個股查詢 ── */
+.stock-search-btn { display:inline-flex; align-items:center; gap:4px; }
+.stock-lookup-overlay { position:fixed; inset:0; z-index:250; background:rgba(0,0,0,0.5); display:flex; align-items:flex-start; justify-content:center; padding-top:70px; opacity:0; pointer-events:none; transition:opacity 0.15s; }
+.stock-lookup-overlay.open { opacity:1; pointer-events:all; }
+.stock-lookup-box { background:var(--bg-1); border:0.5px solid var(--border); border-radius:10px; width:420px; max-width:95vw; overflow:hidden; transform:translateY(-8px); transition:transform 0.15s; }
+.stock-lookup-overlay.open .stock-lookup-box { transform:translateY(0); }
+.stock-lookup-header { display:flex; align-items:center; gap:8px; padding:10px 12px; border-bottom:0.5px solid var(--border); }
+.stock-lookup-input { flex:1; background:transparent; border:none; outline:none; color:var(--text-1); font-size:13px; }
+.stock-lookup-input::placeholder { color:var(--text-4); }
+.stock-lookup-body { padding:14px; min-height:80px; }
+.lookup-result { display:flex; flex-direction:column; gap:10px; }
+.lookup-row { display:flex; justify-content:space-between; align-items:center; padding:8px 10px; background:var(--bg-2); border-radius:var(--radius); border:0.5px solid var(--border); }
+.lookup-label { font-size:11px; color:var(--text-4); }
+.lookup-value { font-size:13px; font-weight:600; color:var(--text-1); font-variant-numeric:tabular-nums; }
+.lookup-verdict { padding:10px 12px; border-radius:var(--radius); font-size:12px; line-height:1.6; margin-top:4px; }
+.lookup-verdict.lag { background:var(--up-bg); border:0.5px solid #155a30; color:var(--up); }
+.lookup-verdict.lead { background:var(--down-bg); border:0.5px solid #5a1515; color:var(--down); }
+.lookup-verdict.neutral { background:var(--bg-2); border:0.5px solid var(--border); color:var(--text-3); }
+.lookup-empty { color:var(--text-4); font-size:12px; text-align:center; padding:16px 0; }
+
 /* ── 比較族群 Modal ── */
 .compare-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.65); z-index:300; display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity 0.15s; }
 .compare-overlay.open { opacity:1; pointer-events:all; }
@@ -781,6 +801,7 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
       <a class="btn" href="/給獺金幣說明書.html" target="_blank" style="text-decoration:none;">📖 說明書</a>
       <a class="btn" href="/portfolio.html" style="text-decoration:none;">📋 模擬倉位</a>
       <a class="btn" href="/signal.html" style="text-decoration:none;">📓 訊號追蹤</a>
+      <button class="btn stock-search-btn" onclick="StockLookup.open()">🔍 個股查詢</button>
       <button class="btn" onclick="CompareUI.open()">⚖️ 比較族群</button>
       <button class="btn btn-primary" id="refreshBtn" onclick="UI.refresh()">↻ 更新行情</button>
     </div>
@@ -990,6 +1011,22 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
 </div>
 
 <div class="toast-container" id="toastContainer"></div>
+
+<!-- 個股查詢 Overlay -->
+<div class="stock-lookup-overlay" id="stockLookupOverlay" onclick="StockLookup.closeOnBg(event)">
+  <div class="stock-lookup-box" onclick="event.stopPropagation()">
+    <div class="stock-lookup-header">
+      <span style="font-size:14px;color:var(--text-4);">🔍</span>
+      <input class="stock-lookup-input" id="stockLookupInput" placeholder="輸入股票代號，例如：2330、2454" maxlength="10"
+        onkeydown="if(event.key==='Enter') StockLookup.search(); if(event.key==='Escape') StockLookup.close()"/>
+      <button class="btn btn-primary" style="padding:4px 12px;font-size:12px;" onclick="StockLookup.search()">查詢</button>
+      <button style="background:none;border:none;color:var(--text-4);cursor:pointer;font-size:16px;" onclick="StockLookup.close()">✕</button>
+    </div>
+    <div class="stock-lookup-body" id="stockLookupBody">
+      <div class="lookup-empty">輸入代號後按 Enter 或點查詢</div>
+    </div>
+  </div>
+</div>
 
 <!-- 比較族群 Modal -->
 <div class="compare-overlay" id="compareOverlay" onclick="CompareUI.closeOnBg(event)">
@@ -2581,6 +2618,117 @@ const MarketDetail = {
 
     const timeNote = ` 📋 ${dataDateStr} 美股收盤數據，供台股盤前參考。`;
     summaryEl.textContent = (summary || '指數數據已更新，請參考上方各指數漲跌幅判斷今日方向。') + timeNote;
+  },
+};
+
+/* ═══════════════════════════════════════════════════════════
+   StockLookup  — 個股查詢
+   ═══════════════════════════════════════════════════════════ */
+const StockLookup = {
+  open() {
+    document.getElementById('stockLookupOverlay').classList.add('open');
+    setTimeout(() => document.getElementById('stockLookupInput').focus(), 100);
+  },
+  close() {
+    document.getElementById('stockLookupOverlay').classList.remove('open');
+  },
+  closeOnBg(e) {
+    if (e.target === document.getElementById('stockLookupOverlay')) this.close();
+  },
+
+  async search() {
+    const raw   = document.getElementById('stockLookupInput').value.trim().toUpperCase();
+    const body  = document.getElementById('stockLookupBody');
+    if (!raw) return;
+
+    body.innerHTML = '<div class="lookup-empty">查詢中…</div>';
+
+    // 在所有族群中找這隻股票
+    const allData = DataLayer.getAll();
+    let foundSector = null, foundStock = null;
+    for (const r of allData) {
+      const s = r.stocks.find(s => s.id === raw || s.id === raw.replace('.TW','').replace('.TWO',''));
+      if (s) { foundSector = r; foundStock = s; break; }
+    }
+
+    // 抓現價
+    const sym = /^\d+$/.test(raw) ? raw + '.TW' : raw;
+    let price = null, chgPct = null;
+    try {
+      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${sym}?interval=1d&range=1d`;
+      const isV = location.hostname !== 'localhost' && !location.protocol.startsWith('file');
+      const res = await fetch(isV
+        ? `/api/proxy?url=${encodeURIComponent(url)}`
+        : `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`);
+      const data = await res.json();
+      const meta = data?.chart?.result?.[0]?.meta;
+      if (meta) {
+        price = meta.regularMarketPrice;
+        const prev = meta.chartPreviousClose || meta.previousClose;
+        chgPct = prev ? ((price - prev) / prev * 100) : null;
+      }
+    } catch {}
+
+    if (!price && !foundSector) {
+      body.innerHTML = '<div class="lookup-empty">找不到這個代號，請確認後重試</div>';
+      return;
+    }
+
+    const chgCls  = !chgPct ? '' : chgPct >= 0 ? 'pct-up' : 'pct-down';
+    const chgStr  = chgPct != null ? `${chgPct >= 0 ? '+' : ''}${chgPct.toFixed(2)}%` : '—';
+    const priceStr = price ? price.toLocaleString('zh-TW', {minimumFractionDigits:1, maximumFractionDigits:1}) : '—';
+
+    let html = '<div class="lookup-result">';
+
+    // 基本資訊
+    html += `<div class="lookup-row">
+      <div>
+        <div class="lookup-value">${foundStock?.name || raw} <span style="font-size:11px;color:var(--text-4);">${raw}</span></div>
+        <div class="lookup-label">${foundSector ? '所屬族群：' + foundSector.sector : '不在追蹤族群中'}</div>
+      </div>
+      <div style="text-align:right;">
+        <div class="lookup-value">${priceStr}</div>
+        <div class="lookup-label ${chgCls}" style="font-size:12px;font-weight:500;">${chgStr}</div>
+      </div>
+    </div>`;
+
+    // 族群資訊
+    if (foundSector) {
+      const gap  = foundSector.gap;
+      const beta = foundSector.beta;
+      const avgChg = foundSector.stocks.filter(s=>s.chg!=null).reduce((a,b)=>a+b.chg,0) /
+                     (foundSector.stocks.filter(s=>s.chg!=null).length || 1);
+      const diff = chgPct != null ? chgPct - avgChg : null;
+      const isLag  = diff != null && diff < -0.5;
+      const isLead = diff != null && diff > 0.5;
+
+      html += `<div class="lookup-row" style="flex-wrap:wrap;gap:8px;">
+        <div><div class="lookup-label">族群 Gap</div><div class="lookup-value ${(gap??0)>=0?'pct-up':'pct-down'}">${gap!=null?(gap>=0?'+':'')+gap.toFixed(2)+'pp':'—'}</div></div>
+        <div><div class="lookup-label">族群 Beta</div><div class="lookup-value">${beta!=null?beta.toFixed(2):'—'}</div></div>
+        <div><div class="lookup-label">族群平均漲跌</div><div class="lookup-value ${avgChg>=0?'pct-up':'pct-down'}">${avgChg>=0?'+':''}${avgChg.toFixed(2)}%</div></div>
+        <div><div class="lookup-label">個股 vs 族群</div><div class="lookup-value ${diff!=null?(diff>=0?'pct-up':'pct-down'):''}">${diff!=null?(diff>=0?'+':'')+diff.toFixed(2)+'%':'—'}</div></div>
+      </div>`;
+
+      // 建議
+      let verdict = '', vClass = 'neutral';
+      if (isLag && (gap??0) > 0) {
+        verdict = `📈 ${foundStock?.name||raw} 今日漲幅落後族群平均 ${Math.abs(diff).toFixed(1)}%，且族群有正 Gap，是補漲候選。`;
+        vClass = 'lag';
+      } else if (isLead) {
+        verdict = `⚠️ ${foundStock?.name||raw} 今日漲幅領先族群平均 ${diff.toFixed(1)}%，已超漲，追高需謹慎。`;
+        vClass = 'lead';
+      } else if ((gap??0) > 0) {
+        verdict = `→ ${foundStock?.name||raw} 與族群同步，族群整體有正 Gap ${gap?.toFixed(2)}pp，可搭配量能確認。`;
+        vClass = 'neutral';
+      } else {
+        verdict = `→ ${foundStock?.name||raw} 所屬族群 Gap 為負值，補跌風險較高，建議觀望。`;
+        vClass = 'neutral';
+      }
+      html += `<div class="lookup-verdict ${vClass}">${verdict}</div>`;
+    }
+
+    html += '</div>';
+    body.innerHTML = html;
   },
 };
 
