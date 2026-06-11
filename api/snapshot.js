@@ -25,14 +25,17 @@ async function kvGet(url, token, key) {
   return data.result ? JSON.parse(data.result) : null;
 }
 
-// 寫入 Redis（帶 TTL，90 天後自動過期）
-// Upstash REST API 格式: GET /SETEX/key/ttl/value
+// 寫入 Redis（帶 TTL，使用 pipeline 避免 URL 過長）
 async function kvSet(url, token, key, value, exSeconds = 7776000) {
-  const encodedKey = encodeURIComponent(key);
-  const encodedVal = encodeURIComponent(JSON.stringify(value));
-  const res = await fetch(`${url}/setex/${encodedKey}/${exSeconds}/${encodedVal}`, {
+  const res = await fetch(`${url}/pipeline`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${token}` },
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify([
+      ['SET', key, JSON.stringify(value), 'EX', exSeconds]
+    ]),
   });
   return res.ok;
 }
