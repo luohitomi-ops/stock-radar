@@ -891,7 +891,7 @@ body {
         <div class="step-num">7</div>
         <div class="step-content">
           <div class="step-title">盤中：自動更新 + Gap 警示</div>
-          <div class="step-desc">設定「Gap 警示閾值」（建議 1.5pp），搭配自動更新 3-5 分鐘，超過的行橘色高亮自動提示，不用一直盯著頁面。</div>
+          <div class="step-desc">設定「Gap 警示閾值」（建議 1.5pp），搭配自動更新 3-5 分鐘，超過的行橘色高亮自動提示。<strong>正負 Gap 都會觸發</strong>，觸發後看按鈕顏色判斷方向（藍色可入場、紅色補跌風險）。</div>
         </div>
       </li>
       <li>
@@ -918,7 +918,14 @@ body {
       <div class="card">
         <div class="card-icon">🔔</div>
         <div class="card-title">Gap 警示閾值</div>
-        <div class="card-desc">設定閾值後，超過的族群整行變橘色並有跳動點，一眼抓住異常訊號</div>
+        <div class="card-desc">
+          設定閾值後，<strong>Gap 絕對值</strong>超過的族群整行變橘色並出現跳動橘點。
+          <strong>正 Gap 和負 Gap 都會觸發</strong>，例如設定 1.5pp：
+          <br>• +2pp → 觸發（補漲空間或補跌壓力）
+          <br>• -2pp → 觸發（已超漲或跌超預期）
+          <br><br>觸發後根據海外方向自動判斷入場建議（見「入場判斷邏輯」章節）。
+          建議值：平常盤 1.5pp，大跌後 1.0pp。
+        </div>
       </div>
       <div class="card">
         <div class="card-icon">⏱️</div>
