@@ -117,6 +117,13 @@ body{background:var(--bg-0);color:var(--text-1);font-family:'Helvetica Neue','Pi
 .form-hint{font-size:11px;color:var(--text-4);}
 .fill-current-price{font-size:11px;color:var(--accent-text);margin-top:4px;cursor:pointer;text-decoration:underline;}
 
+/* PORTFOLIO PROMPT */
+.portfolio-prompt { display:none; position:fixed; bottom:80px; right:24px; z-index:998; background:var(--bg-1); border:0.5px solid #1a3060; border-radius:var(--radius-lg); padding:14px 16px; box-shadow:0 4px 20px rgba(0,0,0,0.4); flex-direction:column; gap:10px; max-width:280px; animation:slideUp 0.3s ease; }
+.portfolio-prompt-title { font-size:12px; font-weight:600; color:var(--text-1); }
+.portfolio-prompt-sub { font-size:11px; color:var(--text-3); }
+.portfolio-prompt-actions { display:flex; gap:8px; }
+@keyframes slideUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+
 /* TOAST */
 .toast{position:fixed;bottom:24px;right:24px;background:var(--bg-2);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:10px 16px;font-size:12px;color:var(--text-1);z-index:999;box-shadow:0 4px 20px rgba(0,0,0,0.4);transform:translateY(8px);opacity:0;transition:all 0.2s;pointer-events:none;}
 .toast.show{transform:translateY(0);opacity:1;}
@@ -333,6 +340,16 @@ body{background:var(--bg-0);color:var(--text-1);font-family:'Helvetica Neue','Pi
       <button class="btn" onclick="closeFillModal()">取消</button>
       <button class="btn btn-primary" onclick="confirmFill()">確認回填</button>
     </div>
+  </div>
+</div>
+
+<!-- PORTFOLIO PROMPT -->
+<div class="portfolio-prompt" id="portfolioPrompt">
+  <div class="portfolio-prompt-title">📋 同時加入模擬倉位？</div>
+  <div class="portfolio-prompt-sub">已記錄「<span id="promptSectorName"></span>」訊號<br>要同時建立模擬倉位追蹤損益嗎？</div>
+  <div class="portfolio-prompt-actions">
+    <a id="promptPortfolioLink" href="/portfolio.html" class="btn btn-primary" style="font-size:11px;padding:4px 12px;" onclick="document.getElementById('portfolioPrompt').style.display='none'">＋ 加入模擬倉位</a>
+    <button class="btn" style="font-size:11px;padding:4px 10px;" onclick="document.getElementById('portfolioPrompt').style.display='none'">不用了</button>
   </div>
 </div>
 
@@ -645,6 +662,29 @@ function saveSignal() {
   closeAddModal();
   render();
   showToast(`已記錄「${sector}」訊號`, '');
+
+  // 詢問是否同時加入模擬倉位
+  setTimeout(() => {
+    openPortfolioPrompt(signal);
+  }, 400);
+}
+
+function openPortfolioPrompt(signal) {
+  const el = document.getElementById('portfolioPrompt');
+  const nameEl = document.getElementById('promptSectorName');
+  const linkEl = document.getElementById('promptPortfolioLink');
+  if (!el) return;
+  nameEl.textContent = signal.sector;
+  // 帶入參數到 portfolio.html
+  const sym   = signal.refPrice ? '' : '';
+  const url   = '/portfolio.html?sector=' + encodeURIComponent(signal.sector)
+              + '&price=' + (signal.refPrice || '')
+              + '&note=訊號追蹤簿帶入';
+  linkEl.href = url;
+  el.style.display = 'flex';
+  // 5 秒後自動消失
+  if (el._timer) clearTimeout(el._timer);
+  el._timer = setTimeout(() => { el.style.display = 'none'; }, 6000);
 }
 
 // ═══════════════════════════════════════
