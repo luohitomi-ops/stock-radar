@@ -799,8 +799,8 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
         </div>
       </div>
       <a class="btn" href="/給獺金幣說明書.html" target="_blank" style="text-decoration:none;">📖 說明書</a>
-      <a class="btn" href="/portfolio.html" style="text-decoration:none;">📋 模擬倉位</a>
-      <a class="btn" href="/signal.html" style="text-decoration:none;">📓 訊號追蹤</a>
+      <a class="btn" href="/portfolio.html" target="_blank" style="text-decoration:none;">📋 模擬倉位</a>
+      <a class="btn" href="/signal.html" target="_blank" style="text-decoration:none;">📓 訊號追蹤</a>
       <button class="btn stock-search-btn" onclick="StockLookup.open()">🔍 個股查詢</button>
       <button class="btn" onclick="CompareUI.open()">⚖️ 比較族群</button>
       <button class="btn btn-primary" id="refreshBtn" onclick="UI.refresh()">↻ 更新行情</button>
@@ -3956,6 +3956,8 @@ const Renderer = {
       const isJP      = r.market === 'JP';
       const gapBarColor = (gap ?? 0) >= 0 ? 'var(--down)' : 'var(--up)';
       const isAlert   = STATE.gapAlert !== null && gap !== null && Math.abs(gap) >= STATE.gapAlert;
+      const sectorStateKey = SectorState.get(r).key;
+      const isRetreating  = sectorStateKey === 'retreat'; // 退潮時不顯示入場按鈕
       const alertDot  = isAlert ? `<span class="gap-alert-dot" title="Gap 絕對值 ${Math.abs(gap).toFixed(2)}pp 超過警示閾值 ${STATE.gapAlert}pp&#10;${(gap??0)>=0?'正 Gap：補漲空間（海外漲時）或補跌壓力（海外跌時）':'負 Gap：已超漲（海外漲時）或跌超預期（海外跌時）'}"></span>` : '';
 
       const betaCell = (r.beta !== null && r.beta !== undefined)
@@ -3986,7 +3988,7 @@ const Renderer = {
         <td>
           <span class="pct ${(gap??0)>=0?'pct-down':'pct-up'}" style="font-weight:600;">${this.fmtOrDash(gap,'pp')}${alertDot}</span>
           ${gap !== null ? `<div class="gap-bar" style="width:${gapBarW}%;background:${gapBarColor};"></div>` : ''}
-          ${isAlert ? '<div style="margin-top:3px;display:flex;gap:4px;flex-wrap:wrap;">' + Renderer._entryBtn(r, gap) + '<a class="portfolio-add-btn" href="/signal.html?sector=' + encodeURIComponent(r.sector) + '&gap=' + (gap?.toFixed(2)||'') + '&beta=' + (r.beta?.toFixed(2)||'') + '&r2=' + (r.r2?.toFixed(2)||'') + '&market=' + r.market + '" onclick="event.stopPropagation()" style="background:rgba(245,158,11,0.1);border-color:#5a3500;color:var(--warn);">📓 記錄訊號</a></div>' : ''}
+          ${isAlert ? '<div style="margin-top:3px;display:flex;gap:4px;flex-wrap:wrap;">' + (isRetreating ? '<span class="portfolio-add-btn" style="background:rgba(107,122,142,0.1);border-color:var(--border);color:var(--text-4);cursor:default;" title="板塊退潮中，不建議入場">🌊 退潮中</span>' : Renderer._entryBtn(r, gap)) + '<a class="portfolio-add-btn" href="/signal.html?sector=' + encodeURIComponent(r.sector) + '&gap=' + (gap?.toFixed(2)||'') + '&beta=' + (r.beta?.toFixed(2)||'') + '&r2=' + (r.r2?.toFixed(2)||'') + '&market=' + r.market + '" target="_blank" onclick="event.stopPropagation()" style="background:rgba(245,158,11,0.1);border-color:#5a3500;color:var(--warn);">📓 記錄訊號</a></div>' : ''}
         </td>
         <td>${betaCell}</td>
         <td>
@@ -4265,9 +4267,9 @@ const Renderer = {
     const url   = '/portfolio.html?add=' + sym + '&sector=' + sec + '&price=' + price;
 
     if (dc >= 0 && gv > 0)
-      return '<a class="portfolio-add-btn" href="' + url + '" onclick="event.stopPropagation()" title="海外上漲＋正 Gap，補漲機會">＋ 模擬倉位</a>';
+      return '<a class="portfolio-add-btn" href="' + url + '" target="_blank" onclick="event.stopPropagation()" title="海外上漲＋正 Gap，補漲機會">＋ 模擬倉位</a>';
     if (dc < 0 && gv < 0)
-      return '<a class="portfolio-add-btn" href="' + url + '" onclick="event.stopPropagation()" title="跌幅超過預期，可能反彈" style="background:rgba(139,92,246,0.15);border-color:#5b21b6;color:#a78bfa;">＋ 模擬倉位（反彈）</a>';
+      return '<a class="portfolio-add-btn" href="' + url + '" target="_blank" onclick="event.stopPropagation()" title="跌幅超過預期，可能反彈" style="background:rgba(139,92,246,0.15);border-color:#5b21b6;color:#a78bfa;">＋ 模擬倉位（反彈）</a>';
     if (dc >= 0 && gv < 0)
       return '<span class="portfolio-add-btn" style="background:rgba(107,122,142,0.1);border-color:var(--border);color:var(--text-4);cursor:default;" title="台股已超漲，不建議追">⚠️ 已超漲</span>';
     if (dc < 0 && gv > 0)
