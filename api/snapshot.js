@@ -15,8 +15,13 @@ const YAHOO_BASE = 'https://query1.finance.yahoo.com/v8/finance/chart';
 
 // 從 Redis 讀取
 async function kvGet(url, token, key) {
-  const res = await fetch(`${url}/get/${encodeURIComponent(key)}`, {
-    headers: { Authorization: `Bearer ${token}` },
+  const res = await fetch(`${url}/get`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify([key]),
   });
   const data = await res.json();
   return data.result;
@@ -24,8 +29,13 @@ async function kvGet(url, token, key) {
 
 // 寫入 Redis（帶 TTL，90 天後自動過期）
 async function kvSet(url, token, key, value, exSeconds = 7776000) {
-  const res = await fetch(`${url}/set/${encodeURIComponent(key)}/${encodeURIComponent(JSON.stringify(value))}?ex=${exSeconds}`, {
-    headers: { Authorization: `Bearer ${token}` },
+  const res = await fetch(`${url}/set`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify([key, JSON.stringify(value), 'EX', exSeconds]),
   });
   return res.ok;
 }
