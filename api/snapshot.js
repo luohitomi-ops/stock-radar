@@ -14,28 +14,25 @@
 const YAHOO_BASE = 'https://query1.finance.yahoo.com/v8/finance/chart';
 
 // 從 Redis 讀取
+// Upstash REST API 格式: GET /GET/key
 async function kvGet(url, token, key) {
-  const res = await fetch(`${url}/get`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify([key]),
+  const encodedKey = encodeURIComponent(key);
+  const res = await fetch(`${url}/get/${encodedKey}`, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` },
   });
   const data = await res.json();
-  return data.result;
+  return data.result ? JSON.parse(data.result) : null;
 }
 
 // 寫入 Redis（帶 TTL，90 天後自動過期）
+// Upstash REST API 格式: GET /SETEX/key/ttl/value
 async function kvSet(url, token, key, value, exSeconds = 7776000) {
-  const res = await fetch(`${url}/set`, {
+  const encodedKey = encodeURIComponent(key);
+  const encodedVal = encodeURIComponent(JSON.stringify(value));
+  const res = await fetch(`${url}/setex/${encodedKey}/${exSeconds}/${encodedVal}`, {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify([key, JSON.stringify(value), 'EX', exSeconds]),
+    headers: { Authorization: `Bearer ${token}` },
   });
   return res.ok;
 }
