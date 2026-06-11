@@ -264,6 +264,7 @@ body {
     <a href="#signal"          class="toc-link">訊號追蹤簿</a>
     <a href="#sector-state"    class="toc-link">板塊狀態標籤</a>
     <a href="#entry-logic"     class="toc-link">入場判斷邏輯</a>
+    <a href="#stock-lookup"    class="toc-link">個股查詢功能</a>
     <a href="#limits"          class="toc-link">注意事項</a>
   </div>
 </nav>
@@ -1432,6 +1433,108 @@ body {
     </div>
     <div class="info-box">
       ⚠️ 「補跌風險」和「已超漲」按鈕無法點擊，只有「＋ 模擬倉位」和「＋ 模擬倉位（反彈）」可以點擊加入模擬倉位。這個判斷是基於當下的海外漲跌方向，盤中方向可能改變，請搭配 Gap 方向警示橫幅一起判斷。
+    </div>
+
+    <p style="font-size:13px;color:var(--t3);margin-top:20px;margin-bottom:12px;font-weight:600;">🎯 最佳建倉流程：個股查詢 → 找落後股 → 建倉</p>
+    <p style="font-size:12px;color:var(--t2);line-height:1.8;margin-bottom:12px;">
+      Gap 警示觸發後，「＋ 模擬倉位」預設帶入的是<strong>族群龍頭股</strong>。但補漲機會通常在族群內<strong>落後的二線股</strong>，龍頭已經帶頭漲了，反而是還沒動的個股彈性更大。
+    </p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div>
+          <div class="step-title">Gap 警示觸發 → 點進族群側邊欄</div>
+          <div class="step-desc">看「個股補漲排行」，找今日漲幅最落後族群平均的個股（綠色數字標示）</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div>
+          <div class="step-title">用「🔍 個股查詢」確認</div>
+          <div class="step-desc">topbar 點「🔍 個股查詢」輸入那隻落後股代號，確認它的族群 Gap、今日 vs 族群平均的差距，以及系統建議</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div>
+          <div class="step-title">確認量能 + 均線方向</div>
+          <div class="step-desc">側邊欄量能趨勢有爆量支撐、MA5 上彎、抵扣值偏低，三個條件越多越好</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div>
+          <div class="step-title">手動填入落後股代號建倉</div>
+          <div class="step-desc">點「＋ 模擬倉位」後，把預填的龍頭股代號改成落後股代號，填入買入價建立模擬倉位</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <div>
+          <div class="step-title">同時記錄訊號追蹤</div>
+          <div class="step-desc">點「📓 記錄訊號」記錄這個族群的 Gap 訊號，幾天後回填實際結果，累積你的策略命中率數據</div>
+        </div>
+      </div>
+    </div>
+    <div class="info-box" style="margin-top:12px;border-color:#155a30;background:rgba(13,42,24,0.5);">
+      💡 <strong>龍頭股 vs 落後股的差別：</strong>龍頭帶頭漲，已反映預期；落後股還沒動，補漲彈性更大。但落後也可能是因為個股本身有問題（財報差、主力出貨），需要搭配量能確認才安全。
+    </div>
+  </section>
+
+  <!-- 個股查詢 -->
+  <section class="section" id="stock-lookup">
+    <div class="section-num">07.11</div>
+    <h2>個股查詢功能</h2>
+    <p class="section-intro">
+      topbar 的「🔍 個股查詢」按鈕，輸入任意台股代號，快速查看這隻股票在族群中的位置和補漲潛力。
+    </p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div>
+          <div class="step-title">點「🔍 個股查詢」</div>
+          <div class="step-desc">從頂部滑下輕量查詢框，不離開主頁</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div>
+          <div class="step-title">輸入股票代號 → Enter</div>
+          <div class="step-desc">輸入純數字代號（如 2330、2454），系統自動加上 .TW 後綴查詢</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div>
+          <div class="step-title">查看結果</div>
+          <div class="step-desc">顯示：現價、漲跌%、所屬族群、族群 Gap、Beta、個股 vs 族群平均漲跌差距</div>
+        </div>
+      </div>
+    </div>
+    <div class="term-wrap" style="margin-top:12px;">
+      <table class="term-table">
+        <thead><tr><th>系統建議</th><th>條件</th><th>意義</th></tr></thead>
+        <tbody>
+          <tr>
+            <td class="term" style="color:var(--up);">📈 補漲候選</td>
+            <td>今日漲幅落後族群平均 0.5%+ 且族群有正 Gap</td>
+            <td>族群在漲但這隻還沒跟上，補漲彈性大</td>
+          </tr>
+          <tr>
+            <td class="term" style="color:var(--down);">⚠️ 已超漲</td>
+            <td>今日漲幅領先族群平均 0.5%+</td>
+            <td>跑在族群前面，追高風險高</td>
+          </tr>
+          <tr>
+            <td class="term" style="color:var(--t3);">→ 同步觀察</td>
+            <td>與族群平均接近</td>
+            <td>搭配量能和均線方向判斷</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="info-box" style="margin-top:12px;">
+      💡 若輸入的代號不在給獺金幣的追蹤族群中，仍會顯示現價和漲跌，但不會有族群比較資訊。可以加入自訂族群後再查詢。
     </div>
   </section>
 
