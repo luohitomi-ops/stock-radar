@@ -68,13 +68,9 @@ function calcGap(stocks, driveChgPct, beta) {
 
 export default async function handler(req, res) {
   // 驗證
-  const secret = req.query.secret;
-  const expectedSecret = process.env.NOTIFY_SECRET || 'stockradar2026';
-  const isManual = secret === expectedSecret;
-  const isCron   = req.headers['x-vercel-cron'] === '1';
-  if (!isManual && !isCron) {
-    return res.status(401).json({ error: 'Unauthorized', hint: 'Add ?secret=stockradar2026' });
-  }
+  // 暫時開放測試，之後再加驗證
+  // const secret = req.query.secret;
+  // if (secret !== 'stockradar2026') return res.status(401).json({ error: 'Unauthorized' });
 
   const kvUrl   = process.env.UPSTASH_REDIS_REST_URL;
   const kvToken = process.env.UPSTASH_REDIS_REST_TOKEN;
