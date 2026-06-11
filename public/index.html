@@ -916,9 +916,12 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
         </div>
       </div>
       <div class="filter-group">
-        <div class="filter-label">Gap 警示閾值</div>
+        <div class="filter-label">Gap 警示閾值
+          <span style="cursor:help;color:var(--text-4);font-size:11px;margin-left:3px;"
+            title="Gap 絕對值超過此閾值時觸發警示（橘色高亮 + 跳動橘點）。&#10;&#10;正 Gap = 補漲空間；負 Gap = 已超漲。&#10;兩個方向都會觸發，例如設定 1.5pp：&#10;• +2pp → 觸發（補漲方向）&#10;• -2pp → 觸發（超漲警示）&#10;&#10;建議值：平常盤 1.5pp，大跌後 1.0pp">ⓘ</span>
+        </div>
         <div style="display:flex;align-items:center;gap:6px;">
-          <input class="range-input" type="number" id="gapAlert" placeholder="pp" step="0.5" style="width:72px;" title="超過此值的行高亮顯示">
+          <input class="range-input" type="number" id="gapAlert" placeholder="pp" step="0.5" style="width:72px;" title="Gap 絕對值超過此值觸發警示，正負 Gap 都算">
           <span class="range-sep">pp</span>
         </div>
       </div>
@@ -3953,7 +3956,7 @@ const Renderer = {
       const isJP      = r.market === 'JP';
       const gapBarColor = (gap ?? 0) >= 0 ? 'var(--down)' : 'var(--up)';
       const isAlert   = STATE.gapAlert !== null && gap !== null && Math.abs(gap) >= STATE.gapAlert;
-      const alertDot  = isAlert ? `<span class="gap-alert-dot" title="Gap 超過警示閾值 ${STATE.gapAlert}pp"></span>` : '';
+      const alertDot  = isAlert ? `<span class="gap-alert-dot" title="Gap 絕對值 ${Math.abs(gap).toFixed(2)}pp 超過警示閾值 ${STATE.gapAlert}pp&#10;${(gap??0)>=0?'正 Gap：補漲空間（海外漲時）或補跌壓力（海外跌時）':'負 Gap：已超漲（海外漲時）或跌超預期（海外跌時）'}"></span>` : '';
 
       const betaCell = (r.beta !== null && r.beta !== undefined)
         ? `<div style="font-size:12px;font-weight:500;color:var(--text-2);">${(+r.beta).toFixed(2)}</div>
