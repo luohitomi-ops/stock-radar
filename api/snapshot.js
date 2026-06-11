@@ -84,8 +84,27 @@ export default async function handler(req, res) {
 
   const kvUrl   = process.env.UPSTASH_REDIS_REST_URL;
   const kvToken = process.env.UPSTASH_REDIS_REST_TOKEN;
+  
+  // Debug: 顯示環境變數狀態
+  console.log('[Snapshot] kvUrl:', kvUrl ? kvUrl.substring(0, 30) + '...' : 'MISSING');
+  console.log('[Snapshot] kvToken:', kvToken ? 'present' : 'MISSING');
+  
   if (!kvUrl || !kvToken) {
-    return res.status(500).json({ error: 'Upstash not configured' });
+    return res.status(500).json({ 
+      error: 'Upstash not configured',
+      hasUrl: !!kvUrl,
+      hasToken: !!kvToken,
+      urlPreview: kvUrl ? kvUrl.substring(0, 40) : null,
+    });
+  }
+  
+  // 測試模式：直接回傳環境變數狀態
+  if (req.query.debug === '1') {
+    return res.status(200).json({
+      urlPreview: kvUrl.substring(0, 40),
+      urlLength: kvUrl.length,
+      tokenPresent: !!kvToken,
+    });
   }
 
   try {
