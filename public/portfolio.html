@@ -718,13 +718,12 @@ function showToast(msg, type = '') {
 // ═══════════════════════════════════════════
 function checkUrlPrefill() {
   const params = new URLSearchParams(location.search);
-  if (params.has('add')) {
+  if (params.has('add') || params.has('sector')) {
     openAddModal({
-      symbol: params.get('add') || '',
+      symbol: params.get('add')    || '',
       sector: params.get('sector') || '',
-      price:  params.get('price') || '',
+      price:  params.get('price')  || '',
     });
-    // clean URL
     history.replaceState({}, '', '/portfolio.html');
   }
 }
