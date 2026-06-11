@@ -83,8 +83,8 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
 .position-row.hit-tp { background: rgba(34,197,94,0.06); border-left: 2px solid var(--up); }
 .position-row.hit-sl { background: rgba(239,68,68,0.06); border-left: 2px solid var(--down); }
 
-/* active positions: 代號 | 族群 | 買入價 | 現價 | 張數 | 成本 | 市值 | 損益% | 停利 | 停損 | 操作 */
-.active-grid { grid-template-columns: 64px 80px 68px 68px 44px 80px 80px 72px 56px 56px 180px; gap: 6px; }
+/* active positions: 代號 | 族群 | 買入價 | 現價 | 張數 | 成本 | 市值 | 損益% | 持倉天 | 停利 | 停損 | 操作 */
+.active-grid { grid-template-columns: 64px 80px 68px 68px 44px 80px 80px 72px 52px 56px 56px 180px; gap: 6px; }
 /* history: 代號 | 族群 | 進場價 | 出場價 | 張數 | 損益% | 損益額 | 進場日 | 出場日 | 出場原因 */
 .history-grid { grid-template-columns: 64px 80px 68px 68px 44px 72px 80px 90px 90px 80px; gap: 6px; }
 
@@ -238,7 +238,7 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
       <div class="table-header-row active-grid">
         <span>代號</span><span>族群</span><span>買入價</span><span>現價</span>
         <span>張數</span><span>成本</span><span>市值</span><span>損益%</span>
-        <span class="col-tp">停利</span><span class="col-sl">停損</span><span>操作</span>
+        <span>持倉天</span><span class="col-tp">停利</span><span class="col-sl">停損</span><span>操作</span>
       </div>
       <div id="activeList"></div>
     </div>
@@ -525,6 +525,12 @@ function renderActive() {
     const rowClass = hitTP ? 'hit-tp' : hitSL ? 'hit-sl' : '';
     const pnlClass = pnlPct == null ? '' : pnlPct >= 0 ? 'up' : 'down';
     const sourceTag = pos.source === 'gap' ? '<span class="badge gap">Gap</span>' : '';
+    // 計算持倉天數
+    const holdDays = pos.entryDate
+      ? Math.floor((Date.now() - new Date(pos.entryDate).getTime()) / 86400000)
+      : null;
+    const holdStr = holdDays != null ? `${holdDays}天` : '—';
+    const holdCls = holdDays != null && holdDays >= 10 ? 'style="color:var(--warn);"' : '';
     return `<div class="position-row active-grid ${rowClass}" data-id="${pos.id}">
       <span class="cell sym">${pos.symbol}</span>
       <span class="cell tag">${pos.sector || '—'}</span>
@@ -534,6 +540,7 @@ function renderActive() {
       <span class="cell muted">$${fmt(cost)}</span>
       <span class="cell">${value != null ? '$'+fmt(value) : '—'}</span>
       <span class="cell ${pnlClass}">${pnlPct != null ? (pnlPct>=0?'+':'')+pnlPct.toFixed(2)+'%' : '—'}</span>
+      <span class="cell muted" ${holdCls} title="${pos.entryDate || ''}">${holdStr}</span>
       <span class="cell col-tp">${pos.takeProfit ? fmtPrice(pos.takeProfit) : '—'}</span>
       <span class="cell col-sl">${pos.stopLoss ? fmtPrice(pos.stopLoss) : '—'}</span>
       <span class="cell">
