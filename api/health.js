@@ -22,7 +22,7 @@ export default async function handler(req, res) {
     }
 
     // 計算距今幾天（台灣時區）
-    const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Taipei' }));
+    const now    = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Taipei' }));
     const latest = new Date(latestDate);
     const diffMs   = now - latest;
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
