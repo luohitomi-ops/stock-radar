@@ -781,6 +781,7 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
     </div>
     <div class="topbar-right">
       <span class="last-updated"><span class="live-dot" id="liveDot"></span>更新：<span id="lastUpdatedTime">—</span></span>
+      <span id="snapshotFreshness" style="font-size:11px;margin-left:6px;padding:1px 7px;border-radius:20px;display:none;"></span>
       <!-- 自動更新計時器 -->
       <div class="auto-refresh-wrap" id="autoRefreshWrap">
         <select class="auto-refresh-select" id="autoRefreshSelect" title="自動更新間隔">
@@ -4554,6 +4555,9 @@ const UI = {
     if (cachedSummary) AISummary._render(cachedSummary.text, cachedSummary.count);
     else AISummary._showTriggerBtn();
 
+    // 10. 快照新鮮度檢查
+    SnapshotHealth.check();
+
     // 9. 載入自訂族群並合併
     CustomSector.merge();
     CustomSector.initBackdropClose();
@@ -4650,6 +4654,40 @@ const UI = {
     overlayEl?.addEventListener('click', closeDrawer);
     // 選了族群後手機自動開抽屜
     this._openDrawer = openDrawer;
+  },
+};
+
+
+/* ═══════════════════════════════════════════════════════════
+   SNAPSHOT HEALTH  — 快照新鮮度檢查
+   ═══════════════════════════════════════════════════════════ */
+const SnapshotHealth = {
+  async check() {
+    try {
+      const res  = await fetch('/api/health');
+      const data = await res.json();
+      const el   = document.getElementById('snapshotFreshness');
+      if (!el) return;
+      if (!data.ok) { el.style.display = 'none'; return; }
+      el.style.display = 'inline-block';
+      if (data.status === 'fresh') {
+        el.textContent      = '📸 快照今日';
+        el.style.background = 'rgba(34,197,94,0.12)';
+        el.style.color      = 'var(--up)';
+        el.style.border     = '0.5px solid rgba(34,197,94,0.3)';
+      } else if (data.status === 'yesterday') {
+        el.textContent      = '📸 快照昨日';
+        el.style.background = 'rgba(245,158,11,0.12)';
+        el.style.color      = 'var(--warn)';
+        el.style.border     = '0.5px solid rgba(245,158,11,0.3)';
+      } else {
+        el.textContent      = `⚠️ 快照 ${data.diffDays} 天前`;
+        el.style.background = 'rgba(239,68,68,0.1)';
+        el.style.color      = 'var(--down)';
+        el.style.border     = '0.5px solid rgba(239,68,68,0.3)';
+        Renderer.toast(`快照資料已 ${data.diffDays} 天未更新，Cron Job 可能異常`, 'error', 5000);
+      }
+    } catch {}
   },
 };
 
