@@ -354,8 +354,64 @@ const KEYS = {
 const Storage = {
   getActive()  { try { return JSON.parse(localStorage.getItem(KEYS.active)  || '[]'); } catch { return []; } },
   getHistory() { try { return JSON.parse(localStorage.getItem(KEYS.history) || '[]'); } catch { return []; } },
-  saveActive(d)  { localStorage.setItem(KEYS.active,  JSON.stringify(d)); },
-  saveHistory(d) { localStorage.setItem(KEYS.history, JSON.stringify(d)); },
+  saveActive(d) {
+    localStorage.setItem(KEYS.active, JSON.stringify(d));
+    CloudSync.push('portfolio_active', d);
+  },
+  saveHistory(d) {
+    localStorage.setItem(KEYS.history, JSON.stringify(d));
+    CloudSync.push('portfolio_history', d);
+  },
+};
+
+// ── 雲端同步（Redis）──
+const CloudSync = {
+  _DEV: location.hostname === 'localhost' || location.hostname === '127.0.0.1',
+
+  async push(key, data) {
+    if (this._DEV) return;
+    try {
+      await fetch('/api/sync?key=' + key, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data }),
+      });
+    } catch {}
+  },
+
+  async pull(key) {
+    if (this._DEV) return null;
+    try {
+      const res  = await fetch('/api/sync?key=' + key);
+      const data = await res.json();
+      return data.ok ? data.data : null;
+    } catch { return null; }
+  },
+
+  async init() {
+    if (this._DEV) return;
+    try {
+      const [cloudActive, cloudHistory] = await Promise.all([
+        this.pull('portfolio_active'),
+        this.pull('portfolio_history'),
+      ]);
+      let changed = false;
+      if (cloudActive && Array.isArray(cloudActive)) {
+        localStorage.setItem(KEYS.active, JSON.stringify(cloudActive));
+        STATE.active = cloudActive;
+        changed = true;
+      }
+      if (cloudHistory && Array.isArray(cloudHistory)) {
+        localStorage.setItem(KEYS.history, JSON.stringify(cloudHistory));
+        STATE.history = cloudHistory;
+        changed = true;
+      }
+      if (changed) {
+        render();
+        console.log('[CloudSync] 模擬倉位已從雲端同步');
+      }
+    } catch {}
+  },
 };
 
 // ═══════════════════════════════════════════
@@ -740,6 +796,7 @@ function checkUrlPrefill() {
 // ═══════════════════════════════════════════
 render();
 checkUrlPrefill();
+CloudSync.init();
 // auto-refresh every 5 min if there are active positions
 setInterval(() => { if (STATE.active.length) refreshPrices(); }, 5 * 60 * 1000);
 </script>
