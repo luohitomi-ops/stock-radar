@@ -2104,6 +2104,33 @@ const HistoryEngine = {
       .sort((a,b) => b.avg - a.avg);
   },
 
+  // ── 從 Redis 同步歷史快照（合併到 localStorage）──
+  async syncFromRedis() {
+    try {
+      const res  = await fetch('/api/redis-history');
+      const data = await res.json();
+      if (!data.ok || !data.history) return;
+
+      const local = this.load();
+      let merged = 0;
+
+      // Redis 資料優先：有 Redis 就覆蓋 localStorage 同日資料
+      Object.entries(data.history).forEach(([date, snap]) => {
+        if (!local[date]) merged++;
+        local[date] = { ...local[date], ...snap };
+      });
+
+      // 存回 localStorage
+      this._save(local);
+
+      if (merged > 0) {
+        console.log(`[HistoryEngine] 從 Redis 同步 ${merged} 天新資料，共 ${Object.keys(local).length} 天`);
+      }
+    } catch (e) {
+      console.warn('[HistoryEngine] Redis 同步失敗（靜默）:', e.message);
+    }
+  },
+
   // ── 清除所有歷史 ──
   clearAll() {
     if (!confirm('確定清除所有歷史回測資料？此操作無法復原。')) return;
@@ -4544,8 +4571,10 @@ const UI = {
     // 6. 自動選中第一行
     setTimeout(() => this.selectRow(0), 50);
 
-    // 7. 背景靜默拉 API
-    setTimeout(() => this.refresh(true), 200);
+    // 7. 先從 Redis 同步歷史快照，再背景靜默拉 API
+    HistoryEngine.syncFromRedis().then(() => {
+      setTimeout(() => this.refresh(true), 200);
+    });
 
     // 8. 啟動自動更新計時器
     AutoRefresh.init();
