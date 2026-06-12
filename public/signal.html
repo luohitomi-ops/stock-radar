@@ -362,8 +362,41 @@ body{background:var(--bg-0);color:var(--text-1);font-family:'Helvetica Neue','Pi
 // ═══════════════════════════════════════
 const KEY = 'stockRadar_signalJournal';
 const Storage = {
-  get()    { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch { return []; } },
-  save(d)  { localStorage.setItem(KEY, JSON.stringify(d)); },
+  get()   { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch { return []; } },
+  save(d) {
+    localStorage.setItem(KEY, JSON.stringify(d));
+    CloudSync.push('signal_journal', d);
+  },
+};
+
+// ── 雲端同步（Redis）──
+const CloudSync = {
+  _DEV: location.hostname === 'localhost' || location.hostname === '127.0.0.1',
+
+  async push(key, data) {
+    if (this._DEV) return;
+    try {
+      await fetch('/api/sync?key=' + key, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data }),
+      });
+    } catch {}
+  },
+
+  async init() {
+    if (this._DEV) return;
+    try {
+      const res  = await fetch('/api/sync?key=signal_journal');
+      const data = await res.json();
+      if (data.ok && Array.isArray(data.data) && data.data.length > 0) {
+        localStorage.setItem(KEY, JSON.stringify(data.data));
+        STATE.signals = data.data;
+        render();
+        console.log('[CloudSync] 訊號追蹤簿已從雲端同步');
+      }
+    } catch {}
+  },
 };
 
 // ═══════════════════════════════════════
@@ -790,6 +823,7 @@ function checkUrlPrefill() {
 // ═══════════════════════════════════════
 render();
 checkUrlPrefill();
+CloudSync.init();
 </script>
 <!-- FOOTER -->
 <div style="margin-top:40px;padding:20px 16px 30px;border-top:0.5px solid var(--border);text-align:center;">
