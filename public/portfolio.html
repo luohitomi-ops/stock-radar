@@ -395,6 +395,8 @@ const CloudSync = {
         this.pull('portfolio_active'),
         this.pull('portfolio_history'),
       ]);
+
+      // Redis 有資料 → 用 Redis 覆蓋 localStorage
       let changed = false;
       if (cloudActive && Array.isArray(cloudActive)) {
         localStorage.setItem(KEYS.active, JSON.stringify(cloudActive));
@@ -409,6 +411,18 @@ const CloudSync = {
       if (changed) {
         render();
         console.log('[CloudSync] 模擬倉位已從雲端同步');
+        return;
+      }
+
+      // Redis 是空的 → 把 localStorage 現有資料推上去（首次同步）
+      const localActive  = Storage.getActive();
+      const localHistory = Storage.getHistory();
+      if (localActive.length > 0 || localHistory.length > 0) {
+        await Promise.all([
+          this.push('portfolio_active',  localActive),
+          this.push('portfolio_history', localHistory),
+        ]);
+        console.log('[CloudSync] 首次同步：本機資料已推送到雲端');
       }
     } catch {}
   },
