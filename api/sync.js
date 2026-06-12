@@ -1,18 +1,11 @@
 /**
  * api/sync.js — 跨裝置資料同步
- * 統一讀寫 Redis，供 portfolio.html 和 signal.html 使用
- *
- * GET  /api/sync?key=portfolio  → 讀取
- * POST /api/sync?key=portfolio  → 寫入（body: { data: ... }）
- *
- * 支援的 key：
- *   portfolio_active   — 模擬倉位持倉中
- *   portfolio_history  — 模擬倉位歷史出場
- *   signal_journal     — 訊號追蹤簿
+ * GET  /api/sync?key=portfolio_active  → 讀取
+ * POST /api/sync?key=portfolio_active  → 寫入
  */
 
 const ALLOWED_KEYS = ['portfolio_active', 'portfolio_history', 'signal_journal'];
-const TTL = 86400 * 365; // 1 年
+const TTL = 86400 * 365;
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -33,7 +26,7 @@ export default async function handler(req, res) {
 
   const redisKey = `userdata:${key}`;
 
-  // ── GET：讀取 ──
+  // ── GET ──
   if (req.method === 'GET') {
     try {
       const r = await fetch(`${kvUrl}/get/${encodeURIComponent(redisKey)}`, {
@@ -47,12 +40,31 @@ export default async function handler(req, res) {
     }
   }
 
-  // ── POST：寫入 ──
+  // ── POST ──
   if (req.method === 'POST') {
     try {
-      const body = req.body;
+      // 手動讀取 body（Vercel Serverless 需要）
+      let body = req.body;
+      if (typeof body === 'string') {
+        try { body = JSON.parse(body); } catch {}
+      }
+      // 若 body 還是 undefined，從 stream 讀取
+      if (!body) {
+        body = await new Promise((resolve, reject) => {
+          let raw = '';
+          req.on('data', chunk => { raw += chunk; });
+          req.on('end', () => {
+            try { resolve(JSON.parse(raw)); }
+            catch { resolve({}); }
+          });
+          req.on('error', reject);
+        });
+      }
+
       const value = body?.data;
-      if (value === undefined) return res.status(400).json({ ok: false, reason: 'missing data' });
+      if (value === undefined) {
+        return res.status(400).json({ ok: false, reason: 'missing data' });
+      }
 
       const r = await fetch(`${kvUrl}/pipeline`, {
         method: 'POST',
@@ -64,7 +76,8 @@ export default async function handler(req, res) {
           ['SET', redisKey, JSON.stringify(value), 'EX', TTL]
         ]),
       });
-      return res.status(200).json({ ok: r.ok });
+      const result = await r.json();
+      return res.status(200).json({ ok: r.ok, result });
     } catch (err) {
       return res.status(200).json({ ok: false, reason: err.message });
     }
