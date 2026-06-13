@@ -21,10 +21,11 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: false, reason: 'no_data' });
     }
 
-    // 計算距今幾天（台灣時區）
-    const now    = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Taipei' }));
-    const latest = new Date(latestDate);
-    const diffMs   = now - latest;
+    // 計算距今幾天（台灣時區，比較日期部分，避免跨時區偏差）
+    const nowTW = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Taipei' }));
+    const nowDate = new Date(nowTW.getFullYear(), nowTW.getMonth(), nowTW.getDate());
+    const latest  = new Date(latestDate + 'T00:00:00');  // 強制本地 midnight 比較
+    const diffMs   = nowDate - latest;
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
     return res.status(200).json({

@@ -188,7 +188,9 @@ export default async function handler(req, res) {
     const tgToken  = process.env.TELEGRAM_TOKEN;
     const tgChatId = process.env.TELEGRAM_CHAT_ID;
     if (tgToken && tgChatId) {
-      const sampleText = Object.entries(snap).slice(0, 3)
+      const sampleText = Object.entries(snap)
+        .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))
+        .slice(0, 3)
         .map(([k, v]) => `  ${k.replace('台股 ','')}：${v > 0 ? '+' : ''}${v}pp`)
         .join('\n');
       const msg = `✅ 盤後快照完成 ${today}\n族群數：${Object.keys(snap).length} 個\n\n前三名 Gap：\n${sampleText}`;

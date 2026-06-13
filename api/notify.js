@@ -2,7 +2,7 @@
  * api/notify.js  —  Vercel Serverless + Cron Job
  *
  * 觸發方式：
- *   1. Vercel Cron Job 每 30 分鐘自動觸發（vercel.json 設定）
+ *   1. Vercel Cron Job 每天 UTC 00:30（台灣 08:30）週一到週五（vercel.json 設定）
  *   2. 手動 GET /api/notify?secret=YOUR_SECRET 觸發（測試用）
  *
  * 環境變數（在 Vercel Dashboard 設定）：
@@ -20,13 +20,15 @@ const DRIVE_SYMBOLS = {
   N225: '^N225',
 };
 
+const BETA_MAP = { SOX: 0.8, SPX: 0.6, N225: 0.7 };
+
 // 只監控熱門族群（避免 API 請求過多）
 const WATCH_SECTORS = [
   { sector:'台股 AI 伺服器 / ODM',      driveIndex:'SOX', stocks:['2382.TW','2356.TW'] },
   { sector:'台股 CoWoS 先進封裝',        driveIndex:'SOX', stocks:['2330.TW','3711.TW'] },
   { sector:'台股 AI 散熱 / 液冷',        driveIndex:'SOX', stocks:['3017.TW','1590.TW'] },
   { sector:'台股 HBM / 高頻寬記憶體',    driveIndex:'SOX', stocks:['2408.TW','2344.TW'] },
-  { sector:'台股 ABF 載板 / PCB',        driveIndex:'SOX', stocks:['3037.TW','8046.TW'] },
+  { sector:'台股 ABF 載板 / PCB',        driveIndex:'SOX', stocks:['3037.TW','8046.TWO'] },
   { sector:'台股 矽光子 / CPO',          driveIndex:'SOX', stocks:['2330.TW','3711.TW'] },
   { sector:'台股 交換器 / 網通設備',     driveIndex:'SOX', stocks:['2345.TW','3596.TW'] },
   { sector:'台股 IC 設計 / 繪圖晶片',    driveIndex:'SOX', stocks:['2454.TW','2379.TW'] },
@@ -96,9 +98,7 @@ async function computeGaps(threshold) {
 
     const act = stockChgs.reduce((a, b) => a + b, 0) / stockChgs.length;
 
-    // 簡化 beta = 0.8（後端無法跑 OLS，用保守估算值）
-    // 未來可以把 beta 存到 KV storage
-    const beta = 0.8;
+    const beta = BETA_MAP[sector.driveIndex] ?? 0.6;
     const exp  = driveQ.chgPct * beta;
     const gap  = parseFloat((exp - act).toFixed(2));
 
