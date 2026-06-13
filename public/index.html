@@ -4016,7 +4016,7 @@ const Renderer = {
         <td>
           <span class="pct ${(gap??0)>=0?'pct-down':'pct-up'}" style="font-weight:600;">${this.fmtOrDash(gap,'pp')}${alertDot}</span>
           ${gap !== null ? `<div class="gap-bar" style="width:${gapBarW}%;background:${gapBarColor};"></div>` : ''}
-          ${isAlert ? '<div style="margin-top:3px;display:flex;gap:4px;flex-wrap:wrap;">' + (isRetreating ? '<span class="portfolio-add-btn" style="background:rgba(107,122,142,0.1);border-color:var(--border);color:var(--text-4);cursor:default;" title="板塊退潮中，不建議入場">🌊 退潮中</span>' : Renderer._entryBtn(r, gap)) + '<a class="portfolio-add-btn" href="/signal.html?sector=' + encodeURIComponent(r.sector) + '&gap=' + (gap?.toFixed(2)||'') + '&beta=' + (r.beta?.toFixed(2)||'') + '&r2=' + (r.r2?.toFixed(2)||'') + '&market=' + r.market + '" target="_blank" onclick="event.stopPropagation()" style="background:rgba(245,158,11,0.1);border-color:#5a3500;color:var(--warn);">📓 記錄訊號</a></div>' : ''}
+          ${gap !== null ? '<div style="margin-top:3px;display:flex;gap:4px;flex-wrap:wrap;">' + (isRetreating ? '<span class="portfolio-add-btn" style="background:rgba(107,122,142,0.1);border-color:var(--border);color:var(--text-4);cursor:default;" title="板塊退潮中，不建議入場">🌊 退潮中</span>' : Renderer._entryBtn(r, gap)) + '<a class="portfolio-add-btn" href="/signal.html?sector=' + encodeURIComponent(r.sector) + '&gap=' + (gap?.toFixed(2)||'') + '&beta=' + (r.beta?.toFixed(2)||'') + '&r2=' + (r.r2?.toFixed(2)||'') + '&market=' + r.market + '" target="_blank" onclick="event.stopPropagation()" style="background:rgba(245,158,11,0.1);border-color:#5a3500;color:var(--warn);">📓 記錄訊號</a></div>' : ''}
         </td>
         <td>${betaCell}</td>
         <td>
