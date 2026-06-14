@@ -21,18 +21,26 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: false, reason: 'no_data' });
     }
 
-    // 計算距今幾天（台灣時區，比較日期部分，避免跨時區偏差）
+    // 計算距今幾個「交易日」（台灣時區，跳過週六日）
     const nowTW = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Taipei' }));
     const nowDate = new Date(nowTW.getFullYear(), nowTW.getMonth(), nowTW.getDate());
-    const latest  = new Date(latestDate + 'T00:00:00');  // 強制本地 midnight 比較
-    const diffMs   = nowDate - latest;
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const latest  = new Date(latestDate + 'T00:00:00');
+
+    // 從快照日的下一天開始往今天數，只計算平日
+    let diffTradingDays = 0;
+    const cursor = new Date(latest);
+    cursor.setDate(cursor.getDate() + 1);
+    while (cursor <= nowDate) {
+      const dow = cursor.getDay(); // 0=日, 6=六
+      if (dow !== 0 && dow !== 6) diffTradingDays++;
+      cursor.setDate(cursor.getDate() + 1);
+    }
 
     return res.status(200).json({
       ok: true,
       latestDate,
-      diffDays,
-      status: diffDays === 0 ? 'fresh' : diffDays === 1 ? 'yesterday' : 'stale',
+      diffDays: diffTradingDays,
+      status: diffTradingDays === 0 ? 'fresh' : diffTradingDays === 1 ? 'yesterday' : 'stale',
     });
   } catch (err) {
     return res.status(200).json({ ok: false, reason: err.message });
