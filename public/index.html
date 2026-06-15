@@ -4082,6 +4082,12 @@ const Renderer = {
       <div class="stocks-label">個股走勢（近 ${CONFIG.sparklineDays} 日）</div>`;
 
     r.stocks.forEach((s, i) => {
+      const sSym = CONFIG.stockSymbolMap[s.id] || (s.id + '.TW');
+      const sUrl = '/portfolio.html?add=' + encodeURIComponent(sSym) + '&sector=' + encodeURIComponent(r.sector) + '&price=' + (s.price || '');
+      const sGap = (r.exp !== null && s.chg !== null) ? parseFloat((r.exp - s.chg).toFixed(2)) : null;
+      const sGapHtml = sGap !== null
+        ? `<span style="color:${sGap >= 0 ? 'var(--down)' : 'var(--up)'};">${sGap >= 0 ? '+' : ''}${sGap}pp</span>`
+        : '<span style="color:var(--text-6);">—</span>';
       html += `
         <div class="stock-sparkline-card ${i === STATE.selectedStock ? 'selected' : ''}" onclick="UI.selectStock(${i})" id="ssc_${i}">
           <div class="ssc-header">
@@ -4101,6 +4107,10 @@ const Renderer = {
             <span>${s._live ? '即時資料 ✓' : '模擬走勢'}</span>
             <span>${s.price ? s.price.toLocaleString() + ' TWD' : '—'}</span>
           </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 8px 4px;border-top:0.5px solid var(--border);margin-top:2px;">
+            <span style="font-size:10px;color:var(--text-5);">個股落差 ${sGapHtml}</span>
+            <a class="portfolio-add-btn" href="${sUrl}" target="_blank" onclick="event.stopPropagation()" title="${s.id} ${s.name} 加入模擬倉位">＋ 加倉</a>
+          </div>
         </div>`;
     });
 
@@ -4114,6 +4124,8 @@ const Renderer = {
         const diff = s.chg - avgChg;
         const isLag = diff < -0.3;
         const isLead = diff > 0.3;
+        const cSym = CONFIG.stockSymbolMap[s.id] || (s.id + '.TW');
+        const cUrl = '/portfolio.html?add=' + encodeURIComponent(cSym) + '&sector=' + encodeURIComponent(r.sector) + '&price=' + (s.price || '');
         html += `<div class="catchup-row ${isLead ? 'leader' : ''}">
           <div class="catchup-left">
             <div class="catchup-rank ${isLag ? 'lag' : ''}">${i + 1}</div>
@@ -4126,6 +4138,7 @@ const Renderer = {
             <div class="catchup-chg ${(s.chg??0)>=0?'pct-up':'pct-down'}">${s.chg >= 0 ? '+' : ''}${s.chg.toFixed(2)}%</div>
             ${isLag  ? `<span class="catchup-badge lag-badge">落後 ${Math.abs(diff).toFixed(1)}%</span>` : ''}
             ${isLead ? `<span class="catchup-badge lead-badge">領先 ${diff.toFixed(1)}%</span>` : ''}
+            <a class="portfolio-add-btn" href="${cUrl}" target="_blank" onclick="event.stopPropagation()" style="margin-top:3px;">＋ 加倉</a>
           </div>
         </div>`;
       });

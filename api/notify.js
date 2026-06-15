@@ -137,11 +137,10 @@ async function sendTelegram(token, chatId, text) {
 
 // ── 格式化通知訊息 ──
 function formatMessage(alerts, threshold) {
-  const now = new Date().toLocaleString('zh-TW', {
-    timeZone: 'Asia/Taipei',
-    year:'numeric', month:'2-digit', day:'2-digit',
-    hour:'2-digit', minute:'2-digit',
-  });
+  // 手動建構台灣時間字串，避免 zh-TW locale 在 Vercel 環境回傳錯誤日期
+  const nowTW = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Taipei' }));
+  const pad = n => String(n).padStart(2, '0');
+  const now = `${nowTW.getFullYear()}/${pad(nowTW.getMonth()+1)}/${pad(nowTW.getDate())} ${pad(nowTW.getHours())}:${pad(nowTW.getMinutes())}`;
 
   const lines = alerts.map(a => {
     const icon    = a.gap > 0 ? '🔴' : '🟢';
