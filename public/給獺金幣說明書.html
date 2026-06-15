@@ -330,6 +330,23 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
 .catchup-badge.lag-badge { background: rgba(34,197,94,0.15); color: var(--up); }
 .catchup-badge.lead-badge { background: rgba(239,68,68,0.1); color: var(--down); }
 
+/* ── 驅動新聞（為什麼海外動了）── */
+.drive-news-item { padding: 5px 0; border-top: 0.5px solid var(--border); margin-top: 6px; }
+.drive-news-title { font-size: 10px; color: var(--text-3); line-height: 1.45; }
+.drive-news-meta  { font-size: 9px; color: var(--text-5); margin-top: 1px; }
+.drive-news-fallback { margin-top: 8px; font-size: 10px; color: var(--text-5); line-height: 1.7; border-top: 0.5px solid var(--border); padding-top: 6px; }
+.drive-news-fallback .check { color: var(--text-4); }
+
+/* ── 個股精選（Lynch：真正的錢在選公司）── */
+.stock-pick-box { margin-top: 14px; }
+.stock-pick-title { font-size: 11px; color: var(--text-4); font-weight: 500; margin-bottom: 8px; letter-spacing: 0.5px; text-transform: uppercase; }
+.stock-pick-card { background: var(--bg-2); border: 0.5px solid var(--accent); border-radius: var(--radius); padding: 10px 12px; }
+.stock-pick-name { font-size: 13px; font-weight: 600; color: var(--text-1); }
+.stock-pick-sub  { font-size: 10px; color: var(--text-4); margin-top: 2px; }
+.stock-pick-checklist { margin-top: 9px; border-top: 0.5px solid var(--border); padding-top: 8px; display: flex; flex-direction: column; gap: 5px; }
+.pick-check { font-size: 11px; color: var(--text-3); line-height: 1.4; }
+.pick-check-label { font-size: 10px; color: var(--text-5); margin-top: 1px; padding-left: 14px; }
+
 /* ── 量能趨勢 ── */
 .vol-section { margin-top: 14px; }
 .vol-title { font-size: 11px; color: var(--text-4); font-weight: 500; margin-bottom: 8px; letter-spacing: 0.5px; }
@@ -1814,6 +1831,63 @@ const FundamentalsEngine = {
       html += `<div class="pe-warn">🔄 週期性族群：PE 偏低可能代表景氣高峰而非便宜，進場前確認供需方向。</div>`;
     }
     if (el) el.innerHTML = html;
+  },
+};
+
+/* ═══════════════════════════════════════════════════════════
+   DRIVE NEWS ENGINE  — 自動抓驅動指數新聞，解釋「為什麼海外動了」
+   ═══════════════════════════════════════════════════════════ */
+const DriveNewsEngine = {
+  _cache: {},
+
+  _FALLBACK: {
+    SOX:  ['□ 重量級半導體財報（NVDA/AMD/ASML）？', '□ AI 資料中心需求指引上修/下修？', '□ 美國出口管制 / 關稅新消息？'],
+    SPX:  ['□ Fed 官員發言 / FOMC 紀錄？', '□ 美國就業 / CPI / 零售數據？', '□ 大型科技股財報（MAG7）？'],
+    N225: ['□ 日銀利率決策 / 日圓匯率變動？', '□ 日本出口數據 / 製造業 PMI？', '□ 外資對日股流向變化？'],
+  },
+
+  _age(ts) {
+    if (!ts) return '';
+    const diff = Date.now() / 1000 - ts;
+    if (diff < 3600)  return `${Math.round(diff / 60)}分前`;
+    if (diff < 86400) return `${Math.round(diff / 3600)}小時前`;
+    return `${Math.round(diff / 86400)}天前`;
+  },
+
+  async fetch(driveIndex) {
+    if (this._cache[driveIndex]) return this._cache[driveIndex];
+    try {
+      const symMap = { SOX: '%5ESOX', SPX: '%5EGSPC', N225: '%5EN225' };
+      const q = symMap[driveIndex] || driveIndex;
+      const url = `https://query2.finance.yahoo.com/v1/finance/search?q=${q}&newsCount=3&enableFuzzyQuery=false&quotesCount=0`;
+      const res = await fetch(`/api/proxy?url=${encodeURIComponent(url)}`);
+      if (!res.ok) throw new Error(res.status);
+      const data = await res.json();
+      const items = (data?.news || []).slice(0, 2).map(n => ({
+        title: n.title,
+        publisher: n.publisher,
+        age: this._age(n.providerPublishTime),
+      }));
+      this._cache[driveIndex] = items;
+      return items;
+    } catch { return []; }
+  },
+
+  async renderInto(driveIndex, containerId) {
+    const el = document.getElementById(containerId);
+    if (!el) return;
+    const news = await this.fetch(driveIndex);
+    if (news.length) {
+      el.innerHTML = news.map(n =>
+        `<div class="drive-news-item">
+          <div class="drive-news-title">${n.title}</div>
+          <div class="drive-news-meta">${n.publisher}・${n.age}</div>
+        </div>`
+      ).join('');
+    } else {
+      const checks = this._FALLBACK[driveIndex] || ['□ 確認海外重要事件原因再操作'];
+      el.innerHTML = `<div class="drive-news-fallback"><span class="check">開盤前確認：</span><br>${checks.join('<br>')}</div>`;
+    }
   },
 };
 
@@ -4181,11 +4255,12 @@ const Renderer = {
         </div>
       </div>
       <div class="driver-box">
-        <div class="driver-label">海外驅動（今日）</div>
+        <div class="driver-label">海外驅動（今日）― 為什麼動了？</div>
         <div class="driver-row">
           <div><span class="overseas-tag ${isJP ? 'jp' : ''}">${r.market}</span><span style="font-size:12px;color:var(--text-2);">${r.driveName}</span></div>
           <span class="pct ${(r.driveChg??0)>=0?'pct-up':'pct-down'}">${this.fmtOrDash(r.driveChg)}</span>
         </div>
+        <div id="driveNews"></div>
       </div>
       ${r.cyclic ? `<div style="margin-top:8px;padding:7px 10px;background:rgba(99,102,241,0.07);border:0.5px solid rgba(99,102,241,0.25);border-radius:6px;font-size:11px;color:#a5b4fc;line-height:1.6;">🔄 <strong>週期性族群</strong>：Gap 訊號需搭配景氣方向判斷。<br>週期高峰時 PE 反而偏低，補漲邏輯需確認供需是否仍在擴張期。</div>` : ''}
       <div class="stocks-label">個股走勢（近 ${CONFIG.sparklineDays} 日）</div>`;
@@ -4228,7 +4303,7 @@ const Renderer = {
           <div class="catchup-left">
             <div class="catchup-rank ${isLag ? 'lag' : ''}">${i + 1}</div>
             <div class="catchup-info">
-              <div class="catchup-id">${s.id} <span style="font-size:10px;color:var(--text-4);font-weight:400;">${s.name}</span></div>
+              <div class="catchup-id">${s.id} <span style="font-size:10px;color:var(--text-4);font-weight:400;">${s.name}</span>${i === 0 && isLag ? ' <span style="font-size:9px;background:rgba(34,197,94,0.15);color:var(--up);padding:1px 4px;border-radius:3px;font-weight:600;">⭐ 首選</span>' : ''}</div>
               <div class="catchup-name">${s.role}</div>
             </div>
           </div>
@@ -4240,6 +4315,33 @@ const Renderer = {
         </div>`;
       });
       html += `<div style="font-size:10px;color:var(--text-5);margin-top:4px;padding:0 2px;">${benchmarkLabel}：${benchmark >= 0 ? '+' : ''}${benchmark.toFixed(2)}%・落後股（綠色數字）為補漲候選</div></div>`;
+
+      // ── 個股精選卡片（Lynch：真正的錢在選公司）──
+      const pick = sortedByChg[0];
+      const pickDiff = pick ? Math.abs(pick.chg - benchmark) : 0;
+      if (pick && pickDiff > 0.3) {
+        const pickSignalUrl = '/signal.html?sector=' + encodeURIComponent(r.sector) + '&gap=' + (gap?.toFixed(2)||'') + '&beta=' + (r.beta?.toFixed(2)||'') + '&r2=' + (r.r2?.toFixed(2)||'') + '&market=' + r.market;
+        html += `<div class="stock-pick-box">
+          <div class="stock-pick-title">🎯 個股精選</div>
+          <div class="stock-pick-card">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+              <div>
+                <div class="stock-pick-name">${pick.id} ${pick.name}</div>
+                <div class="stock-pick-sub">${pick.role}・落後族群 ${pickDiff.toFixed(1)}%・今日 ${pick.chg >= 0 ? '+' : ''}${pick.chg.toFixed(2)}%</div>
+              </div>
+              <span id="pickPeTag" style="font-size:10px;color:var(--text-5);">P/E…</span>
+            </div>
+            <div class="stock-pick-checklist">
+              <div class="pick-check">□ 一句話說清楚這檔的故事是什麼？</div>
+              <div class="pick-check-label">（例：CoWoS 需求持續擴張，${pick.name} 是唯一雙供應商之一）</div>
+              <div class="pick-check">□ 落後是因個股雜音，還是基本面變化？</div>
+              <div class="pick-check-label">（個股雜音 = 補漲機會；基本面變差 = 避開）</div>
+              <div class="pick-check">□ 出場條件已設好（Gap 收斂 / ${r.driveName} 轉向）？</div>
+            </div>
+            <a class="portfolio-add-btn" href="${pickSignalUrl}" target="_blank" style="display:block;margin-top:10px;text-align:center;background:rgba(34,197,94,0.08);border-color:rgba(34,197,94,0.3);color:var(--up);">📓 記錄這筆訊號</a>
+          </div>
+        </div>`;
+      }
     }
 
     // P/E 基本面區塊（非同步填入）
@@ -4247,8 +4349,20 @@ const Renderer = {
 
     document.getElementById('sidebarBody').innerHTML = html;
 
-    // ── 非同步抓個股基本面（P/E）──
+    // ── 非同步抓個股基本面（P/E）+ 更新精選卡 P/E 標籤 ──
     FundamentalsEngine.renderBlock(r.stocks, r.cyclic, 'peFundamentals');
+    (async () => {
+      const pickEl = document.getElementById('pickPeTag');
+      if (!pickEl) return;
+      const pick0 = sortedByChg?.[0];
+      if (!pick0) return;
+      const f = await FundamentalsEngine.fetch(pick0.id);
+      pickEl.textContent = f?.pe != null ? `P/E ${f.pe.toFixed(1)}x` : 'P/E —';
+      pickEl.style.color = f?.pe > 30 ? '#f87171' : f?.pe < 15 ? '#4ade80' : 'var(--text-3)';
+    })();
+
+    // ── 非同步抓驅動指數新聞（為什麼海外動了）──
+    DriveNewsEngine.renderInto(r.driveIndex, 'driveNews');
 
     // ── 非同步抓歷史資料，更新量能 + 均線 ──
     (async () => {
