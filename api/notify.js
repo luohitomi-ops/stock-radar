@@ -135,6 +135,16 @@ async function sendTelegram(token, chatId, text) {
   return data;
 }
 
+// ── 依驅動幅度判斷 Gap 可信度 ──
+function driveContext(alerts) {
+  const maxAbs = Math.max(...alerts.map(a => Math.abs(a.driveChg)));
+  if (maxAbs >= 5)
+    return `⚡ 驅動幅度異常（最大 ${maxAbs.toFixed(1)}%），可能有重大消息面（財報/Fed/政策），建議開盤前確認來源再操作`;
+  if (maxAbs >= 3)
+    return `📊 驅動幅度中等（最大 ${maxAbs.toFixed(1)}%），Gap 機會可信度普通，建議搭配開盤量能確認`;
+  return `📉 驅動幅度偏小（${maxAbs.toFixed(1)}%），Gap 機會需特別確認是否有持續性`;
+}
+
 // ── 格式化通知訊息 ──
 function formatMessage(alerts, threshold) {
   // 手動建構台灣時間字串，避免 zh-TW locale 在 Vercel 環境回傳錯誤日期
@@ -157,6 +167,8 @@ function formatMessage(alerts, threshold) {
     ``,
     `⏰ ${now}`,
     `🔴 = 補漲空間　🟢 = 已超漲`,
+    ``,
+    driveContext(alerts),
   ].join('\n');
 }
 

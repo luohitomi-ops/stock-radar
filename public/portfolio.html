@@ -153,6 +153,12 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
 .flash-up { animation: flash-up 0.8s ease; }
 .flash-down { animation: flash-down 0.8s ease; }
 
+/* ── STORY CHECK BANNER ── */
+.story-check-banner{display:none;padding:12px 16px;background:rgba(245,158,11,0.08);border:0.5px solid #5a3500;border-radius:var(--radius-lg);margin-bottom:14px;font-size:12px;color:var(--text-2);line-height:1.8;}
+.story-check-title{font-weight:600;color:var(--warn);margin-bottom:4px;}
+.story-check-stocks{margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;}
+.story-check-chip{padding:2px 8px;border-radius:20px;background:rgba(245,158,11,0.12);border:0.5px solid #5a3500;color:var(--warn);font-size:11px;}
+
 /* ── TOAST ── */
 .toast { position: fixed; bottom: 24px; right: 24px; background: var(--bg-2); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 10px 16px; font-size: 12px; color: var(--text-1); z-index: 999; box-shadow: 0 4px 20px rgba(0,0,0,0.4); transform: translateY(8px); opacity: 0; transition: all 0.2s; pointer-events: none; }
 .toast.show { transform: translateY(0); opacity: 1; }
@@ -230,6 +236,14 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
   <div class="tabs">
     <div class="tab active" id="tabActive" onclick="switchTab('active')">持倉中 <span id="activeCount" style="color:var(--text-4)"></span></div>
     <div class="tab" id="tabHistory" onclick="switchTab('history')">歷史出場 <span id="historyCount" style="color:var(--text-4)"></span></div>
+  </div>
+
+  <!-- 故事確認提醒 -->
+  <div class="story-check-banner" id="storyCheckBanner">
+    <div class="story-check-title">🔔 故事還成立嗎？</div>
+    以下持倉已超過 14 天。當初的進場邏輯是否仍然有效？<br>
+    如果故事已改變，考慮出場——不論盈虧。（Lynch：賣出的理由是故事變了，不是漲夠了）
+    <div class="story-check-stocks" id="storyCheckStocks"></div>
   </div>
 
   <!-- ACTIVE POSITIONS -->
@@ -651,10 +665,29 @@ function renderHistory() {
   }).join('');
 }
 
+function renderStoryCheck() {
+  const banner = document.getElementById('storyCheckBanner');
+  const chips  = document.getElementById('storyCheckStocks');
+  if (!banner || !chips) return;
+  const old = STATE.active.filter(p => {
+    const days = p.entryDate
+      ? Math.floor((Date.now() - new Date(p.entryDate).getTime()) / 86400000)
+      : 0;
+    return days >= 14;
+  });
+  if (!old.length) { banner.style.display = 'none'; return; }
+  banner.style.display = 'block';
+  chips.innerHTML = old.map(p => {
+    const days = Math.floor((Date.now() - new Date(p.entryDate).getTime()) / 86400000);
+    return `<span class="story-check-chip">${p.symbol} ${p.sector ? '(' + p.sector.replace('台股 ','') + ')' : ''} · ${days}天</span>`;
+  }).join('');
+}
+
 function render() {
   renderSummary();
   renderActive();
   renderHistory();
+  renderStoryCheck();
 }
 
 // ═══════════════════════════════════════════

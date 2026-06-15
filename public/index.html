@@ -279,6 +279,9 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
 .ai-trigger-btn { background: none; border: 0.5px dashed #1a3060; border-radius: var(--radius); color: var(--accent-text); font-size: 12px; padding: 6px 14px; cursor: pointer; transition: 0.15s; width: 100%; text-align: center; }
 .ai-trigger-btn:hover { background: rgba(26,110,245,0.1); border-style: solid; }
 
+/* ── 週期股標籤 ── */
+.cyclic-tag { display:inline-flex; align-items:center; font-size:9px; padding:1px 5px; border-radius:3px; font-weight:500; white-space:nowrap; margin-left:3px; vertical-align:middle; background:rgba(99,102,241,0.1); color:#818cf8; border:0.5px solid rgba(99,102,241,0.3); cursor:help; }
+
 /* ── 板塊狀態標籤 ── */
 .sector-state { display:inline-flex; align-items:center; gap:3px; font-size:10px; padding:1px 6px; border-radius:3px; font-weight:600; white-space:nowrap; margin-left:4px; vertical-align:middle; }
 .sector-state.bull    { background:rgba(34,197,94,0.12);  color:var(--up);   border:0.5px solid rgba(34,197,94,0.3); }
@@ -293,6 +296,18 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
 .gap-direction-banner.positive { background:#0d2a18; border-color:#155a30; color:#4ade80; }
 .gap-direction-banner .banner-title { font-weight:600; margin-bottom:2px; }
 .gap-direction-banner .banner-sub   { color: inherit; opacity: 0.8; font-size: 11px; }
+
+/* ── 個股基本面（P/E）── */
+.pe-section { margin-top: 14px; }
+.pe-title { font-size: 11px; color: var(--text-4); font-weight: 500; margin-bottom: 8px; letter-spacing: 0.5px; text-transform: uppercase; }
+.pe-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; border-radius: 6px; background: var(--bg-2); border: 0.5px solid var(--border); margin-bottom: 5px; }
+.pe-name { font-size: 12px; color: var(--text-2); font-weight: 500; }
+.pe-val { font-size: 12px; color: var(--text-1); font-weight: 600; }
+.pe-val.high { color: var(--down); }
+.pe-val.low  { color: var(--up); }
+.pe-val.mid  { color: var(--warn); }
+.pe-sub { font-size: 10px; color: var(--text-5); margin-top: 1px; }
+.pe-warn { font-size: 10px; color: #818cf8; margin-top: 6px; padding: 5px 8px; background: rgba(99,102,241,0.07); border-radius: 4px; border: 0.5px solid rgba(99,102,241,0.2); }
 
 /* ── 個股補漲排行 ── */
 .catchup-section { margin-top: 14px; }
@@ -1712,6 +1727,93 @@ const CONFIG = {
   ],
 };
 
+// ── 週期性族群標記（需用不同邏輯評估，不能純看 Gap）──
+const CYCLIC_SECTORS = new Set([
+  '台股 HBM / 高頻寬記憶體',
+  '台股 NOR Flash / 利基記憶體',
+  '台股 NAND Flash / SSD 控制',
+  '台股 被動元件',
+  '台股 貨櫃航運',
+  '台股 散裝航運',
+  '台股 航空',
+  '台股 鋼鐵',
+  '台股 石化 / 塑化',
+  '台股 成熟製程代工',
+  '台股 矽晶圓',
+  '台股 功率半導體 / 電源管理',
+]);
+// 在 sectorData 上標記 cyclic 屬性（不修改原始資料結構）
+CONFIG.sectorData.forEach(r => { r.cyclic = CYCLIC_SECTORS.has(r.sector); });
+
+/* ═══════════════════════════════════════════════════════════
+   FUNDAMENTALS ENGINE  — 非同步抓個股 P/E（via /api/proxy）
+   ═══════════════════════════════════════════════════════════ */
+const FundamentalsEngine = {
+  _cache: {},   // symbol → { pe, forwardPe, earningsDate, fetchedAt }
+  _DEV: location.hostname === 'localhost' || location.hostname === '127.0.0.1',
+
+  async fetch(symbol) {
+    const now = Date.now();
+    if (this._cache[symbol] && now - this._cache[symbol].fetchedAt < 3600000) return this._cache[symbol];
+    try {
+      const yahooSym = CONFIG.stockSymbolMap[symbol] || (symbol + '.TW');
+      const url = `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${yahooSym}?modules=summaryDetail%2CcalendarEvents`;
+      const res = await fetch(this._DEV
+        ? `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
+        : `/api/proxy?url=${encodeURIComponent(url)}`);
+      if (!res.ok) throw new Error(res.status);
+      const data = await res.json();
+      const sd = data?.quoteSummary?.result?.[0]?.summaryDetail;
+      const cal = data?.quoteSummary?.result?.[0]?.calendarEvents;
+      const pe        = sd?.trailingPE?.raw ?? null;
+      const forwardPe = sd?.forwardPE?.raw  ?? null;
+      const earningsTs = cal?.earnings?.earningsDate?.[0]?.raw ?? null;
+      const earningsDate = earningsTs ? new Date(earningsTs * 1000).toLocaleDateString('zh-TW', { month:'numeric', day:'numeric' }) : null;
+      const result = { pe, forwardPe, earningsDate, fetchedAt: now };
+      this._cache[symbol] = result;
+      return result;
+    } catch { return null; }
+  },
+
+  peClass(pe) {
+    if (pe == null) return '';
+    if (pe > 30) return 'high';
+    if (pe < 15) return 'low';
+    return 'mid';
+  },
+
+  async renderBlock(stocks, sectorCyclic, containerId) {
+    const el = document.getElementById(containerId);
+    if (!el) return;
+    el.innerHTML = `<div class="pe-title">📊 個股基本面（P/E）</div><div style="color:var(--text-5);font-size:11px;padding:4px 0;">載入中…</div>`;
+
+    const results = await Promise.all(stocks.map(s => this.fetch(s.id)));
+
+    let html = `<div class="pe-title">📊 個股基本面（P/E 本益比）</div>`;
+    stocks.forEach((s, i) => {
+      const f = results[i];
+      const peStr = f?.pe != null ? f.pe.toFixed(1) + 'x' : '—';
+      const fwdStr = f?.forwardPe != null ? f.forwardPe.toFixed(1) + 'x' : '';
+      const cls = this.peClass(f?.pe);
+      const earnStr = f?.earningsDate ? `法說：${f.earningsDate}` : '';
+      html += `<div class="pe-row">
+        <div>
+          <div class="pe-name">${s.id} ${s.name}</div>
+          ${earnStr ? `<div class="pe-sub">${earnStr}</div>` : ''}
+        </div>
+        <div style="text-align:right;">
+          <div class="pe-val ${cls}" title="本益比（TTM）">${peStr}</div>
+          ${fwdStr ? `<div class="pe-sub">預估 ${fwdStr}</div>` : ''}
+        </div>
+      </div>`;
+    });
+    if (sectorCyclic) {
+      html += `<div class="pe-warn">🔄 週期性族群：PE 偏低可能代表景氣高峰而非便宜，進場前確認供需方向。</div>`;
+    }
+    if (el) el.innerHTML = html;
+  },
+};
+
 /* ═══════════════════════════════════════════════════════════
    STRATEGY ENGINE  — 根據族群屬性推薦追蹤策略
    ═══════════════════════════════════════════════════════════
@@ -2996,7 +3098,7 @@ const AISummary = {
       ? `SOX ${soxItem.chg}，NASDAQ ${nasdaqItem?.chg||'—'}，道瓊 ${djiaItem.chg}`
       : '';
 
-    const prompt = `你是一位台股盤前分析師，請根據以下資料，用繁體中文寫一段 2-3 句的今日盤前重點摘要，語氣簡潔專業，不要廢話。
+    const prompt = `你是一位台股盤前分析師，請根據以下資料，用繁體中文寫一段 4 句的今日盤前重點摘要，語氣簡潔專業，不要廢話。
 
 今天：${today}
 宏觀指數：${macroText || '資料載入中'}
@@ -3004,9 +3106,10 @@ const AISummary = {
 Gap 前五名族群：${topSectors || '資料載入中'}
 
 要求：
-1. 第一句說明今日整體市場氛圍，特別點出 SOX/NASDAQ/道瓊 是否有分化
-2. 第二句點出最值得關注的 1-2 個補漲族群及原因（考慮分化方向）
-3. 第三句給出一個操作提醒（注意事項或建議）
+1. 第一句說明今日整體市場氛圍，特別點出 SOX/NASDAQ/道瓊 是否有分化，並推測昨晚主要驅動原因（財報、Fed、政策、族群輪動等）
+2. 第二句點出最值得關注的 1-2 個補漲族群，並說明為什麼這個 Gap 訊號可能有效（驅動因素是否扎實、是大消息還是一般波動）
+3. 第三句提出今日最主要的反論風險：什麼情況下這些 Gap 機會可能是假的或已被消化？（例如：驅動幅度過大可能已被預期、族群屬週期性需確認景氣位置等）
+4. 第四句給出一個具體操作提醒（建議觀察什麼指標或留意什麼時間點）
 直接輸出摘要，不要加標題或編號。`;
 
     try {
@@ -4007,6 +4110,7 @@ const Renderer = {
             ${this.qualityBadge(r._quality || 'fallback')}
             ${r._custom ? '<span class="custom-tag">自訂</span>' : ''}
             ${SectorState.badge(r)}
+            ${r.cyclic ? '<span class="cyclic-tag" title="週期性族群：股價受景氣循環影響，Gap 訊號需搭配景氣方向判斷，不能純看補漲邏輯">🔄 週期</span>' : ''}
           </div>
           <div style="font-size:10px;color:var(--text-6);margin-top:1px;">${r.stocks.length} 檔</div>
         </td>
@@ -4078,6 +4182,7 @@ const Renderer = {
           <span class="pct ${(r.driveChg??0)>=0?'pct-up':'pct-down'}">${this.fmtOrDash(r.driveChg)}</span>
         </div>
       </div>
+      ${r.cyclic ? `<div style="margin-top:8px;padding:7px 10px;background:rgba(99,102,241,0.07);border:0.5px solid rgba(99,102,241,0.25);border-radius:6px;font-size:11px;color:#a5b4fc;line-height:1.6;">🔄 <strong>週期性族群</strong>：Gap 訊號需搭配景氣方向判斷。<br>週期高峰時 PE 反而偏低，補漲邏輯需確認供需是否仍在擴張期。</div>` : ''}
       <div class="stocks-label">個股走勢（近 ${CONFIG.sparklineDays} 日）</div>`;
 
     r.stocks.forEach((s, i) => {
@@ -4142,10 +4247,16 @@ const Renderer = {
           </div>
         </div>`;
       });
-      html += `<div style="font-size:10px;color:var(--text-5);margin-top:4px;padding:0 2px;">族群平均：${avgChg >= 0 ? '+' : ''}${avgChg.toFixed(2)}%・落後股（綠色數字）為補漲候選</div></div>`;
+      html += `<div style="font-size:10px;color:var(--text-5);margin-top:4px;padding:0 2px;">${benchmarkLabel}：${benchmark >= 0 ? '+' : ''}${benchmark.toFixed(2)}%・落後股（綠色數字）為補漲候選</div></div>`;
     }
 
+    // P/E 基本面區塊（非同步填入）
+    html += `<div class="pe-section" id="peFundamentals"></div>`;
+
     document.getElementById('sidebarBody').innerHTML = html;
+
+    // ── 非同步抓個股基本面（P/E）──
+    FundamentalsEngine.renderBlock(r.stocks, r.cyclic, 'peFundamentals');
 
     // ── 非同步抓歷史資料，更新量能 + 均線 ──
     (async () => {

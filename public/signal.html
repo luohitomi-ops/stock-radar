@@ -102,7 +102,7 @@ body{background:var(--bg-0);color:var(--text-1);font-family:'Helvetica Neue','Pi
 /* MODAL */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.15s;}
 .overlay.open{opacity:1;pointer-events:all;}
-.modal{background:var(--bg-1);border:0.5px solid var(--border);border-radius:10px;width:420px;max-width:95vw;overflow:hidden;transform:translateY(8px);transition:transform 0.15s;}
+.modal{background:var(--bg-1);border:0.5px solid var(--border);border-radius:10px;width:480px;max-width:95vw;overflow:hidden;transform:translateY(8px);transition:transform 0.15s;max-height:90vh;overflow-y:auto;}
 .overlay.open .modal{transform:translateY(0);}
 .modal-header{padding:14px 16px;border-bottom:0.5px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
 .modal-title{font-size:13px;font-weight:600;}
@@ -112,9 +112,12 @@ body{background:var(--bg-0);color:var(--text-1);font-family:'Helvetica Neue','Pi
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .form-group{display:flex;flex-direction:column;gap:5px;}
 .form-group label{font-size:11px;color:var(--text-3);}
-.form-group input,.form-group select{background:var(--bg-2);border:0.5px solid var(--border);border-radius:var(--radius);color:var(--text-1);font-size:12px;padding:7px 10px;outline:none;transition:var(--transition);width:100%;}
-.form-group input:focus,.form-group select:focus{border-color:var(--accent);}
+.form-group input,.form-group select,.form-group textarea{background:var(--bg-2);border:0.5px solid var(--border);border-radius:var(--radius);color:var(--text-1);font-size:12px;padding:7px 10px;outline:none;transition:var(--transition);width:100%;resize:vertical;}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--accent);}
 .form-hint{font-size:11px;color:var(--text-4);}
+.story-divider{border:none;border-top:0.5px solid var(--border);margin:4px 0;}
+.story-label{font-size:10px;color:var(--text-4);letter-spacing:0.5px;font-weight:500;padding:0 2px;}
+.signal-story{font-size:10px;color:var(--text-4);margin-top:3px;line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;}
 .fill-current-price{font-size:11px;color:var(--accent-text);margin-top:4px;cursor:pointer;text-decoration:underline;}
 
 /* PORTFOLIO PROMPT */
@@ -307,6 +310,16 @@ body{background:var(--bg-0);color:var(--text-1);font-family:'Helvetica Neue','Pi
       <div class="form-group">
         <label>備註</label>
         <input type="text" id="fNote" placeholder="選填，例：配合 VIX 回落進場"/>
+      </div>
+      <hr class="story-divider">
+      <div class="story-label">📖 Lynch 測試（兩分鐘故事）</div>
+      <div class="form-group">
+        <label>進場故事 *（必填）</label>
+        <textarea id="fStory" rows="2" placeholder="一句話說清楚這個機會的邏輯，例：SOX 大漲 8%，IC設計 Gap +5pp，補漲可能在 1-2 天出現"></textarea>
+      </div>
+      <div class="form-group">
+        <label>出場條件（故事結束的信號）</label>
+        <input type="text" id="fExitCondition" placeholder="例：Gap 收斂到 0、SOX 轉跌超 2%、開盤量能不足"/>
       </div>
     </div>
     <div class="modal-footer">
@@ -519,9 +532,13 @@ function renderPending() {
         ? `<span class="badge pending">明日到期</span>`
         : `<span class="badge pending">${left} 天後到期</span>`;
     const daysLabel = DAYS_LABELS[s.days] || `${s.days}天`;
+    const storyTitle = [s.story && `故事：${s.story}`, s.exitCondition && `出場：${s.exitCondition}`].filter(Boolean).join('\n');
     return `<div class="signal-row pending-grid">
       <span class="cell muted">${s.recordDate}</span>
-      <span class="cell sym" title="${s.sector}">${s.sector.replace('台股 ','')}</span>
+      <span class="cell" title="${storyTitle || s.sector}">
+        <div class="cell sym" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${s.sector.replace('台股 ','')}</div>
+        ${s.story ? `<div class="signal-story" title="${s.story}">${s.story}</div>` : ''}
+      </span>
       <span class="cell ${(s.gap??0)>=0?'up':'down'}">${(s.gap??0)>=0?'+':''}${fmt(s.gap)}pp</span>
       <span class="cell">${fmt(s.beta)}</span>
       <span class="cell muted">${fmt(s.r2)}</span>
@@ -555,7 +572,10 @@ function renderDone() {
     const daysLabel = DAYS_LABELS[s.days] || `${s.days}天`;
     return `<div class="signal-row done-grid">
       <span class="cell muted">${s.recordDate}</span>
-      <span class="cell sym" title="${s.sector}">${s.sector.replace('台股 ','')}</span>
+      <span class="cell" title="${s.story || s.sector}">
+        <div class="cell sym" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${s.sector.replace('台股 ','')}</div>
+        ${s.story ? `<div class="signal-story" title="${s.story}">${s.story}</div>` : ''}
+      </span>
       <span class="cell ${(s.gap??0)>=0?'up':'down'}">${(s.gap??0)>=0?'+':''}${fmt(s.gap)}pp</span>
       <span class="cell">${fmt(s.beta)}</span>
       <span class="cell ${gainCls}">${gainStr}</span>
@@ -655,9 +675,11 @@ function openAddModal(prefill = null) {
   document.getElementById('fBeta').value      = prefill?.beta     || '';
   document.getElementById('fR2').value        = prefill?.r2       || '';
   document.getElementById('fRefPrice').value  = prefill?.refPrice || '';
-  document.getElementById('fDays').value      = '5';
-  document.getElementById('fThreshold').value = '2';
-  document.getElementById('fNote').value      = '';
+  document.getElementById('fDays').value          = '5';
+  document.getElementById('fThreshold').value     = '2';
+  document.getElementById('fNote').value          = '';
+  document.getElementById('fStory').value         = prefill?.story || '';
+  document.getElementById('fExitCondition').value = '';
   document.getElementById('addOverlay').classList.add('open');
   setTimeout(() => document.getElementById('fSector').focus(), 100);
 }
@@ -674,16 +696,19 @@ function saveSignal() {
   const days      = parseInt(document.getElementById('fDays').value);
   const threshold = parseFloat(document.getElementById('fThreshold').value) || 2;
   const market    = document.getElementById('fMarket').value;
-  const note      = document.getElementById('fNote').value.trim();
+  const note          = document.getElementById('fNote').value.trim();
+  const story         = document.getElementById('fStory').value.trim();
+  const exitCondition = document.getElementById('fExitCondition').value.trim();
 
   if (!sector) { showToast('請輸入族群名稱', ''); return; }
   if (isNaN(gap)) { showToast('請輸入正確的 Gap 值', ''); return; }
+  if (!story) { showToast('請填寫進場故事（兩分鐘測試）', ''); return; }
 
   const today = localDateStr();
   const signal = {
     id: Date.now().toString(),
     sector, market, gap, beta, r2, refPrice,
-    days, threshold, note,
+    days, threshold, note, story, exitCondition,
     recordDate: today,
     dueDate: addDays(today, days),
     status: 'pending',
@@ -729,7 +754,9 @@ function openFill(id) {
   STATE.fillId = id;
   document.getElementById('fillInfo').innerHTML =
     `<strong>${s.sector}</strong>　Gap +${fmt(s.gap)}pp　Beta ${fmt(s.beta)}　R² ${fmt(s.r2)}<br>
-     記錄日：${s.recordDate}　到期日：${s.dueDate}　命中門檻：漲幅 ≥ ${s.threshold}%`;
+     記錄日：${s.recordDate}　到期日：${s.dueDate}　命中門檻：漲幅 ≥ ${s.threshold}%`
+    + (s.story ? `<br><span style="color:var(--text-4);font-size:11px;">📖 故事：${s.story}</span>` : '')
+    + (s.exitCondition ? `<br><span style="color:var(--warn);font-size:11px;">🚪 出場條件：${s.exitCondition}</span>` : '');
   document.getElementById('fActualGain').value = '';
   document.getElementById('fFillNote').value   = '';
   document.getElementById('fillThresholdHint').textContent = `漲幅 ≥ ${s.threshold}% 自動判定為命中`;
