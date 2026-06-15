@@ -3709,29 +3709,26 @@ const SectorState = {
 
     if (gap === null) return { key:'watch', label:'👀 觀望', cls:'watch' };
 
-    const hasVol     = volRatio !== null;
-    const volHigh    = hasVol && volRatio >= 1.3;   // 量能放大 30%+
-    const volLow     = hasVol && volRatio <= 0.7;   // 量能萎縮 30%+
-    const volNormal  = hasVol && !volHigh && !volLow;
+    const driveUp  = (r.driveChg ?? 0) >= 0;  // 海外今日是否上漲
+    const hasVol  = volRatio !== null;
+    const volHigh = hasVol && volRatio >= 1.3;
+    const volLow  = hasVol && volRatio <= 0.7;
 
-    // 主力：Gap 大 + Beta 高 + R² 有支撐 + 量能放大（或無量能資料時放寬）
-    const mainCondition = gap >= 2 && beta !== null && beta >= 0.8 && r2 !== null && r2 >= 0.4;
-    if (mainCondition && (!hasVol || volHigh || volNormal))
+    // 主力：海外漲 + Gap 大 + Beta / R² 有支撐（條件放寬至 0.6/0.3，資料不足時仍可觸發）
+    if (driveUp && gap >= 2 && beta !== null && beta >= 0.6 && r2 !== null && r2 >= 0.3 && !volLow)
       return { key:'bull', label:'🔥 主力', cls:'bull' };
 
-    // 退潮：Gap 負值 + 量能萎縮，或 Gap 很負
-    if (gap <= -1.5 && (!hasVol || volLow))
-      return { key:'retreat', label:'🌊 退潮', cls:'retreat' };
-    if (gap <= -2.5)
-      return { key:'retreat', label:'🌊 退潮', cls:'retreat' };
+    // 已超漲：海外漲但台股漲幅超過預期（gap 負值是台股跑太快，不是退潮）
+    if (driveUp && gap <= -2)
+      return { key:'retreat', label:'⚠️ 已超漲', cls:'retreat' };
 
-    // 觀望：量能萎縮（不論 Gap），或 Gap 接近 0
-    if (volLow || (gap > -1 && gap < 0.5))
-      return { key:'watch', label:'👀 觀望', cls:'watch' };
-
-    // 輪動：Gap 正值
-    if (gap >= 0.5)
+    // 輪動：海外漲 + 正 Gap（還沒跟上，值得關注）
+    if (driveUp && gap >= 0.5)
       return { key:'rotate', label:'🔄 輪動', cls:'rotate' };
+
+    // 退潮：海外跌 + 台股跌幅超過預期（真正的退潮）
+    if (!driveUp && gap <= -1.5)
+      return { key:'retreat', label:'🌊 退潮', cls:'retreat' };
 
     return { key:'watch', label:'👀 觀望', cls:'watch' };
   },
@@ -3739,10 +3736,12 @@ const SectorState = {
   badge(r) {
     const s = this.get(r);
     const tooltips = {
-      bull:    '🔥 主力：Gap 大＋Beta 高＋量能放大，補漲動能最強',
-      rotate:  '🔄 輪動：有正 Gap 但條件普通，資金輪動中',
-      watch:   '👀 觀望：Gap 接近 0 或量能萎縮，方向不明',
-      retreat: '🌊 退潮：Gap 為負值，已超漲或資金退出',
+      bull:    '🔥 主力：海外漲＋Gap 大＋Beta 有支撐，補漲動能最強',
+      rotate:  '🔄 輪動：海外漲＋有正 Gap，台股尚未跟上',
+      watch:   '👀 觀望：Gap 接近 0 或方向不明',
+      retreat: s.label === '⚠️ 已超漲'
+        ? '⚠️ 已超漲：台股漲幅已超過海外預期，不建議追高'
+        : '🌊 退潮：海外下跌＋台股跌幅超過預期，資金退出中',
     };
     return `<span class="sector-state ${s.cls}" title="${tooltips[s.key] || s.label}">${s.label}</span>`;
   },
@@ -4021,7 +4020,7 @@ const Renderer = {
         <td>
           <span class="pct ${(gap??0)>=0?'pct-down':'pct-up'}" style="font-weight:600;">${this.fmtOrDash(gap,'pp')}${alertDot}</span>
           ${gap !== null ? `<div class="gap-bar" style="width:${gapBarW}%;background:${gapBarColor};"></div>` : ''}
-          ${isAlert ? '<div style="margin-top:3px;display:flex;gap:4px;flex-wrap:wrap;">' + (isRetreating ? '<span class="portfolio-add-btn" style="background:rgba(107,122,142,0.1);border-color:var(--border);color:var(--text-4);cursor:default;" title="板塊退潮中，不建議入場">🌊 退潮中</span>' : Renderer._entryBtn(r, gap)) + '<a class="portfolio-add-btn" href="/signal.html?sector=' + encodeURIComponent(r.sector) + '&gap=' + (gap?.toFixed(2)||'') + '&beta=' + (r.beta?.toFixed(2)||'') + '&r2=' + (r.r2?.toFixed(2)||'') + '&market=' + r.market + '" target="_blank" onclick="event.stopPropagation()" style="background:rgba(245,158,11,0.1);border-color:#5a3500;color:var(--warn);">📓 記錄訊號</a></div>' : ''}
+          ${gap !== null ? '<div style="margin-top:3px;display:flex;gap:4px;flex-wrap:wrap;">' + (isRetreating ? '<span class="portfolio-add-btn" style="background:rgba(107,122,142,0.1);border-color:var(--border);color:var(--text-4);cursor:default;" title="板塊退潮中，不建議入場">🌊 退潮中</span>' : Renderer._entryBtn(r, gap)) + '<a class="portfolio-add-btn" href="/signal.html?sector=' + encodeURIComponent(r.sector) + '&gap=' + (gap?.toFixed(2)||'') + '&beta=' + (r.beta?.toFixed(2)||'') + '&r2=' + (r.r2?.toFixed(2)||'') + '&market=' + r.market + '" target="_blank" onclick="event.stopPropagation()" style="background:rgba(245,158,11,0.1);border-color:#5a3500;color:var(--warn);">📓 記錄訊號</a></div>' : ''}
         </td>
         <td>${betaCell}</td>
         <td>
@@ -4111,12 +4110,13 @@ const Renderer = {
 
     // ── 補漲排行 ──
     const sortedByChg = [...r.stocks].filter(s => s.chg !== null).sort((a, b) => a.chg - b.chg);
-    const avgChg = r.stocks.filter(s => s.chg !== null).reduce((s, x) => s + x.chg, 0) / (r.stocks.filter(s => s.chg !== null).length || 1);
+    const benchmark = r.exp ?? (r.stocks.filter(s => s.chg !== null).reduce((s, x) => s + x.chg, 0) / (r.stocks.filter(s => s.chg !== null).length || 1));
+    const benchmarkLabel = r.exp !== null ? '預期' : '族群平均';
     if (sortedByChg.length > 1) {
       html += `<div class="catchup-section">
-        <div class="catchup-title">📊 個股補漲排行（今日漲幅由低到高）</div>`;
+        <div class="catchup-title">📊 個股補漲排行（vs ${benchmarkLabel} ${benchmark >= 0 ? '+' : ''}${benchmark.toFixed(2)}%）</div>`;
       sortedByChg.forEach((s, i) => {
-        const diff = s.chg - avgChg;
+        const diff = s.chg - benchmark;
         const isLag = diff < -0.3;
         const isLead = diff > 0.3;
         html += `<div class="catchup-row ${isLead ? 'leader' : ''}">
@@ -4134,7 +4134,7 @@ const Renderer = {
           </div>
         </div>`;
       });
-      html += `<div style="font-size:10px;color:var(--text-5);margin-top:4px;padding:0 2px;">族群平均：${avgChg >= 0 ? '+' : ''}${avgChg.toFixed(2)}%・落後股（綠色數字）為補漲候選</div></div>`;
+      html += `<div style="font-size:10px;color:var(--text-5);margin-top:4px;padding:0 2px;">${benchmarkLabel}：${benchmark >= 0 ? '+' : ''}${benchmark.toFixed(2)}%・落後股（綠色數字）為補漲候選</div></div>`;
     }
 
     document.getElementById('sidebarBody').innerHTML = html;
@@ -4294,9 +4294,10 @@ const Renderer = {
   _entryBtn(r, gap) {
     const dc = r.driveChg ?? 0;
     const gv = gap ?? 0;
-    const sym   = encodeURIComponent(r.stocks[0]?.symbol || '');
+    const s0    = r.stocks[0];
+    const sym   = encodeURIComponent(CONFIG.stockSymbolMap[s0?.id] || s0?.id || '');
     const sec   = encodeURIComponent(r.sector);
-    const price = r.stocks[0]?.price || '';
+    const price = s0?.price || '';
     const url   = '/portfolio.html?add=' + sym + '&sector=' + sec + '&price=' + price;
 
     if (dc >= 0 && gv > 0)
