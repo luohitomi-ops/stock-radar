@@ -203,7 +203,7 @@ export default async function handler(req, res) {
   // 環境變數
   const TOKEN     = process.env.TELEGRAM_TOKEN;
   const CHAT_ID   = process.env.TELEGRAM_CHAT_ID;
-  const SECRET    = process.env.NOTIFY_SECRET;
+  const SECRET    = process.env.NOTIFY_SECRET || 'stockradar2026';
   const THRESHOLD = parseFloat(process.env.GAP_THRESHOLD || '2.0');
 
   if (!TOKEN || !CHAT_ID) {
