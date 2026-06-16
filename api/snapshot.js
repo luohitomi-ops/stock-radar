@@ -181,10 +181,10 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: false, message: '無法取得資料，可能是非交易日' });
     }
 
-    // 4. 存入 Redis
-    const today = new Date().toLocaleDateString('zh-TW', {
-      timeZone: 'Asia/Taipei', year:'numeric', month:'2-digit', day:'2-digit'
-    }).replace(/\//g, '-');
+    // 4. 存入 Redis（手動建構台灣時間字串，避免 zh-TW locale 在 Vercel 回傳 ROC 民國年）
+    const nowTW = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Taipei' }));
+    const pad = n => String(n).padStart(2, '0');
+    const today = `${nowTW.getFullYear()}-${pad(nowTW.getMonth()+1)}-${pad(nowTW.getDate())}`;
 
     await kvSet(kvUrl, kvToken, `snapshot:${today}`, snap);
     await kvSet(kvUrl, kvToken, 'snapshot:latest', today, 86400 * 7); // latest 7天TTL
