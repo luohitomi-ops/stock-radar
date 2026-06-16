@@ -1387,6 +1387,9 @@ const CONFIG = {
     '2317': '2317.TW',   // 鴻海
     '2357': '2357.TW',   // 華碩
     '3008b':'3008.TW',
+    '1519': '1519.TW',   // 華城電機
+    '1513': '1513.TW',   // 中興電
+    '1503': '1503.TW',   // 士林電機
   },
 
   // ── Beta 計算設定 ──
@@ -1406,9 +1409,9 @@ const CONFIG = {
   // hot: false = 搜尋才出現
   // ══════════════════════════════════════════════════════
   sectorData: [
-    // ════ 熱門 20 個（hot: true）════
+    // ════ 熱門（海外連動最強排前，週期性排末）════
 
-    // AI / 半導體供應鏈
+    // ── SOX 驅動 AI 核心供應鏈（最強聯動）──
     { hot:true,  sector:'台股 AI 伺服器 / ODM', exp:null, act:null, gap:null,
       market:'US', driveName:'美股 費城半導體', driveIndex:'SOX', driveChg:null, cover:100,
       stocks:[
@@ -1429,27 +1432,6 @@ const CONFIG = {
         {id:'3017',name:'奇鋐',   price:195, chg:null, role:'龍頭', seed:301},
         {id:'1590',name:'亞德客', price:890, chg:null, role:'核心', seed:302},
         {id:'2049',name:'上銀',   price:320, chg:null, role:'觀察', seed:303},
-      ]},
-    { hot:true,  sector:'台股 HBM / 高頻寬記憶體', exp:null, act:null, gap:null,
-      market:'US', driveName:'美股 費城半導體', driveIndex:'SOX', driveChg:null, cover:75,
-      stocks:[
-        {id:'2408',name:'南亞科', price:68,  chg:null, role:'龍頭', seed:401},
-        {id:'2344',name:'華邦電', price:35,  chg:null, role:'核心', seed:402},
-        {id:'6770',name:'力積電', price:42,  chg:null, role:'觀察', seed:403},
-      ]},
-    { hot:true,  sector:'台股 ABF 載板 / PCB', exp:null, act:null, gap:null,
-      market:'US', driveName:'美股 費城半導體', driveIndex:'SOX', driveChg:null, cover:100,
-      stocks:[
-        {id:'3037',name:'欣興',   price:142, chg:null, role:'龍頭', seed:501},
-        {id:'8046',name:'南電',   price:98,  chg:null, role:'核心', seed:502},
-        {id:'3189',name:'景碩',   price:105, chg:null, role:'觀察', seed:503},
-      ]},
-    { hot:true,  sector:'台股 矽光子 / CPO', exp:null, act:null, gap:null,
-      market:'US', driveName:'美股 費城半導體', driveIndex:'SOX', driveChg:null, cover:50,
-      stocks:[
-        {id:'2330',name:'台積電', price:2300,chg:null, role:'龍頭', seed:601},
-        {id:'3711',name:'日月光', price:165, chg:null, role:'核心', seed:602},
-        {id:'3014',name:'聯陽',   price:85,  chg:null, role:'觀察', seed:603},
       ]},
     { hot:true,  sector:'台股 交換器 / 網通設備', exp:null, act:null, gap:null,
       market:'US', driveName:'美股 費城半導體', driveIndex:'SOX', driveChg:null, cover:100,
@@ -1472,19 +1454,53 @@ const CONFIG = {
         {id:'3443',name:'創意',   price:920, chg:null, role:'核心', seed:902},
         {id:'5347',name:'世界先進',price:90, chg:null, role:'觀察', seed:903},
       ]},
-    { hot:true,  sector:'台股 功率半導體 / 電源管理', exp:null, act:null, gap:null,
-      market:'JP', driveName:'日股 日經225', driveIndex:'N225', driveChg:null, cover:100,
+    { hot:true,  sector:'台股 ABF 載板 / PCB', exp:null, act:null, gap:null,
+      market:'US', driveName:'美股 費城半導體', driveIndex:'SOX', driveChg:null, cover:100,
       stocks:[
-        {id:'6415',name:'矽力-KY', price:580, chg:null, role:'龍頭', seed:1001},
-        {id:'8081',name:'致新',    price:238, chg:null, role:'核心', seed:1002},
-        {id:'2308',name:'台達電',  price:380, chg:null, role:'觀察', seed:1003},
+        {id:'3037',name:'欣興',   price:142, chg:null, role:'龍頭', seed:501},
+        {id:'8046',name:'南電',   price:98,  chg:null, role:'核心', seed:502},
+        {id:'3189',name:'景碩',   price:105, chg:null, role:'觀察', seed:503},
       ]},
-    { hot:true,  sector:'台股 貨櫃航運', exp:null, act:null, gap:null,
+    { hot:true,  sector:'台股 矽光子 / CPO', exp:null, act:null, gap:null,
+      market:'US', driveName:'美股 費城半導體', driveIndex:'SOX', driveChg:null, cover:50,
+      stocks:[
+        {id:'2330',name:'台積電', price:2300,chg:null, role:'龍頭', seed:601},
+        {id:'3711',name:'日月光', price:165, chg:null, role:'核心', seed:602},
+        {id:'3014',name:'聯陽',   price:85,  chg:null, role:'觀察', seed:603},
+      ]},
+    { hot:true,  sector:'台股 電力設備 / 變壓器', exp:null, act:null, gap:null,
+      market:'US', driveName:'美股 費城半導體', driveIndex:'SOX', driveChg:null, cover:75,
+      stocks:[
+        {id:'1519',name:'華城電機', price:420, chg:null, role:'龍頭', seed:6001},
+        {id:'1513',name:'中興電',   price:188, chg:null, role:'核心', seed:6002},
+        {id:'1503',name:'士林電機', price:125, chg:null, role:'觀察', seed:6003},
+      ]},
+
+    // ── SPX / N225 驅動 ──
+    { hot:true,  sector:'台股 鴻海 / 代工龍頭', exp:null, act:null, gap:null,
       market:'US', driveName:'美股 S&P500', driveIndex:'SPX', driveChg:null, cover:100,
       stocks:[
-        {id:'2603',name:'長榮', price:185, chg:null, role:'龍頭', seed:1101},
-        {id:'2609',name:'陽明', price:92,  chg:null, role:'核心', seed:1102},
-        {id:'2615',name:'萬海', price:78,  chg:null, role:'觀察', seed:1103},
+        {id:'2317',name:'鴻海',   price:210, chg:null, role:'龍頭', seed:1701},
+        {id:'2357',name:'華碩',   price:580, chg:null, role:'核心', seed:1702},
+        {id:'3231',name:'緯創',   price:68,  chg:null, role:'觀察', seed:1703},
+      ]},
+    { hot:true,  sector:'台股 光學鏡頭', exp:null, act:null, gap:null,
+      market:'JP', driveName:'日股 日經225', driveIndex:'N225', driveChg:null, cover:100,
+      stocks:[
+        {id:'3008',name:'大立光', price:2400,chg:null, role:'龍頭', seed:1301},
+        {id:'3406',name:'玉晶光', price:310, chg:null, role:'核心', seed:1302},
+      ]},
+    { hot:true,  sector:'台股 機器人 / 精密傳動', exp:null, act:null, gap:null,
+      market:'JP', driveName:'日股 日經225', driveIndex:'N225', driveChg:null, cover:75,
+      stocks:[
+        {id:'2049',name:'上銀',   price:320, chg:null, role:'龍頭', seed:1901},
+        {id:'1590',name:'亞德客', price:890, chg:null, role:'核心', seed:1902},
+      ]},
+    { hot:true,  sector:'台股 ETF / 大盤追蹤', exp:null, act:null, gap:null,
+      market:'US', driveName:'美股 S&P500', driveIndex:'SPX', driveChg:null, cover:100,
+      stocks:[
+        {id:'0050',name:'元大台灣50', price:198, chg:null, role:'龍頭', seed:2001},
+        {id:'2330',name:'台積電',     price:2300,chg:null, role:'核心', seed:2002},
       ]},
     { hot:true,  sector:'台股 壽險 / 金控', exp:null, act:null, gap:null,
       market:'US', driveName:'美股 S&P500', driveIndex:'SPX', driveChg:null, cover:100,
@@ -1493,11 +1509,21 @@ const CONFIG = {
         {id:'2881',name:'富邦金', price:98, chg:null, role:'核心', seed:1202},
         {id:'2891',name:'中信金', price:42, chg:null, role:'觀察', seed:1203},
       ]},
-    { hot:true,  sector:'台股 光學鏡頭', exp:null, act:null, gap:null,
+
+    // ── 🔄 週期性族群（排熱門末，需搭配景氣方向）──
+    { hot:true,  sector:'台股 功率半導體 / 電源管理', exp:null, act:null, gap:null,
       market:'JP', driveName:'日股 日經225', driveIndex:'N225', driveChg:null, cover:100,
       stocks:[
-        {id:'3008',name:'大立光', price:2400,chg:null, role:'龍頭', seed:1301},
-        {id:'3406',name:'玉晶光', price:310, chg:null, role:'核心', seed:1302},
+        {id:'6415',name:'矽力-KY', price:580, chg:null, role:'龍頭', seed:1001},
+        {id:'8081',name:'致新',    price:238, chg:null, role:'核心', seed:1002},
+        {id:'2308',name:'台達電',  price:380, chg:null, role:'觀察', seed:1003},
+      ]},
+    { hot:true,  sector:'台股 HBM / 高頻寬記憶體', exp:null, act:null, gap:null,
+      market:'US', driveName:'美股 費城半導體', driveIndex:'SOX', driveChg:null, cover:75,
+      stocks:[
+        {id:'2408',name:'南亞科', price:68,  chg:null, role:'龍頭', seed:401},
+        {id:'2344',name:'華邦電', price:35,  chg:null, role:'核心', seed:402},
+        {id:'6770',name:'力積電', price:42,  chg:null, role:'觀察', seed:403},
       ]},
     { hot:true,  sector:'台股 被動元件', exp:null, act:null, gap:null,
       market:'US', driveName:'美股 費城半導體', driveIndex:'SOX', driveChg:null, cover:100,
@@ -1519,30 +1545,12 @@ const CONFIG = {
         {id:'2301',name:'光寶科', price:112, chg:null, role:'核心', seed:1602},
         {id:'1590',name:'亞德客', price:890, chg:null, role:'觀察', seed:1603},
       ]},
-    { hot:true,  sector:'台股 鴻海 / 代工龍頭', exp:null, act:null, gap:null,
+    { hot:true,  sector:'台股 貨櫃航運', exp:null, act:null, gap:null,
       market:'US', driveName:'美股 S&P500', driveIndex:'SPX', driveChg:null, cover:100,
       stocks:[
-        {id:'2317',name:'鴻海',   price:210, chg:null, role:'龍頭', seed:1701},
-        {id:'2357',name:'華碩',   price:580, chg:null, role:'核心', seed:1702},
-        {id:'3231',name:'緯創',   price:68,  chg:null, role:'觀察', seed:1703},
-      ]},
-    { hot:true,  sector:'台股 電信 / 防禦型', exp:null, act:null, gap:null,
-      market:'US', driveName:'美股 S&P500', driveIndex:'SPX', driveChg:null, cover:100,
-      stocks:[
-        {id:'2412',name:'中華電', price:120, chg:null, role:'龍頭', seed:1801},
-        {id:'4904',name:'遠傳',   price:78,  chg:null, role:'核心', seed:1802},
-      ]},
-    { hot:true,  sector:'台股 機器人 / 精密傳動', exp:null, act:null, gap:null,
-      market:'JP', driveName:'日股 日經225', driveIndex:'N225', driveChg:null, cover:75,
-      stocks:[
-        {id:'2049',name:'上銀',   price:320, chg:null, role:'龍頭', seed:1901},
-        {id:'1590',name:'亞德客', price:890, chg:null, role:'核心', seed:1902},
-      ]},
-    { hot:true,  sector:'台股 ETF / 大盤追蹤', exp:null, act:null, gap:null,
-      market:'US', driveName:'美股 S&P500', driveIndex:'SPX', driveChg:null, cover:100,
-      stocks:[
-        {id:'0050',name:'元大台灣50', price:198, chg:null, role:'龍頭', seed:2001},
-        {id:'2330',name:'台積電',     price:2300,chg:null, role:'核心', seed:2002},
+        {id:'2603',name:'長榮', price:185, chg:null, role:'龍頭', seed:1101},
+        {id:'2609',name:'陽明', price:92,  chg:null, role:'核心', seed:1102},
+        {id:'2615',name:'萬海', price:78,  chg:null, role:'觀察', seed:1103},
       ]},
 
     // ════ 次熱門（hot: false，搜尋才出現）════
@@ -1567,10 +1575,11 @@ const CONFIG = {
         {id:'2374',name:'精英', price:45,  chg:null, role:'核心', seed:2302},
       ]},
     { hot:false, sector:'台股 低軌衛星 / 天線', exp:null, act:null, gap:null,
-      market:'US', driveName:'美股 費城半導體', driveIndex:'SOX', driveChg:null, cover:75,
+      market:'US', driveName:'美股 S&P500', driveIndex:'SPX', driveChg:null, cover:75,
       stocks:[
-        {id:'2345',name:'智邦', price:520, chg:null, role:'龍頭', seed:2401},
-        {id:'3596',name:'智易', price:178, chg:null, role:'核心', seed:2402},
+        {id:'6814',name:'昇達科', price:220, chg:null, role:'龍頭', seed:5041},
+        {id:'2441',name:'超豐',   price:85,  chg:null, role:'核心', seed:5042},
+        {id:'3023',name:'信邦',   price:195, chg:null, role:'核心', seed:5043},
       ]},
     { hot:false, sector:'台股 車用鏡頭 / ADAS', exp:null, act:null, gap:null,
       market:'JP', driveName:'日股 日經225', driveIndex:'N225', driveChg:null, cover:75,
@@ -1583,12 +1592,6 @@ const CONFIG = {
       stocks:[
         {id:'2603',name:'長榮', price:185, chg:null, role:'龍頭', seed:2601},
         {id:'2609',name:'陽明', price:92,  chg:null, role:'核心', seed:2602},
-      ]},
-    { hot:false, sector:'台股 航空', exp:null, act:null, gap:null,
-      market:'US', driveName:'美股 S&P500', driveIndex:'SPX', driveChg:null, cover:75,
-      stocks:[
-        {id:'2618',name:'長榮航', price:38, chg:null, role:'龍頭', seed:2701},
-        {id:'2610',name:'華航',   price:22, chg:null, role:'核心', seed:2702},
       ]},
     { hot:false, sector:'台股 鋼鐵', exp:null, act:null, gap:null,
       market:'US', driveName:'美股 S&P500', driveIndex:'SPX', driveChg:null, cover:100,
@@ -1618,12 +1621,6 @@ const CONFIG = {
       stocks:[
         {id:'6415',name:'矽力-KY', price:580,chg:null, role:'龍頭', seed:3201},
         {id:'2301',name:'光寶科',  price:112,chg:null, role:'核心', seed:3202},
-      ]},
-    { hot:false, sector:'台股 太陽能 / 綠能', exp:null, act:null, gap:null,
-      market:'US', driveName:'美股 S&P500', driveIndex:'SPX', driveChg:null, cover:50,
-      stocks:[
-        {id:'2308',name:'台達電', price:380, chg:null, role:'龍頭', seed:3301},
-        {id:'2301',name:'光寶科', price:112, chg:null, role:'核心', seed:3302},
       ]},
     { hot:false, sector:'台股 伺服器 / 機櫃', exp:null, act:null, gap:null,
       market:'US', driveName:'美股 費城半導體', driveIndex:'SOX', driveChg:null, cover:75,
@@ -1667,12 +1664,6 @@ const CONFIG = {
         {id:'3008',name:'大立光', price:2400,chg:null, role:'龍頭', seed:4001},
         {id:'2454',name:'聯發科', price:1250,chg:null, role:'核心', seed:4002},
       ]},
-    { hot:false, sector:'台股 資安 / 雲端服務', exp:null, act:null, gap:null,
-      market:'US', driveName:'美股 S&P500', driveIndex:'SPX', driveChg:null, cover:50,
-      stocks:[
-        {id:'2382',name:'廣達', price:310, chg:null, role:'龍頭', seed:4101},
-        {id:'2353',name:'宏碁', price:38,  chg:null, role:'核心', seed:4102},
-      ]},
     { hot:false, sector:'台股 ABF 材料 / 基板材料', exp:null, act:null, gap:null,
       market:'US', driveName:'美股 費城半導體', driveIndex:'SOX', driveChg:null, cover:50,
       stocks:[
@@ -1699,45 +1690,24 @@ const CONFIG = {
         {id:'3664',name:'波若威', price:95,  chg:null, role:'核心', seed:5012},
         {id:'3630',name:'新鉅科', price:75,  chg:null, role:'核心', seed:5013},
       ]},
-    { hot:false, sector:'台股 軍工 / 國防', exp:null, act:null, gap:null,
-      market:'US', driveName:'美股 S&P500', driveIndex:'SPX', driveChg:null, cover:75,
-      stocks:[
-        {id:'2634',name:'漢翔', price:48,  chg:null, role:'龍頭', seed:5021},
-        {id:'8048',name:'雷虎', price:95,  chg:null, role:'核心', seed:5022},
-        {id:'1568',name:'倫飛', price:32,  chg:null, role:'核心', seed:5023},
-      ]},
-    { hot:false, sector:'台股 醫療器材 / 生技', exp:null, act:null, gap:null,
-      market:'US', driveName:'美股 S&P500', driveIndex:'SPX', driveChg:null, cover:75,
-      stocks:[
-        {id:'6510',name:'精測', price:450, chg:null, role:'龍頭', seed:5031},
-        {id:'4707',name:'雃博', price:125, chg:null, role:'核心', seed:5032},
-        {id:'4107',name:'邦特', price:180, chg:null, role:'核心', seed:5033},
-      ]},
-    { hot:false, sector:'台股 低軌衛星 / 天線', exp:null, act:null, gap:null,
-      market:'US', driveName:'美股 S&P500', driveIndex:'SPX', driveChg:null, cover:75,
-      stocks:[
-        {id:'6814',name:'昇達科', price:220, chg:null, role:'龍頭', seed:5041},
-        {id:'2441',name:'超豐', price:85,  chg:null, role:'核心', seed:5042},
-        {id:'3023',name:'信邦', price:195, chg:null, role:'核心', seed:5043},
-      ]},
     { hot:false, sector:'台股 IP 授權 / 矽智財', exp:null, act:null, gap:null,
       market:'US', driveName:'美股 費城半導體', driveIndex:'SOX', driveChg:null, cover:75,
       stocks:[
-        {id:'6643',name:'M31', price:380, chg:null, role:'龍頭', seed:5051},
+        {id:'6643',name:'M31',     price:380,  chg:null, role:'龍頭', seed:5051},
         {id:'3661',name:'世芯-KY', price:2200, chg:null, role:'核心', seed:5052},
-        {id:'3051',name:'智原', price:320, chg:null, role:'核心', seed:5053},
+        {id:'3051',name:'智原',    price:320,  chg:null, role:'核心', seed:5053},
       ]},
     { hot:false, sector:'台股 玻璃基板 / 先進封裝材料', exp:null, act:null, gap:null,
       market:'US', driveName:'美股 費城半導體', driveIndex:'SOX', driveChg:null, cover:75,
       stocks:[
         {id:'2383',name:'台光電', price:320, chg:null, role:'龍頭', seed:5061},
-        {id:'6213',name:'聯茂', price:155, chg:null, role:'核心', seed:5062},
-        {id:'8046',name:'南電', price:290, chg:null, role:'核心', seed:5063},
+        {id:'6213',name:'聯茂',   price:155, chg:null, role:'核心', seed:5062},
+        {id:'8046',name:'南電',   price:290, chg:null, role:'核心', seed:5063},
       ]},
     { hot:false, sector:'台股 工業自動化 / 機器手臂', exp:null, act:null, gap:null,
       market:'JP', driveName:'日股 日經225', driveIndex:'N225', driveChg:null, cover:75,
       stocks:[
-        {id:'2049',name:'上銀', price:380, chg:null, role:'龍頭', seed:5071},
+        {id:'2049',name:'上銀',   price:380, chg:null, role:'龍頭', seed:5071},
         {id:'1590',name:'亞德客', price:680, chg:null, role:'核心', seed:5072},
         {id:'2308',name:'台達電', price:320, chg:null, role:'核心', seed:5073},
       ]},
@@ -1752,12 +1722,12 @@ const CYCLIC_SECTORS = new Set([
   '台股 被動元件',
   '台股 貨櫃航運',
   '台股 散裝航運',
-  '台股 航空',
   '台股 鋼鐵',
   '台股 石化 / 塑化',
   '台股 成熟製程代工',
   '台股 矽晶圓',
   '台股 功率半導體 / 電源管理',
+  '台股 EV 充電樁 / 充電設備',
 ]);
 // 在 sectorData 上標記 cyclic 屬性（不修改原始資料結構）
 CONFIG.sectorData.forEach(r => { r.cyclic = CYCLIC_SECTORS.has(r.sector); });
