@@ -1774,17 +1774,17 @@ const FundamentalsEngine = {
     if (this._cache[symbol] && now - this._cache[symbol].fetchedAt < 3600000) return this._cache[symbol];
     try {
       const yahooSym = CONFIG.stockSymbolMap[symbol] || (symbol + '.TW');
-      const url = `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${yahooSym}?modules=summaryDetail%2CcalendarEvents`;
+      // v7/finance/quote 比 v10/quoteSummary 對台股 .TW 有更穩定的 PE 回傳
+      const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${yahooSym}&fields=trailingPE,forwardPE,earningsTimestampStart`;
       const res = await fetch(this._DEV
         ? `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
         : `/api/proxy?url=${encodeURIComponent(url)}`);
       if (!res.ok) throw new Error(res.status);
       const data = await res.json();
-      const sd = data?.quoteSummary?.result?.[0]?.summaryDetail;
-      const cal = data?.quoteSummary?.result?.[0]?.calendarEvents;
-      const pe        = sd?.trailingPE?.raw ?? null;
-      const forwardPe = sd?.forwardPE?.raw  ?? null;
-      const earningsTs = cal?.earnings?.earningsDate?.[0]?.raw ?? null;
+      const q = data?.quoteResponse?.result?.[0];
+      const pe        = q?.trailingPE ?? null;
+      const forwardPe = q?.forwardPE  ?? null;
+      const earningsTs = q?.earningsTimestampStart ?? null;
       const earningsDate = earningsTs ? new Date(earningsTs * 1000).toLocaleDateString('zh-TW', { month:'numeric', day:'numeric' }) : null;
       const result = { pe, forwardPe, earningsDate, fetchedAt: now };
       this._cache[symbol] = result;
