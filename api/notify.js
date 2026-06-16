@@ -37,85 +37,107 @@ const WATCH_SECTORS = [
   { sector:'台股 壽險 / 金控',          driveIndex:'SPX', stocks:['2882.TW','2881.TW'] },
 ];
 
-// ── Yahoo Finance 抓報價 ──
+// ── Yahoo Finance 抓報價（含新鮮度資訊）──
 async function fetchQuote(symbol) {
-  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=2d`;
+  // range=5d 比 2d 更容易取到有效資料，避免週末邊界問題
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=5d`;
   const res  = await fetch(url, {
     headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-      'Accept':     'application/json',
-      'Referer':    'https://finance.yahoo.com/',
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+      'Accept':          'application/json',
+      'Accept-Language': 'en-US,en;q=0.9',
+      'Referer':         'https://finance.yahoo.com/',
+      'Origin':          'https://finance.yahoo.com',
     },
-    signal: AbortSignal.timeout(8000),
+    signal: AbortSignal.timeout(10000),
   });
   if (!res.ok) throw new Error(`Yahoo ${symbol}: HTTP ${res.status}`);
   const data = await res.json();
   const meta = data?.chart?.result?.[0]?.meta;
   if (!meta) throw new Error(`No meta for ${symbol}`);
-  const price    = meta.regularMarketPrice;
+  const price     = meta.regularMarketPrice;
   const prevClose = meta.chartPreviousClose || meta.previousClose;
-  const chgPct   = ((price - prevClose) / prevClose) * 100;
-  return { symbol, price, chgPct };
+  if (!price || !prevClose) throw new Error(`No price data for ${symbol}`);
+  const chgPct = ((price - prevClose) / prevClose) * 100;
+  // regularMarketTime 用來驗證數據新鮮度（Unix timestamp）
+  const marketTime = meta.regularMarketTime ?? null;
+  return { symbol, price, chgPct, marketTime };
 }
 
-// ── 批次取報價（串行，避免被封）──
+// ── 批次取報價（串行，追蹤失敗）──
 async function fetchAll(symbols) {
-  const result = {};
+  const result  = {};
+  const failed  = [];
   for (const sym of symbols) {
     try {
       result[sym] = await fetchQuote(sym);
-      await new Promise(r => setTimeout(r, 300)); // 每次間隔 300ms
+      await new Promise(r => setTimeout(r, 300));
     } catch (e) {
       console.warn(`fetchQuote failed: ${sym}`, e.message);
       result[sym] = null;
+      failed.push(`${sym}(${e.message.slice(0, 40)})`);
     }
   }
-  return result;
+  return { quotes: result, failed };
+}
+
+// ── 驗證數據是否新鮮（最近 3 個交易日內）──
+function isStaleData(marketTime) {
+  if (!marketTime) return true;
+  const diffDays = (Date.now() / 1000 - marketTime) / 86400;
+  return diffDays > 4; // 週末最多差 3 天（週五→週一）
 }
 
 // ── 計算各族群 gap ──
 async function computeGaps(threshold) {
-  // 1. 收集所有需要的 symbols
   const allStockSyms = [...new Set(WATCH_SECTORS.flatMap(s => s.stocks))];
   const allDriveSyms = [...new Set(WATCH_SECTORS.map(s => DRIVE_SYMBOLS[s.driveIndex]))];
   const allSyms      = [...allStockSyms, ...allDriveSyms];
 
-  // 2. 拉報價
-  const quotes = await fetchAll(allSyms);
+  const { quotes, failed } = await fetchAll(allSyms);
 
-  // 3. 計算每個族群的 act / exp / gap
+  // 驗證驅動指數是否有效
+  const driveStatus = {};
+  for (const [name, sym] of Object.entries(DRIVE_SYMBOLS)) {
+    const q = quotes[sym];
+    driveStatus[name] = q
+      ? { chg: q.chgPct.toFixed(2), stale: isStaleData(q.marketTime) }
+      : { chg: null, stale: true };
+  }
+
   const alerts = [];
+  const allGaps = []; // 收集全部 gap 供「無警示摘要」使用
+
   for (const sector of WATCH_SECTORS) {
-    const driveSym  = DRIVE_SYMBOLS[sector.driveIndex];
-    const driveQ    = quotes[driveSym];
+    const driveSym = DRIVE_SYMBOLS[sector.driveIndex];
+    const driveQ   = quotes[driveSym];
     if (!driveQ) continue;
 
     const stockChgs = sector.stocks
       .map(s => quotes[s]?.chgPct)
       .filter(v => v !== null && v !== undefined && !isNaN(v));
-
     if (!stockChgs.length) continue;
 
-    const act = stockChgs.reduce((a, b) => a + b, 0) / stockChgs.length;
-
+    const act  = stockChgs.reduce((a, b) => a + b, 0) / stockChgs.length;
     const beta = BETA_MAP[sector.driveIndex] ?? 0.6;
     const exp  = driveQ.chgPct * beta;
     const gap  = parseFloat((exp - act).toFixed(2));
-
-    if (Math.abs(gap) >= threshold) {
-      alerts.push({
-        sector:   sector.sector,
-        gap,
-        act:      parseFloat(act.toFixed(2)),
-        exp:      parseFloat(exp.toFixed(2)),
-        driveChg: parseFloat(driveQ.chgPct.toFixed(2)),
-        driveName: sector.driveIndex,
-      });
-    }
+    const entry = {
+      sector:    sector.sector,
+      gap,
+      act:       parseFloat(act.toFixed(2)),
+      exp:       parseFloat(exp.toFixed(2)),
+      driveChg:  parseFloat(driveQ.chgPct.toFixed(2)),
+      driveName: sector.driveIndex,
+    };
+    allGaps.push(entry);
+    if (Math.abs(gap) >= threshold) alerts.push(entry);
   }
 
-  // 按 gap 絕對值排序
-  return alerts.sort((a, b) => Math.abs(b.gap) - Math.abs(a.gap));
+  alerts.sort((a, b) => Math.abs(b.gap) - Math.abs(a.gap));
+  allGaps.sort((a, b) => Math.abs(b.gap) - Math.abs(a.gap));
+
+  return { alerts, allGaps, failed, driveStatus };
 }
 
 // ── 發送 Telegram 訊息 ──
@@ -199,27 +221,79 @@ export default async function handler(req, res) {
   try {
     console.log(`[notify] triggered at ${new Date().toISOString()}`);
 
-    // 計算 gap
-    const alerts = await computeGaps(THRESHOLD);
+    const { alerts, allGaps, failed, driveStatus } = await computeGaps(THRESHOLD);
 
-    if (!alerts.length) {
-      console.log(`[notify] no alerts (threshold: ${THRESHOLD}pp)`);
-      return res.status(200).json({ sent: false, reason: 'no alerts', threshold: THRESHOLD });
+    const nowTW = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Taipei' }));
+    const pad = n => String(n).padStart(2, '0');
+    const now = `${nowTW.getFullYear()}/${pad(nowTW.getMonth()+1)}/${pad(nowTW.getDate())} ${pad(nowTW.getHours())}:${pad(nowTW.getMinutes())}`;
+
+    // ── 情況 1：驅動指數全部拿不到 → 系統錯誤通知 ──
+    const driveAllFailed = Object.values(driveStatus).every(d => d.chg === null);
+    if (driveAllFailed) {
+      const errMsg = [
+        `⚠️ <b>Stock Radar 系統錯誤</b>`,
+        `⏰ ${now}`,
+        ``,
+        `無法取得海外指數數據（SOX / SPX / N225 全部失敗）`,
+        `可能原因：Yahoo Finance API 被封鎖 / Vercel 網路異常`,
+        ``,
+        failed.length ? `失敗清單（前 5）：\n${failed.slice(0,5).join('\n')}` : '',
+        ``,
+        `請手動查閱後操作，或至 Vercel Logs 確認錯誤詳情。`,
+      ].filter(Boolean).join('\n');
+      await sendTelegram(TOKEN, CHAT_ID, errMsg);
+      console.error('[notify] drive indices all failed');
+      return res.status(200).json({ sent: true, type: 'error', failed });
     }
 
-    // 發送 Telegram
-    const message = formatMessage(alerts, THRESHOLD);
-    await sendTelegram(TOKEN, CHAT_ID, message);
+    // ── 情況 2：數據有效但有部分失敗 → 附帶警告 ──
+    const staleWarning = Object.entries(driveStatus)
+      .filter(([, v]) => v.stale && v.chg !== null)
+      .map(([k]) => k);
 
-    console.log(`[notify] sent ${alerts.length} alerts`);
-    return res.status(200).json({
-      sent:    true,
-      alerts:  alerts.length,
-      sectors: alerts.map(a => a.sector),
-    });
+    // ── 情況 3：有 Gap 警示 → 正常發送 ──
+    if (alerts.length) {
+      let message = formatMessage(alerts, THRESHOLD);
+      if (failed.length || staleWarning.length) {
+        const warn = [];
+        if (staleWarning.length) warn.push(`⚠️ 數據可能過時：${staleWarning.join('/')} 超過 4 天未更新`);
+        if (failed.length) warn.push(`⚠️ ${failed.length} 個 symbol 抓取失敗`);
+        message += `\n\n${warn.join('\n')}`;
+      }
+      await sendTelegram(TOKEN, CHAT_ID, message);
+      console.log(`[notify] sent ${alerts.length} alerts`);
+      return res.status(200).json({ sent: true, alerts: alerts.length, sectors: alerts.map(a => a.sector) });
+    }
+
+    // ── 情況 4：無警示（低於閾值）→ 發平靜摘要 ──
+    const driveLines = Object.entries(driveStatus)
+      .filter(([, v]) => v.chg !== null)
+      .map(([k, v]) => `${k} ${parseFloat(v.chg) >= 0 ? '+' : ''}${v.chg}%`)
+      .join('　');
+    const top3 = allGaps.slice(0, 3).map(a =>
+      `${a.gap > 0 ? '🔴' : '🟢'} ${a.sector.replace('台股 ','')}：${a.gap > 0 ? '+' : ''}${a.gap}pp`
+    ).join('\n');
+    const quietMsg = [
+      `📊 <b>Stock Radar 今日掃描完成</b>`,
+      `⏰ ${now}`,
+      ``,
+      `海外今日：${driveLines}`,
+      ``,
+      `無族群超過 ±${THRESHOLD}pp 閾值，市場今日平靜。`,
+      top3 ? `\n最大 Gap（僅供參考）：\n${top3}` : '',
+      failed.length ? `\n⚠️ ${failed.length} 個 symbol 抓取失敗` : '',
+    ].filter(Boolean).join('\n');
+    await sendTelegram(TOKEN, CHAT_ID, quietMsg);
+    console.log(`[notify] quiet — no alerts above ${THRESHOLD}pp`);
+    return res.status(200).json({ sent: true, type: 'quiet', allGaps: allGaps.length });
 
   } catch (err) {
     console.error('[notify] error:', err.message);
+    // 即使 handler 崩潰也發 TG
+    try {
+      await sendTelegram(TOKEN, CHAT_ID,
+        `🔴 <b>Stock Radar 執行錯誤</b>\n${err.message}\n請至 Vercel Logs 查詳情`);
+    } catch { /* ignore */ }
     return res.status(500).json({ error: err.message });
   }
 }
