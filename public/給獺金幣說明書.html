@@ -1872,10 +1872,12 @@ const DriveNewsEngine = {
     } catch { return []; }
   },
 
-  async renderInto(driveIndex, containerId) {
+  async renderInto(driveIndex, containerId, isStale) {
     const el = document.getElementById(containerId);
     if (!el) return;
     const news = await this.fetch(driveIndex);
+    if (isStale && isStale()) return;
+    if (!document.getElementById(containerId)) return;
     if (news.length) {
       el.innerHTML = news.map(n =>
         `<div class="drive-news-item">
@@ -4225,6 +4227,10 @@ const Renderer = {
   },
 
   sidebar(r) {
+    const token = Symbol();
+    Renderer._sidebarToken = token;
+    const isStale = () => Renderer._sidebarToken !== token;
+
     document.getElementById('sidebarTitle').textContent = r.sector;
     document.getElementById('sidebarMeta').textContent  = `${r.stocks.length} 檔觀察股・覆蓋率 ${r.cover}%`;
 
@@ -4356,21 +4362,24 @@ const Renderer = {
       const pick0 = sortedByChg?.[0];
       if (!pick0) return;
       const f = await FundamentalsEngine.fetch(pick0.id);
+      if (isStale()) return;
       pickEl.textContent = f?.pe != null ? `P/E ${f.pe.toFixed(1)}x` : 'P/E —';
       pickEl.style.color = f?.pe > 30 ? '#f87171' : f?.pe < 15 ? '#4ade80' : 'var(--text-3)';
     })();
 
     // ── 非同步抓驅動指數新聞（為什麼海外動了）──
-    DriveNewsEngine.renderInto(r.driveIndex, 'driveNews');
+    DriveNewsEngine.renderInto(r.driveIndex, 'driveNews', isStale);
 
     // ── 非同步抓歷史資料，更新量能 + 均線 ──
     (async () => {
+      if (isStale()) return;
       const maResults = [];
       for (const s of r.stocks) {
         const hist = await DataLayer.fetchStockHistory(s.id);
         if (!hist || hist.prices.length < 10) { maResults.push({ s, hist: null }); continue; }
         maResults.push({ s, hist });
       }
+      if (isStale()) return;
 
       // 量能趨勢區塊
       let volHtml = `<div class="vol-section"><div class="vol-title">📈 量能趨勢（近 5 日）</div>`;
@@ -4441,6 +4450,7 @@ const Renderer = {
       const useLive = async () => {
         let prices, vols, labels;
         const hist = await DataLayer.fetchStockHistory(s.id);
+        if (isStale()) return;
         if (hist && hist.prices.length >= 5) {
           prices = hist.prices;
           vols   = hist.volumes.map(v => v / Math.max(...hist.volumes));  // normalize
