@@ -4122,6 +4122,35 @@ const Renderer = {
     });
   },
 
+  // ── 個股精選卡片 HTML（live 與盤前 hist 模式共用）──
+  _pickCardHtml(pick, pickDiff, signalUrl, driveName, isPreMarket) {
+    const chgStr = isPreMarket
+      ? `昨收 ${pick.chg >= 0 ? '+' : ''}${pick.chg.toFixed(2)}%`
+      : `今日 ${pick.chg >= 0 ? '+' : ''}${pick.chg.toFixed(2)}%`;
+    const badge = isPreMarket
+      ? `<span style="font-size:9px;background:rgba(245,158,11,0.15);color:var(--warn);padding:1px 5px;border-radius:3px;margin-left:4px;">📋 盤前參考</span>`
+      : '';
+    return `<div class="stock-pick-box">
+      <div class="stock-pick-title">🎯 個股精選${badge}</div>
+      <div class="stock-pick-card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div>
+            <div class="stock-pick-name">${pick.id} ${pick.name}</div>
+            <div class="stock-pick-sub">${pick.role}・落後族群 ${pickDiff.toFixed(1)}%・${chgStr}</div>
+          </div>
+          <span id="pickPeTag" style="font-size:10px;color:var(--text-5);">P/E…</span>
+        </div>
+        <div class="stock-pick-checklist">
+          <div class="pick-check">□ 一句話說清楚這檔的故事是什麼？</div>
+          <div class="pick-check-label">（落後是個股雜音？還是基本面真的變差？）</div>
+          <div class="pick-check">□ 族群 Gap 方向一致，不是個股獨立跌？</div>
+          <div class="pick-check">□ 出場條件已設好（Gap 收斂 / ${driveName} 轉向）？</div>
+        </div>
+        <a class="portfolio-add-btn" href="${signalUrl}" target="_blank" style="display:block;margin-top:10px;text-align:center;background:rgba(34,197,94,0.08);border-color:rgba(34,197,94,0.3);color:var(--up);">📓 記錄這筆訊號</a>
+      </div>
+    </div>`;
+  },
+
   // null 值顯示為 —，有值才 fmt
   fmtOrDash(v, suffix = '%', dec = 2) {
     if (v === null || v === undefined || isNaN(v)) return '<span style="color:var(--text-6);">—</span>';
@@ -4325,39 +4354,25 @@ const Renderer = {
       html += `<div style="font-size:10px;color:var(--text-5);margin-top:4px;padding:0 2px;">${benchmarkLabel}：${benchmark >= 0 ? '+' : ''}${benchmark.toFixed(2)}%・落後股（綠色數字）為補漲候選</div></div>`;
 
       // ── 個股精選卡片（Lynch：真正的錢在選公司）──
+      // 統一用 stockPickBox 容器：live 有數據立刻填，無數據留空等 hist 回填
       const pick = sortedByChg[0];
       const pickDiff = pick ? Math.abs(pick.chg - benchmark) : 0;
-      if (pick && pickDiff > 0.3) {
-        const pickSignalUrl = '/signal.html?sector=' + encodeURIComponent(r.sector) + '&gap=' + (gap?.toFixed(2)||'') + '&beta=' + (r.beta?.toFixed(2)||'') + '&r2=' + (r.r2?.toFixed(2)||'') + '&market=' + r.market;
-        html += `<div class="stock-pick-box">
-          <div class="stock-pick-title">🎯 個股精選</div>
-          <div class="stock-pick-card">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-              <div>
-                <div class="stock-pick-name">${pick.id} ${pick.name}</div>
-                <div class="stock-pick-sub">${pick.role}・落後族群 ${pickDiff.toFixed(1)}%・今日 ${pick.chg >= 0 ? '+' : ''}${pick.chg.toFixed(2)}%</div>
-              </div>
-              <span id="pickPeTag" style="font-size:10px;color:var(--text-5);">P/E…</span>
-            </div>
-            <div class="stock-pick-checklist">
-              <div class="pick-check">□ 一句話說清楚這檔的故事是什麼？</div>
-              <div class="pick-check-label">（例：CoWoS 需求持續擴張，${pick.name} 是唯一雙供應商之一）</div>
-              <div class="pick-check">□ 落後是因個股雜音，還是基本面變化？</div>
-              <div class="pick-check-label">（個股雜音 = 補漲機會；基本面變差 = 避開）</div>
-              <div class="pick-check">□ 出場條件已設好（Gap 收斂 / ${r.driveName} 轉向）？</div>
-            </div>
-            <a class="portfolio-add-btn" href="${pickSignalUrl}" target="_blank" style="display:block;margin-top:10px;text-align:center;background:rgba(34,197,94,0.08);border-color:rgba(34,197,94,0.3);color:var(--up);">📓 記錄這筆訊號</a>
-          </div>
-        </div>`;
-      }
+      const pickSignalUrl = '/signal.html?sector=' + encodeURIComponent(r.sector) + '&gap=' + (gap?.toFixed(2)||'') + '&beta=' + (r.beta?.toFixed(2)||'') + '&r2=' + (r.r2?.toFixed(2)||'') + '&market=' + r.market;
+      const livePickHtml = (pick && pickDiff > 0.3)
+        ? Renderer._pickCardHtml(pick, pickDiff, pickSignalUrl, r.driveName, false)
+        : '';
+      html += `<div id="stockPickBox">${livePickHtml}</div>`;
     }
+
+    // 精選卡 placeholder（無 live chg 或只有 1 檔時，hist 回填用）
+    if (sortedByChg.length <= 1) html += `<div id="stockPickBox"></div>`;
 
     // P/E 基本面區塊（非同步填入）
     html += `<div class="pe-section" id="peFundamentals"></div>`;
 
     document.getElementById('sidebarBody').innerHTML = html;
 
-    // ── 非同步抓個股基本面（P/E）+ 更新精選卡 P/E 標籤 ──
+    // ── 非同步抓個股基本面（P/E）+ 更新精選卡 P/E 標籤（live 模式）──
     FundamentalsEngine.renderBlock(r.stocks, r.cyclic, 'peFundamentals');
     (async () => {
       const pickEl = document.getElementById('pickPeTag');
@@ -4365,8 +4380,9 @@ const Renderer = {
       const pick0 = sortedByChg?.[0];
       if (!pick0) return;
       const f = await FundamentalsEngine.fetch(pick0.id);
-      pickEl.textContent = f?.pe != null ? `P/E ${f.pe.toFixed(1)}x` : 'P/E —';
-      pickEl.style.color = f?.pe > 30 ? '#f87171' : f?.pe < 15 ? '#4ade80' : 'var(--text-3)';
+      if (!document.getElementById('pickPeTag')) return;
+      document.getElementById('pickPeTag').textContent = f?.pe != null ? `P/E ${f.pe.toFixed(1)}x` : 'P/E —';
+      document.getElementById('pickPeTag').style.color = f?.pe > 30 ? '#f87171' : f?.pe < 15 ? '#4ade80' : 'var(--text-3)';
     })();
 
     // ── 非同步抓驅動指數新聞（為什麼海外動了）──
@@ -4443,6 +4459,37 @@ const Renderer = {
       // 把量能 + 均線區塊追加到 sidebarBody
       const body = document.getElementById('sidebarBody');
       if (body) body.insertAdjacentHTML('beforeend', volHtml + maHtml);
+
+      // ── 盤前精選（live chg 是 null 時，用昨日收盤找補漲候選）──
+      const pickBox = document.getElementById('stockPickBox');
+      if (pickBox && !pickBox.innerHTML.trim()) {
+        const histChgs = maResults
+          .filter(({ hist }) => hist && hist.prices.length >= 2)
+          .map(({ s, hist }) => {
+            const p = hist.prices;
+            const yChg = ((p[p.length - 1] - p[p.length - 2]) / p[p.length - 2]) * 100;
+            return { ...s, chg: yChg };
+          });
+        if (histChgs.length > 1) {
+          const avgYChg = histChgs.reduce((sum, x) => sum + x.chg, 0) / histChgs.length;
+          histChgs.sort((a, b) => a.chg - b.chg);
+          const hPick = histChgs[0];
+          const hDiff = Math.abs(hPick.chg - avgYChg);
+          if (hDiff > 0.3) {
+            const hSignalUrl = '/signal.html?sector=' + encodeURIComponent(r.sector) + '&gap=' + (gap?.toFixed(2)||'') + '&beta=' + (r.beta?.toFixed(2)||'') + '&r2=' + (r.r2?.toFixed(2)||'') + '&market=' + r.market;
+            pickBox.innerHTML = Renderer._pickCardHtml(hPick, hDiff, hSignalUrl, r.driveName, true);
+            // 非同步填入 P/E
+            (async () => {
+              const el = document.getElementById('pickPeTag');
+              if (!el) return;
+              const f = await FundamentalsEngine.fetch(hPick.id);
+              if (!el.isConnected) return;
+              el.textContent = f?.pe != null ? `P/E ${f.pe.toFixed(1)}x` : 'P/E —';
+              el.style.color = f?.pe > 30 ? '#f87171' : f?.pe < 15 ? '#4ade80' : 'var(--text-3)';
+            })();
+          }
+        }
+      }
     })();
 
     // 畫 sparkline + volume（優先用真實 history，fallback mock）
