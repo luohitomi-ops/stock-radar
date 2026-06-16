@@ -1728,6 +1728,11 @@ const CYCLIC_SECTORS = new Set([
   '台股 矽晶圓',
   '台股 功率半導體 / 電源管理',
   '台股 EV 充電樁 / 充電設備',
+  '台股 散裝航運',
+  '台股 鋼鐵',
+  '台股 石化 / 塑化',
+  '台股 成熟製程代工',
+  '台股 矽晶圓',
 ]);
 // 在 sectorData 上標記 cyclic 屬性（不修改原始資料結構）
 CONFIG.sectorData.forEach(r => { r.cyclic = CYCLIC_SECTORS.has(r.sector); });
