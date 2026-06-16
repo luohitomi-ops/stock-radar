@@ -4364,7 +4364,7 @@ const Renderer = {
       // 統一用 stockPickBox 容器：live 有數據立刻填，無數據留空等 hist 回填
       const pick = sortedByChg[0];
       const pickDiff = pick ? Math.abs(pick.chg - benchmark) : 0;
-      const pickSignalUrl = '/signal.html?sector=' + encodeURIComponent(r.sector) + '&gap=' + (gap?.toFixed(2)||'') + '&beta=' + (r.beta?.toFixed(2)||'') + '&r2=' + (r.r2?.toFixed(2)||'') + '&market=' + r.market;
+      const pickSignalUrl = '/signal.html?sector=' + encodeURIComponent(r.sector) + '&gap=' + (r.gap?.toFixed(2)||'') + '&beta=' + (r.beta?.toFixed(2)||'') + '&r2=' + (r.r2?.toFixed(2)||'') + '&market=' + r.market;
       const livePickHtml = (pick && pickDiff > 0.3)
         ? Renderer._pickCardHtml(pick, pickDiff, pickSignalUrl, r.driveName, false)
         : '';
@@ -4486,7 +4486,7 @@ const Renderer = {
           const hPick = histChgs[0];
           const hDiff = Math.abs(hPick.chg - avgYChg);
           if (hDiff > 0.3) {
-            const hSignalUrl = '/signal.html?sector=' + encodeURIComponent(r.sector) + '&gap=' + (gap?.toFixed(2)||'') + '&beta=' + (r.beta?.toFixed(2)||'') + '&r2=' + (r.r2?.toFixed(2)||'') + '&market=' + r.market;
+            const hSignalUrl = '/signal.html?sector=' + encodeURIComponent(r.sector) + '&gap=' + (r.gap?.toFixed(2)||'') + '&beta=' + (r.beta?.toFixed(2)||'') + '&r2=' + (r.r2?.toFixed(2)||'') + '&market=' + r.market;
             pickBox.innerHTML = Renderer._pickCardHtml(hPick, hDiff, hSignalUrl, r.driveName, true);
             // 非同步填入 P/E
             (async () => {
