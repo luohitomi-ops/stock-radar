@@ -84,9 +84,12 @@ function calcGap(stocks, driveChgPct, beta) {
 }
 
 export default async function handler(req, res) {
-  // 驗證
-  const secret = req.query.secret;
-  const isCron = req.headers['x-vercel-cron'] === '1';
+  // 驗證：Vercel 2024+ 改用 Authorization: Bearer <CRON_SECRET>，舊版用 x-vercel-cron: 1
+  const secret     = req.query.secret;
+  const cronSecret = process.env.CRON_SECRET;
+  const authHeader = req.headers['authorization'];
+  const isCron     = req.headers['x-vercel-cron'] === '1' ||
+    (cronSecret && authHeader === `Bearer ${cronSecret}`);
   if (!isCron && secret !== (process.env.NOTIFY_SECRET || 'stockradar2026')) {
     return res.status(401).json({ error: 'Unauthorized' });
   }

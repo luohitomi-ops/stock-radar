@@ -211,7 +211,11 @@ export default async function handler(req, res) {
   }
 
   // 安全驗證：手動觸發需要 ?secret=xxx，Cron Job 由 Vercel 自動帶 header
-  const isVercelCron = req.headers['x-vercel-cron'] === '1';
+  // Vercel 2024+ 改用 Authorization: Bearer <CRON_SECRET>，舊版用 x-vercel-cron: 1
+  const cronSecret   = process.env.CRON_SECRET;
+  const authHeader   = req.headers['authorization'];
+  const isVercelCron = req.headers['x-vercel-cron'] === '1' ||
+    (cronSecret && authHeader === `Bearer ${cronSecret}`);
   const manualSecret = req.query?.secret;
 
   if (!isVercelCron && manualSecret !== SECRET) {
