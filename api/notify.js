@@ -46,6 +46,8 @@ const WATCH_SECTORS = [
   { sector:'台股 貨櫃航運',                driveIndex:'SPX',  stocks:['2603.TW','2609.TW'] },
 ];
 
+const VIX_SYMBOL = '^VIX';
+
 // ── Yahoo Finance 抓報價（含新鮮度資訊）──
 async function fetchQuote(symbol) {
   // range=5d 比 2d 更容易取到有效資料，避免週末邊界問題
@@ -229,7 +231,7 @@ function driveContext(alerts) {
 }
 
 // ── 格式化通知訊息 ──
-function formatMessage(alerts, threshold, streaks = {}) {
+function formatMessage(alerts, threshold, streaks = {}, vixLevel = null) {
   // 手動建構台灣時間字串，避免 zh-TW locale 在 Vercel 環境回傳錯誤日期
   const nowTW = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Taipei' }));
   const pad = n => String(n).padStart(2, '0');
@@ -244,9 +246,18 @@ function formatMessage(alerts, threshold, streaks = {}) {
     return `${icon} <b>${a.sector.replace('台股 ', '')}${streakTag}</b>\n   Gap: <b>${gapStr}</b>　驅動: ${driveStr}\n   預期: ${a.exp > 0 ? '+' : ''}${a.exp}%　實際: ${a.act > 0 ? '+' : ''}${a.act}%`;
   });
 
+  const vixLine = vixLevel != null
+    ? vixLevel >= 25
+      ? `🛑 VIX ${vixLevel.toFixed(1)}（高恐慌）— 訊號可靠度低，建議觀望`
+      : vixLevel >= 20
+      ? `⚠️ VIX ${vixLevel.toFixed(1)}（偏高）— 需搭配量能確認`
+      : null
+    : null;
+
   return [
     `📡 <b>Stock Radar Gap 警示</b>`,
     `閾值 ±${threshold}pp 以上共 ${alerts.length} 個族群`,
+    vixLine ? `\n${vixLine}` : '',
     ``,
     lines.join('\n\n'),
     ``,
@@ -254,7 +265,7 @@ function formatMessage(alerts, threshold, streaks = {}) {
     `🔴 = 補漲空間　🟢 = 已超漲`,
     ``,
     driveContext(alerts),
-  ].join('\n');
+  ].filter(x => x !== '').join('\n');
 }
 
 // ── 主 Handler ──
@@ -291,7 +302,14 @@ export default async function handler(req, res) {
     console.log(`[notify] triggered at ${new Date().toISOString()}`);
 
     const { alerts, allGaps, failed, driveStatus } = await computeGaps(THRESHOLD);
-    const streaks = await fetchStreaks(kvUrl, kvToken);
+    const streaks  = await fetchStreaks(kvUrl, kvToken);
+
+    // VIX 絕對值（單獨抓，不影響 gap 計算）
+    let vixLevel = null;
+    try {
+      const vq = await fetchQuote(VIX_SYMBOL);
+      vixLevel = vq?.price ?? null;
+    } catch { /* ignore */ }
 
     const nowTW = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Taipei' }));
     const pad = n => String(n).padStart(2, '0');
@@ -323,7 +341,7 @@ export default async function handler(req, res) {
 
     // ── 情況 3：有 Gap 警示 → 正常發送 ──
     if (alerts.length) {
-      let message = formatMessage(alerts, THRESHOLD, streaks);
+      let message = formatMessage(alerts, THRESHOLD, streaks, vixLevel);
       if (failed.length || staleWarning.length) {
         const warn = [];
         if (staleWarning.length) warn.push(`⚠️ 數據可能過時：${staleWarning.join('/')} 超過 4 天未更新`);

@@ -2802,7 +2802,10 @@ const MarketDetail = {
     else if (spxChg <= -1.5) summary += ` S&P500 ${spx?.chg}，大盤偏空。`;
     if (djiaChg !== null && Math.abs(djiaChg - (nasdaqChg??0)) > 1.5)
       summary += ` 道瓊 vs NASDAQ 分化（${djia?.chg} vs ${nasdaq?.chg}），留意資金輪動。`;
-    if (vixChg >= 20) summary += ` VIX 恐慌指數大漲 ${vix?.chg}，市場情緒不穩，建議觀望。`;
+    const vixLevel = parseFloat(vix?.val) || 0;
+    if (vixLevel >= 25)      summary += ` 🛑 VIX ${vixLevel.toFixed(1)} 高恐慌（≥25），Gap 補漲訊號可靠度低，建議觀望。`;
+    else if (vixLevel >= 20) summary += ` ⚠️ VIX ${vixLevel.toFixed(1)} 偏高（≥20），Gap 訊號需搭配量能確認。`;
+    else if (vixChg >= 20)   summary += ` VIX 恐慌指數大漲 ${vix?.chg}，注意情緒波動。`;
     // 時段判斷（台灣時間）
     const now = new Date();
     const hour = now.getHours();
@@ -4254,8 +4257,18 @@ const Renderer = {
       ? `<span style="font-size:10px;color:var(--text-5);">β = ${r.beta.toFixed(2)}</span>`
       : `<span style="font-size:10px;color:var(--text-6);">β 計算中</span>`;
 
+    // VIX Gate 警告
+    const vixItem  = (STATE.macroItems||[]).find(m => m.label === 'VIX');
+    const vixLevel = parseFloat(vixItem?.val) || 0;
+    const vixGate  = vixLevel >= 25
+      ? `<div style="margin-bottom:10px;padding:8px 12px;background:rgba(239,68,68,0.1);border:0.5px solid rgba(239,68,68,0.4);border-radius:6px;font-size:11px;color:var(--down);">🛑 <b>VIX ${vixLevel.toFixed(1)}（高恐慌）</b>　Gap 補漲訊號可靠度低，市場 risk-off，建議觀望</div>`
+      : vixLevel >= 20
+      ? `<div style="margin-bottom:10px;padding:8px 12px;background:rgba(251,191,36,0.08);border:0.5px solid rgba(251,191,36,0.35);border-radius:6px;font-size:11px;color:var(--warn,#fbbf24);">⚠️ <b>VIX ${vixLevel.toFixed(1)}（偏高）</b>　Gap 訊號需搭配量能確認，避免倉位過重</div>`
+      : '';
+
     let html = `
       <button class="compare-btn">+ 比較落差組合</button>
+      ${vixGate}
       <div class="sidebar-metric" style="margin-top:14px;">
         <div>
           <div class="s-metric-label">預期 ${betaStr}</div>
