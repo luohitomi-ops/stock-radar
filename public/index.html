@@ -854,6 +854,17 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
     指數資料僅供 Gap 計算參考・即時漲跌請至<a href="/market.html" target="_blank" style="color:var(--accent-text);text-decoration:none;">完整行情頁</a>確認
   </div>
 
+  <!-- 快照過期警示橫幅（stale 時才顯示）-->
+  <div id="staleSnapshotBanner" style="display:none;margin:8px 16px 0;padding:9px 14px;background:rgba(239,68,68,0.08);border:0.5px solid rgba(239,68,68,0.35);border-radius:8px;display:none;align-items:center;justify-content:space-between;gap:10px;">
+    <div>
+      <span style="color:var(--down);font-weight:600;font-size:12px;">⚠️ 盤後快照已 <span id="staleDays">?</span> 個交易日未更新</span>
+      <span style="color:var(--text-4);font-size:11px;margin-left:6px;">Gap 歷史數據可能不準確，建議手動更新</span>
+    </div>
+    <button onclick="SnapshotHealth.manualUpdate(this)" style="flex-shrink:0;padding:4px 12px;font-size:11px;border-radius:20px;border:0.5px solid rgba(239,68,68,0.5);background:rgba(239,68,68,0.12);color:var(--down);cursor:pointer;white-space:nowrap;">
+      🔄 立即更新快照
+    </button>
+  </div>
+
   <!-- 美股詳情展開區塊 -->
   <div class="market-detail-wrap" id="marketDetailWrap">
     <div class="market-detail-header" onclick="MarketDetail.toggle()">
@@ -5004,28 +5015,57 @@ const SnapshotHealth = {
     try {
       const res  = await fetch('/api/health');
       const data = await res.json();
-      const el   = document.getElementById('snapshotFreshness');
+      const el     = document.getElementById('snapshotFreshness');
+      const banner = document.getElementById('staleSnapshotBanner');
       if (!el) return;
-      if (!data.ok) { el.style.display = 'none'; return; }
+      if (!data.ok) { el.style.display = 'none'; if (banner) banner.style.display = 'none'; return; }
+
       el.style.display = 'inline-block';
       if (data.status === 'fresh') {
-        el.textContent      = '📸 快照今日';
+        el.textContent      = `📸 快照今日 ${data.latestDate.slice(5)}`;
         el.style.background = 'rgba(34,197,94,0.12)';
         el.style.color      = 'var(--up)';
         el.style.border     = '0.5px solid rgba(34,197,94,0.3)';
+        if (banner) banner.style.display = 'none';
       } else if (data.status === 'yesterday') {
-        el.textContent      = '📸 快照昨日';
+        el.textContent      = `📸 快照 ${data.latestDate.slice(5)}`;
         el.style.background = 'rgba(245,158,11,0.12)';
         el.style.color      = 'var(--warn)';
         el.style.border     = '0.5px solid rgba(245,158,11,0.3)';
+        if (banner) banner.style.display = 'none';
       } else {
-        el.textContent      = `⚠️ 快照 ${data.diffDays} 天前`;
+        el.textContent      = `⚠️ 快照 ${data.latestDate.slice(5)}`;
         el.style.background = 'rgba(239,68,68,0.1)';
         el.style.color      = 'var(--down)';
         el.style.border     = '0.5px solid rgba(239,68,68,0.3)';
-        Renderer.toast(`快照資料已 ${data.diffDays} 天未更新，Cron Job 可能異常`, 'error', 5000);
+        // 顯示橫幅
+        if (banner) {
+          const daysEl = document.getElementById('staleDays');
+          if (daysEl) daysEl.textContent = data.diffDays;
+          banner.style.display = 'flex';
+        }
       }
     } catch {}
+  },
+
+  async manualUpdate(btn) {
+    if (btn) { btn.textContent = '更新中…'; btn.disabled = true; }
+    try {
+      const secret = 'stockradar2026';
+      const res  = await fetch(`/api/snapshot?secret=${secret}`);
+      const data = await res.json();
+      if (data.ok) {
+        Renderer.toast(`快照已更新：${data.date}，共 ${data.sectors} 個族群`, 'success', 4000);
+        await HistoryEngine.syncFromRedis();
+        await this.check();
+      } else {
+        Renderer.toast('快照更新失敗：' + (data.message || data.error || '未知錯誤'), 'error', 5000);
+        if (btn) { btn.textContent = '🔄 立即更新快照'; btn.disabled = false; }
+      }
+    } catch (e) {
+      Renderer.toast('快照更新失敗：' + e.message, 'error', 5000);
+      if (btn) { btn.textContent = '🔄 立即更新快照'; btn.disabled = false; }
+    }
   },
 };
 
