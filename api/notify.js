@@ -22,19 +22,28 @@ const DRIVE_SYMBOLS = {
 
 const BETA_MAP = { SOX: 0.8, SPX: 0.6, N225: 0.7 };
 
-// 只監控熱門族群（避免 API 請求過多）
+// 監控所有熱門 20 族群（hot:true，與 index.html sectorData 同步）
 const WATCH_SECTORS = [
-  { sector:'台股 AI 伺服器 / ODM',      driveIndex:'SOX', stocks:['2382.TW','2356.TW'] },
-  { sector:'台股 CoWoS 先進封裝',        driveIndex:'SOX', stocks:['2330.TW','3711.TW'] },
-  { sector:'台股 AI 散熱 / 液冷',        driveIndex:'SOX', stocks:['3017.TW','1590.TW'] },
-  { sector:'台股 HBM / 高頻寬記憶體',    driveIndex:'SOX', stocks:['2408.TW','2344.TW'] },
-  { sector:'台股 ABF 載板 / PCB',        driveIndex:'SOX', stocks:['3037.TW','8046.TWO'] },
-  { sector:'台股 矽光子 / CPO',          driveIndex:'SOX', stocks:['2330.TW','3711.TW'] },
-  { sector:'台股 交換器 / 網通設備',     driveIndex:'SOX', stocks:['2345.TW','3596.TW'] },
-  { sector:'台股 IC 設計 / 繪圖晶片',    driveIndex:'SOX', stocks:['2454.TW','2379.TW'] },
-  { sector:'台股 功率半導體 / 電源管理', driveIndex:'N225',stocks:['6415.TW','8081.TW'] },
-  { sector:'台股 貨櫃航運',             driveIndex:'SPX', stocks:['2603.TW','2609.TW'] },
-  { sector:'台股 壽險 / 金控',          driveIndex:'SPX', stocks:['2882.TW','2881.TW'] },
+  { sector:'台股 AI 伺服器 / ODM',        driveIndex:'SOX',  stocks:['2382.TW','2356.TW'] },
+  { sector:'台股 CoWoS 先進封裝',          driveIndex:'SOX',  stocks:['2330.TW','3711.TW'] },
+  { sector:'台股 AI 散熱 / 液冷',          driveIndex:'SOX',  stocks:['3017.TW','1590.TW'] },
+  { sector:'台股 交換器 / 網通設備',        driveIndex:'SOX',  stocks:['2345.TW','3596.TW'] },
+  { sector:'台股 IC 設計 / 繪圖晶片',      driveIndex:'SOX',  stocks:['2454.TW','2379.TW'] },
+  { sector:'台股 ASIC / 客製晶片',         driveIndex:'SOX',  stocks:['2454.TW','3443.TW'] },
+  { sector:'台股 ABF 載板 / PCB',          driveIndex:'SOX',  stocks:['3037.TW','8046.TWO'] },
+  { sector:'台股 矽光子 / CPO',            driveIndex:'SOX',  stocks:['2330.TW','3711.TW'] },
+  { sector:'台股 電力設備 / 變壓器',        driveIndex:'SOX',  stocks:['1519.TW','1513.TW'] },
+  { sector:'台股 鴻海 / 代工龍頭',         driveIndex:'SPX',  stocks:['2317.TW','2357.TW'] },
+  { sector:'台股 光學鏡頭',                driveIndex:'N225', stocks:['3008.TW','3406.TW'] },
+  { sector:'台股 機器人 / 精密傳動',        driveIndex:'N225', stocks:['2049.TW','1590.TW'] },
+  { sector:'台股 ETF / 大盤追蹤',          driveIndex:'SPX',  stocks:['0050.TW','2330.TW'] },
+  { sector:'台股 壽險 / 金控',             driveIndex:'SPX',  stocks:['2882.TW','2881.TW'] },
+  { sector:'台股 功率半導體 / 電源管理',    driveIndex:'N225', stocks:['6415.TW','8081.TW'] },
+  { sector:'台股 HBM / 高頻寬記憶體',      driveIndex:'SOX',  stocks:['2408.TW','2344.TW'] },
+  { sector:'台股 被動元件',                driveIndex:'SOX',  stocks:['2327.TW','2351.TW'] },
+  { sector:'台股 NOR Flash / 利基記憶體',  driveIndex:'SOX',  stocks:['2337.TW','2344.TW'] },
+  { sector:'台股 EV 充電樁 / 充電設備',    driveIndex:'N225', stocks:['2308.TW','2301.TW'] },
+  { sector:'台股 貨櫃航運',                driveIndex:'SPX',  stocks:['2603.TW','2609.TW'] },
 ];
 
 // ── Yahoo Finance 抓報價（含新鮮度資訊）──

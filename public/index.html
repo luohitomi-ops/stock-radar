@@ -1774,12 +1774,15 @@ const FundamentalsEngine = {
     return 'mid';
   },
 
-  async renderBlock(stocks, sectorCyclic, containerId) {
+  async renderBlock(stocks, sectorCyclic, containerId, isStale) {
     const el = document.getElementById(containerId);
     if (!el) return;
     el.innerHTML = `<div class="pe-title">📊 個股基本面（P/E）</div><div style="color:var(--text-5);font-size:11px;padding:4px 0;">載入中…</div>`;
 
     const results = await Promise.all(stocks.map(s => this.fetch(s.id)));
+
+    if (isStale && isStale()) return;
+    if (!document.getElementById(containerId)) return;
 
     let html = `<div class="pe-title">📊 個股基本面（P/E 本益比）</div>`;
     stocks.forEach((s, i) => {
@@ -4355,7 +4358,7 @@ const Renderer = {
     document.getElementById('sidebarBody').innerHTML = html;
 
     // ── 非同步抓個股基本面（P/E）+ 更新精選卡 P/E 標籤（live 模式）──
-    FundamentalsEngine.renderBlock(r.stocks, r.cyclic, 'peFundamentals');
+    FundamentalsEngine.renderBlock(r.stocks, r.cyclic, 'peFundamentals', isStale);
     (async () => {
       const pickEl = document.getElementById('pickPeTag');
       if (!pickEl) return;
