@@ -231,7 +231,7 @@ function driveContext(alerts) {
 }
 
 // ── 格式化通知訊息 ──
-function formatMessage(alerts, threshold, streaks = {}, vixLevel = null) {
+function formatMessage(alerts, threshold, streaks = {}, vixLevel = null, driveStatus = {}) {
   // 手動建構台灣時間字串，避免 zh-TW locale 在 Vercel 環境回傳錯誤日期
   const nowTW = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Taipei' }));
   const pad = n => String(n).padStart(2, '0');
@@ -243,7 +243,18 @@ function formatMessage(alerts, threshold, streaks = {}, vixLevel = null) {
     const driveStr = `${a.driveName} ${a.driveChg > 0 ? '+' : ''}${a.driveChg}%`;
     const streak   = streaks[a.sector];
     const streakTag = streak && streak.count >= 2 ? ` ⚡連續${streak.count}日` : '';
-    return `${icon} <b>${a.sector.replace('台股 ', '')}${streakTag}</b>\n   Gap: <b>${gapStr}</b>　驅動: ${driveStr}\n   預期: ${a.exp > 0 ? '+' : ''}${a.exp}%　實際: ${a.act > 0 ? '+' : ''}${a.act}%`;
+    // 雙指數確認
+    const SECONDARY = { SOX: 'SPX', SPX: 'SOX', N225: 'SPX' };
+    const secKey  = SECONDARY[a.driveName];
+    const secChg  = secKey ? parseFloat(driveStatus[secKey]?.chg) : null;
+    const priDir  = a.driveChg >= 0;
+    let confirmTag = '';
+    if (secChg !== null && !isNaN(secChg)) {
+      confirmTag = (secChg >= 0) === priDir
+        ? ` ✅雙確認`
+        : ` ⚠️單指數`;
+    }
+    return `${icon} <b>${a.sector.replace('台股 ', '')}${streakTag}${confirmTag}</b>\n   Gap: <b>${gapStr}</b>　驅動: ${driveStr}\n   預期: ${a.exp > 0 ? '+' : ''}${a.exp}%　實際: ${a.act > 0 ? '+' : ''}${a.act}%`;
   });
 
   const vixLine = vixLevel != null
@@ -341,7 +352,7 @@ export default async function handler(req, res) {
 
     // ── 情況 3：有 Gap 警示 → 正常發送 ──
     if (alerts.length) {
-      let message = formatMessage(alerts, THRESHOLD, streaks, vixLevel);
+      let message = formatMessage(alerts, THRESHOLD, streaks, vixLevel, driveStatus);
       if (failed.length || staleWarning.length) {
         const warn = [];
         if (staleWarning.length) warn.push(`⚠️ 數據可能過時：${staleWarning.join('/')} 超過 4 天未更新`);

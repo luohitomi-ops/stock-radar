@@ -4321,14 +4321,34 @@ const Renderer = {
           <div style="display:flex;align-items:center;gap:4px;">${dots}</div>
         </div>`;
       })()}
-      <div class="driver-box">
-        <div class="driver-label">海外驅動（今日）― 為什麼動了？</div>
-        <div class="driver-row">
-          <div><span class="overseas-tag ${isJP ? 'jp' : ''}">${r.market}</span><span style="font-size:12px;color:var(--text-2);">${r.driveName}</span></div>
-          <span class="pct ${(r.driveChg??0)>=0?'pct-up':'pct-down'}">${this.fmtOrDash(r.driveChg)}</span>
-        </div>
-        <div id="driveNews"></div>
-      </div>
+      ${(() => {
+        // 雙指數確認
+        const SECONDARY = { SOX: 'SPX', SPX: 'NASDAQ', N225: 'SPX' };
+        const secLabel   = { SOX: 'S&P500', SPX: 'NASDAQ', N225: 'S&P500' };
+        const secKey  = SECONDARY[r.driveIndex];
+        const secItem = secKey ? (STATE.macroItems||[]).find(m => m.label === secKey) : null;
+        const secChg  = secItem ? parseFloat(secItem.chg) || 0 : null;
+        const priDir  = (r.driveChg ?? 0) >= 0;
+        let confirmTag = '';
+        if (secChg !== null) {
+          const secDir = secChg >= 0;
+          if (priDir === secDir) {
+            const icon = priDir ? '✅' : '✅';
+            confirmTag = `<div style="margin-top:5px;font-size:11px;color:var(--up);">${icon} 雙指數確認（${r.driveIndex} & ${secLabel[r.driveIndex]} 同向）</div>`;
+          } else {
+            confirmTag = `<div style="margin-top:5px;font-size:11px;color:var(--warn);">⚠️ 單指數訊號（${secLabel[r.driveIndex]} ${secChg>=0?'+':''}${secChg.toFixed(1)}% 方向不同，訊號較弱）</div>`;
+          }
+        }
+        return `<div class="driver-box">
+          <div class="driver-label">海外驅動（今日）― 為什麼動了？</div>
+          <div class="driver-row">
+            <div><span class="overseas-tag ${isJP ? 'jp' : ''}">${r.market}</span><span style="font-size:12px;color:var(--text-2);">${r.driveName}</span></div>
+            <span class="pct ${(r.driveChg??0)>=0?'pct-up':'pct-down'}">${this.fmtOrDash(r.driveChg)}</span>
+          </div>
+          ${confirmTag}
+          <div id="driveNews"></div>
+        </div>`;
+      })()}
       ${r.cyclic ? `<div style="margin-top:8px;padding:7px 10px;background:rgba(99,102,241,0.07);border:0.5px solid rgba(99,102,241,0.25);border-radius:6px;font-size:11px;color:#a5b4fc;line-height:1.6;">🔄 <strong>週期性族群</strong>：Gap 訊號需搭配景氣方向判斷。<br>週期高峰時 PE 反而偏低，補漲邏輯需確認供需是否仍在擴張期。</div>` : ''}
       <div class="stocks-label">個股走勢（近 ${CONFIG.sparklineDays} 日）</div>`;
 
