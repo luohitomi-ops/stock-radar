@@ -874,7 +874,9 @@ function checkUrlPrefill() {
 render();
 checkUrlPrefill();
 CloudSync.init();
-// auto-refresh every 5 min if there are active positions
+// 進頁面立刻抓一次現價
+if (STATE.active.length) refreshPrices();
+// 之後每 5 分鐘自動更新
 setInterval(() => { if (STATE.active.length) refreshPrices(); }, 5 * 60 * 1000);
 </script>
 <!-- FOOTER -->
