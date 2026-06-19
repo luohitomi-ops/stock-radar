@@ -818,32 +818,15 @@ async function autoFillPrice() {
 
   showToast('抓取歷史報價中…', '');
   try {
-    const recordTs = new Date(s.recordDate).getTime() / 1000;
-    const pcts = await Promise.all(stocks.map(async sym => {
-      const res = await fetch(
-        `https://query1.finance.yahoo.com/v8/finance/chart/${sym}?interval=1d&range=30d`,
-        { headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json', 'Referer': 'https://finance.yahoo.com/' } }
-      );
-      const data = await res.json();
-      const result = data?.chart?.result?.[0];
-      if (!result) return null;
-      const ts = result.timestamp || [];
-      const closes = result.indicators?.quote?.[0]?.close || [];
-      // 找 recordDate 當天或最近一天的收盤（entry）
-      let entryClose = null, latestClose = null;
-      for (let i = 0; i < ts.length; i++) {
-        if (closes[i] == null) continue;
-        if (ts[i] >= recordTs && entryClose === null) entryClose = closes[i];
-        latestClose = closes[i];
-      }
-      if (!entryClose || !latestClose) return null;
-      return (latestClose - entryClose) / entryClose * 100;
-    }));
-
-    const valid = pcts.filter(x => x !== null);
-    if (!valid.length) { showToast('抓取失敗，請手動輸入漲幅', ''); return; }
-
-    const avg = valid.reduce((a, b) => a + b, 0) / valid.length;
+    const params = new URLSearchParams({ symbols: stocks.join(','), from: s.recordDate });
+    const res  = await fetch(`/api/price-history?${params}`);
+    const data = await res.json();
+    if (!data.ok || !Object.keys(data.results).length) {
+      showToast('抓取失敗，請手動輸入漲幅', '');
+      return;
+    }
+    const vals = Object.values(data.results);
+    const avg  = vals.reduce((a, b) => a + b, 0) / vals.length;
     document.getElementById('fActualGain').value = avg.toFixed(2);
     showToast(`✅ 自動計算：平均漲幅 ${avg >= 0 ? '+' : ''}${avg.toFixed(2)}%`, avg >= 0 ? 'hit' : '');
   } catch (e) {
