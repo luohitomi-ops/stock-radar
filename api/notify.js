@@ -270,7 +270,7 @@ export default async function handler(req, res) {
       if (failed.length || staleWarning.length) {
         const warn = [];
         if (staleWarning.length) warn.push(`⚠️ 數據可能過時：${staleWarning.join('/')} 超過 4 天未更新`);
-        if (failed.length) warn.push(`⚠️ ${failed.length} 個 symbol 抓取失敗`);
+        if (failed.length) warn.push(`⚠️ ${failed.length} 個 symbol 抓取失敗：${failed.join(', ')}`);
         message += `\n\n${warn.join('\n')}`;
       }
       await sendTelegram(TOKEN, CHAT_ID, message);
@@ -294,7 +294,7 @@ export default async function handler(req, res) {
       ``,
       `無族群超過 ±${THRESHOLD}pp 閾值，市場今日平靜。`,
       top3 ? `\n最大 Gap（僅供參考）：\n${top3}` : '',
-      failed.length ? `\n⚠️ ${failed.length} 個 symbol 抓取失敗` : '',
+      failed.length ? `\n⚠️ ${failed.length} 個 symbol 抓取失敗：${failed.join(', ')}` : '',
     ].filter(Boolean).join('\n');
     await sendTelegram(TOKEN, CHAT_ID, quietMsg);
     console.log(`[notify] quiet — no alerts above ${THRESHOLD}pp`);
