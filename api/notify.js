@@ -166,6 +166,58 @@ async function sendTelegram(token, chatId, text) {
   return data;
 }
 
+// ── 從 Redis 取近期快照，計算各族群連續同向天數 ──
+async function fetchStreaks(kvUrl, kvToken) {
+  if (!kvUrl || !kvToken) return {};
+  try {
+    const keysRes  = await fetch(`${kvUrl}/keys/snapshot:2*`, {
+      headers: { Authorization: `Bearer ${kvToken}` },
+      signal: AbortSignal.timeout(5000),
+    });
+    const keysData = await keysRes.json();
+    const keys = (keysData.result || [])
+      .filter(k => /^snapshot:\d{4}-\d{2}-\d{2}$/.test(k))
+      .sort()
+      .slice(-5); // 只取最近 5 天
+
+    if (!keys.length) return {};
+
+    const pipeline = keys.map(k => ['GET', k]);
+    const pipeRes  = await fetch(`${kvUrl}/pipeline`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${kvToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(pipeline),
+      signal: AbortSignal.timeout(5000),
+    });
+    const pipeData = await pipeRes.json();
+
+    const days = [];
+    keys.forEach((k, i) => {
+      const val = pipeData[i]?.result;
+      if (val) try { days.push({ date: k.replace('snapshot:', ''), snap: JSON.parse(val) }); } catch {}
+    });
+    days.sort((a, b) => a.date.localeCompare(b.date));
+
+    const streaks = {};
+    const allSectors = new Set(days.flatMap(d => Object.keys(d.snap)));
+    for (const sector of allSectors) {
+      const series = days.map(d => d.snap[sector]).filter(v => v !== undefined);
+      if (!series.length) continue;
+      const last = series[series.length - 1];
+      let count = 1;
+      for (let i = series.length - 2; i >= 0; i--) {
+        if ((series[i] >= 0) === (last >= 0)) count++;
+        else break;
+      }
+      streaks[sector] = { count, positive: last >= 0 };
+    }
+    return streaks;
+  } catch (e) {
+    console.warn('[notify] fetchStreaks failed:', e.message);
+    return {};
+  }
+}
+
 // ── 依驅動幅度判斷 Gap 可信度 ──
 function driveContext(alerts) {
   const maxAbs = Math.max(...alerts.map(a => Math.abs(a.driveChg)));
@@ -177,7 +229,7 @@ function driveContext(alerts) {
 }
 
 // ── 格式化通知訊息 ──
-function formatMessage(alerts, threshold) {
+function formatMessage(alerts, threshold, streaks = {}) {
   // 手動建構台灣時間字串，避免 zh-TW locale 在 Vercel 環境回傳錯誤日期
   const nowTW = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Taipei' }));
   const pad = n => String(n).padStart(2, '0');
@@ -187,7 +239,9 @@ function formatMessage(alerts, threshold) {
     const icon    = a.gap > 0 ? '🔴' : '🟢';
     const gapStr  = a.gap > 0 ? `+${a.gap}pp` : `${a.gap}pp`;
     const driveStr = `${a.driveName} ${a.driveChg > 0 ? '+' : ''}${a.driveChg}%`;
-    return `${icon} <b>${a.sector.replace('台股 ', '')}</b>\n   Gap: <b>${gapStr}</b>　驅動: ${driveStr}\n   預期: ${a.exp > 0 ? '+' : ''}${a.exp}%　實際: ${a.act > 0 ? '+' : ''}${a.act}%`;
+    const streak   = streaks[a.sector];
+    const streakTag = streak && streak.count >= 2 ? ` ⚡連續${streak.count}日` : '';
+    return `${icon} <b>${a.sector.replace('台股 ', '')}${streakTag}</b>\n   Gap: <b>${gapStr}</b>　驅動: ${driveStr}\n   預期: ${a.exp > 0 ? '+' : ''}${a.exp}%　實際: ${a.act > 0 ? '+' : ''}${a.act}%`;
   });
 
   return [
@@ -214,6 +268,8 @@ export default async function handler(req, res) {
   const CHAT_ID   = process.env.TELEGRAM_CHAT_ID;
   const SECRET    = process.env.NOTIFY_SECRET || 'stockradar2026';
   const THRESHOLD = parseFloat(process.env.GAP_THRESHOLD || '2.0');
+  const kvUrl     = process.env.UPSTASH_REDIS_REST_URL;
+  const kvToken   = process.env.UPSTASH_REDIS_REST_TOKEN;
 
   if (!TOKEN || !CHAT_ID) {
     return res.status(500).json({ error: 'TELEGRAM_TOKEN or TELEGRAM_CHAT_ID not set' });
@@ -235,6 +291,7 @@ export default async function handler(req, res) {
     console.log(`[notify] triggered at ${new Date().toISOString()}`);
 
     const { alerts, allGaps, failed, driveStatus } = await computeGaps(THRESHOLD);
+    const streaks = await fetchStreaks(kvUrl, kvToken);
 
     const nowTW = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Taipei' }));
     const pad = n => String(n).padStart(2, '0');
@@ -266,7 +323,7 @@ export default async function handler(req, res) {
 
     // ── 情況 3：有 Gap 警示 → 正常發送 ──
     if (alerts.length) {
-      let message = formatMessage(alerts, THRESHOLD);
+      let message = formatMessage(alerts, THRESHOLD, streaks);
       if (failed.length || staleWarning.length) {
         const warn = [];
         if (staleWarning.length) warn.push(`⚠️ 數據可能過時：${staleWarning.join('/')} 超過 4 天未更新`);
