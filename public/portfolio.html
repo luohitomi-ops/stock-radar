@@ -296,7 +296,7 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
       <div class="form-row">
         <div class="form-group">
           <label>買入價（元）*</label>
-          <input type="number" id="fEntryPrice" placeholder="0.00" step="0.01" min="0"/>
+          <input type="number" id="fEntryPrice" placeholder="0.00" step="0.01" min="0" oninput="autoCalcTPSL()"/>
         </div>
         <div class="form-group">
           <label>張數 *</label>
@@ -305,13 +305,17 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label>停利價（元）</label>
-          <input type="number" id="fTakeProfit" placeholder="留空=不設定" step="0.01" min="0"/>
+          <label>停利價（元）<span id="tpHint" style="color:var(--up);font-size:10px;margin-left:4px;"></span></label>
+          <input type="number" id="fTakeProfit" placeholder="留空=不設定" step="0.01" min="0" oninput="updateHints()"/>
         </div>
         <div class="form-group">
-          <label>停損價（元）</label>
-          <input type="number" id="fStopLoss" placeholder="留空=不設定" step="0.01" min="0"/>
+          <label>停損價（元）<span id="slHint" style="color:var(--down);font-size:10px;margin-left:4px;"></span></label>
+          <input type="number" id="fStopLoss" placeholder="留空=不設定" step="0.01" min="0" oninput="updateHints()"/>
         </div>
+      </div>
+      <div class="form-hint" style="margin-top:-6px;">
+        停利 / 停損預設 +10% / −5%，可手動覆蓋
+        <span style="float:right;cursor:pointer;color:var(--accent-text);" onclick="autoCalcTPSL()">⚡ 重新計算</span>
       </div>
       <div class="form-group">
         <label>進場日期</label>
@@ -693,6 +697,27 @@ function render() {
 // ═══════════════════════════════════════════
 // MODAL
 // ═══════════════════════════════════════════
+function updateHints() {
+  const entry = parseFloat(document.getElementById('fEntryPrice').value);
+  if (!entry || entry <= 0) return;
+  const tp = parseFloat(document.getElementById('fTakeProfit').value);
+  const sl = parseFloat(document.getElementById('fStopLoss').value);
+  const tpPct = tp ? (((tp - entry) / entry) * 100).toFixed(1) : '';
+  const slPct = sl ? (((sl - entry) / entry) * 100).toFixed(1) : '';
+  document.getElementById('tpHint').textContent = tpPct ? `+${tpPct}%` : '';
+  document.getElementById('slHint').textContent = slPct ? `${slPct}%` : '';
+}
+
+function autoCalcTPSL() {
+  const entry = parseFloat(document.getElementById('fEntryPrice').value);
+  if (!entry || entry <= 0) return;
+  const tpEl = document.getElementById('fTakeProfit');
+  const slEl = document.getElementById('fStopLoss');
+  if (!tpEl.value) tpEl.value = parseFloat((entry * 1.10).toFixed(2));
+  if (!slEl.value) slEl.value = parseFloat((entry * 0.95).toFixed(2));
+  updateHints();
+}
+
 function openAddModal(prefill = null) {
   STATE.editId = null;
   STATE.prefill = prefill;
@@ -703,9 +728,13 @@ function openAddModal(prefill = null) {
   document.getElementById('fLots').value      = 1;
   document.getElementById('fTakeProfit').value = '';
   document.getElementById('fStopLoss').value  = '';
+  document.getElementById('tpHint').textContent = '';
+  document.getElementById('slHint').textContent = '';
   document.getElementById('fDate').value      = new Date().toISOString().slice(0,10);
   document.getElementById('gapSourceTag').style.display = prefill ? 'block' : 'none';
   document.getElementById('addOverlay').classList.add('open');
+  // 如果已有買入價（從 Gap 頁帶入），自動計算停損停利
+  if (prefill?.price) setTimeout(autoCalcTPSL, 50);
   setTimeout(() => document.getElementById('fSymbol').focus(), 100);
 }
 
@@ -721,6 +750,7 @@ function editPosition(id) {
   document.getElementById('fTakeProfit').value  = pos.takeProfit || '';
   document.getElementById('fStopLoss').value   = pos.stopLoss || '';
   document.getElementById('fDate').value       = pos.entryDate || '';
+  setTimeout(updateHints, 50);
   document.getElementById('gapSourceTag').style.display = 'none';
   // 編輯時顯示代號可修改提示
   const symInput = document.getElementById('fSymbol');
