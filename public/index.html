@@ -4263,6 +4263,40 @@ const Renderer = {
           </div>
         </div>
       </div>
+      ${(() => {
+        const series = HistoryEngine.getSectorHistory(r.sector);
+        const recent = series.slice(-5);
+        if (!recent.length) return '';
+        const dots = recent.map(d => {
+          const pos = d.gap >= 0;
+          const color = pos ? 'var(--up)' : 'var(--down)';
+          const bg    = pos ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)';
+          const label = (pos ? '+' : '') + d.gap.toFixed(1) + 'pp';
+          const dateStr = d.date.slice(5);
+          return `<span title="${dateStr}: ${label}" style="display:inline-flex;align-items:center;justify-content:center;min-width:38px;padding:2px 5px;border-radius:4px;background:${bg};color:${color};font-size:10px;font-weight:600;border:0.5px solid ${color}30;">${label}</span>`;
+        }).join('<span style="color:var(--text-6);font-size:9px;padding:0 1px;">›</span>');
+
+        // 連續信號判斷（最近 N 天同向）
+        let streakMsg = '';
+        if (recent.length >= 2) {
+          let streak = 1;
+          const last = recent[recent.length - 1].gap;
+          for (let i = recent.length - 2; i >= 0; i--) {
+            if ((recent[i].gap >= 0) === (last >= 0)) streak++;
+            else break;
+          }
+          if (streak >= 2) {
+            streakMsg = last >= 0
+              ? `<span style="color:var(--up);font-size:10px;margin-left:6px;">↑ 連續 ${streak} 日落後</span>`
+              : `<span style="color:var(--down);font-size:10px;margin-left:6px;">↓ 連續 ${streak} 日已超漲</span>`;
+          }
+        }
+
+        return `<div style="margin:10px 0 8px;padding:8px 10px;background:var(--bg-2);border-radius:6px;border:0.5px solid var(--border);">
+          <div style="font-size:10px;color:var(--text-5);margin-bottom:6px;">近 ${recent.length} 日 Gap 走勢${streakMsg}</div>
+          <div style="display:flex;align-items:center;gap:4px;">${dots}</div>
+        </div>`;
+      })()}
       <div class="driver-box">
         <div class="driver-label">海外驅動（今日）― 為什麼動了？</div>
         <div class="driver-row">
