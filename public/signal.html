@@ -680,6 +680,8 @@ function openAddModal(prefill = null) {
   document.getElementById('fNote').value          = '';
   document.getElementById('fStory').value         = prefill?.story || '';
   document.getElementById('fExitCondition').value = '';
+  // 隱藏存 stocks（不顯示給用戶）
+  document.getElementById('addOverlay').dataset.stocks = JSON.stringify(prefill?.stocks || []);
   document.getElementById('addOverlay').classList.add('open');
   setTimeout(() => document.getElementById('fSector').focus(), 100);
 }
@@ -704,10 +706,11 @@ function saveSignal() {
   if (isNaN(gap)) { showToast('請輸入正確的 Gap 值', ''); return; }
   if (!story) { showToast('請填寫進場故事（兩分鐘測試）', ''); return; }
 
+  const stocks = JSON.parse(document.getElementById('addOverlay').dataset.stocks || '[]');
   const today = localDateStr();
   const signal = {
     id: Date.now().toString(),
-    sector, market, gap, beta, r2, refPrice,
+    sector, market, gap, beta, r2, refPrice, stocks,
     days, threshold, note, story, exitCondition,
     recordDate: today,
     dueDate: addDays(today, days),
@@ -771,10 +774,47 @@ function closeFillModal(e) {
 
 async function autoFillPrice() {
   const s = STATE.signals.find(x => x.id === STATE.fillId);
-  if (!s || !s.refPrice) { showToast('沒有參考價，請手動輸入漲幅', ''); return; }
-  showToast('抓取現價中…', '');
-  // 用族群名稱找不到 symbol，這裡提示用戶
-  showToast('請在族群側邊欄確認代表股現價後手動填入', '');
+  if (!s) return;
+
+  const stocks = s.stocks || [];
+  if (!stocks.length) {
+    showToast('此訊號無代表股資訊，請手動輸入漲幅', '');
+    return;
+  }
+
+  showToast('抓取歷史報價中…', '');
+  try {
+    const recordTs = new Date(s.recordDate).getTime() / 1000;
+    const pcts = await Promise.all(stocks.map(async sym => {
+      const res = await fetch(
+        `https://query1.finance.yahoo.com/v8/finance/chart/${sym}?interval=1d&range=30d`,
+        { headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json', 'Referer': 'https://finance.yahoo.com/' } }
+      );
+      const data = await res.json();
+      const result = data?.chart?.result?.[0];
+      if (!result) return null;
+      const ts = result.timestamp || [];
+      const closes = result.indicators?.quote?.[0]?.close || [];
+      // 找 recordDate 當天或最近一天的收盤（entry）
+      let entryClose = null, latestClose = null;
+      for (let i = 0; i < ts.length; i++) {
+        if (closes[i] == null) continue;
+        if (ts[i] >= recordTs && entryClose === null) entryClose = closes[i];
+        latestClose = closes[i];
+      }
+      if (!entryClose || !latestClose) return null;
+      return (latestClose - entryClose) / entryClose * 100;
+    }));
+
+    const valid = pcts.filter(x => x !== null);
+    if (!valid.length) { showToast('抓取失敗，請手動輸入漲幅', ''); return; }
+
+    const avg = valid.reduce((a, b) => a + b, 0) / valid.length;
+    document.getElementById('fActualGain').value = avg.toFixed(2);
+    showToast(`✅ 自動計算：平均漲幅 ${avg >= 0 ? '+' : ''}${avg.toFixed(2)}%`, avg >= 0 ? 'hit' : '');
+  } catch (e) {
+    showToast('抓取失敗，請手動輸入漲幅', '');
+  }
 }
 
 function confirmFill() {
@@ -840,6 +880,7 @@ function checkUrlPrefill() {
       beta:     p.get('beta')   || '',
       r2:       p.get('r2')     || '',
       refPrice: p.get('price')  || '',
+      stocks:   p.get('stocks') ? p.get('stocks').split(',').filter(Boolean) : [],
     });
     history.replaceState({}, '', '/signal.html');
   }
