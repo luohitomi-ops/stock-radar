@@ -314,8 +314,8 @@ body{background:var(--bg-0);color:var(--text-1);font-family:'Helvetica Neue','Pi
       <hr class="story-divider">
       <div class="story-label">📖 Lynch 測試（兩分鐘故事）</div>
       <div class="form-group">
-        <label>進場故事 *（必填）</label>
-        <textarea id="fStory" rows="2" placeholder="一句話說清楚這個機會的邏輯，例：SOX 大漲 8%，IC設計 Gap +5pp，補漲可能在 1-2 天出現"></textarea>
+        <label>進場故事 <span style="color:var(--down);">*</span> <span style="color:var(--text-5);font-size:10px;">必填 — 兩句話說清楚為什麼進這筆</span></label>
+        <textarea id="fStory" rows="2" placeholder="例：SOX 大漲 8%，IC設計 Gap +5pp，補漲可能在 1-2 天出現" style="border-color: var(--border);" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor=this.value?'var(--border)':'var(--down)'"></textarea>
       </div>
       <div class="form-group">
         <label>出場條件（故事結束的信號）</label>

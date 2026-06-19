@@ -314,7 +314,7 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
         </div>
       </div>
       <div class="form-hint" style="margin-top:-6px;">
-        停利 / 停損預設 +10% / −5%，可手動覆蓋
+        停利 / 停損預設 +6% / −3%，可手動覆蓋
         <span style="float:right;cursor:pointer;color:var(--accent-text);" onclick="autoCalcTPSL()">⚡ 重新計算</span>
       </div>
       <div class="form-group">
@@ -713,8 +713,8 @@ function autoCalcTPSL() {
   if (!entry || entry <= 0) return;
   const tpEl = document.getElementById('fTakeProfit');
   const slEl = document.getElementById('fStopLoss');
-  if (!tpEl.value) tpEl.value = parseFloat((entry * 1.10).toFixed(2));
-  if (!slEl.value) slEl.value = parseFloat((entry * 0.95).toFixed(2));
+  if (!tpEl.value) tpEl.value = parseFloat((entry * 1.06).toFixed(2));
+  if (!slEl.value) slEl.value = parseFloat((entry * 0.97).toFixed(2));
   updateHints();
 }
 
@@ -733,8 +733,21 @@ function openAddModal(prefill = null) {
   document.getElementById('fDate').value      = new Date().toISOString().slice(0,10);
   document.getElementById('gapSourceTag').style.display = prefill ? 'block' : 'none';
   document.getElementById('addOverlay').classList.add('open');
-  // 如果已有買入價（從 Gap 頁帶入），自動計算停損停利
-  if (prefill?.price) setTimeout(autoCalcTPSL, 50);
+  // 有價格 → 直接計算；無價格但有代號 → 自動抓現價後計算
+  if (prefill?.price) {
+    setTimeout(autoCalcTPSL, 50);
+  } else if (prefill?.symbol) {
+    const sym = /^\d+$/.test(prefill.symbol) ? prefill.symbol + '.TW' : prefill.symbol;
+    fetch(proxyUrl(`https://query1.finance.yahoo.com/v8/finance/chart/${sym}?interval=1d&range=1d`))
+      .then(r => r.json())
+      .then(data => {
+        const price = data?.chart?.result?.[0]?.meta?.regularMarketPrice;
+        if (price) {
+          document.getElementById('fEntryPrice').value = price;
+          autoCalcTPSL();
+        }
+      }).catch(() => {});
+  }
   setTimeout(() => document.getElementById('fSymbol').focus(), 100);
 }
 

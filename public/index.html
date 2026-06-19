@@ -1043,9 +1043,9 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
         <div class="sidebar-meta" id="sidebarMeta">點選左側族群查看詳情</div>
       </div>
       <div class="sidebar-tabs">
-        <div class="sidebar-tab active" id="tabDetail"   onclick="UI.switchSidebarTab('detail')">個股詳情</div>
+        <div class="sidebar-tab active" id="tabStrategy" onclick="UI.switchSidebarTab('strategy')">策略推薦</div>
+        <div class="sidebar-tab"        id="tabDetail"   onclick="UI.switchSidebarTab('detail')">個股詳情</div>
         <div class="sidebar-tab"        id="tabHistory"  onclick="UI.switchSidebarTab('history')">歷史 Gap</div>
-        <div class="sidebar-tab"        id="tabStrategy" onclick="UI.switchSidebarTab('strategy')">策略推薦</div>
       </div>
       <div class="sidebar-body" id="sidebarBody">
         <div class="sidebar-placeholder">
@@ -2181,7 +2181,7 @@ const HistoryEngine = {
   STORAGE_KEY: 'stockRadar_gapHistory',
   MAX_DAYS:    90,
   _sidebarSector: null,  // 當前側邊欄選取的族群名稱
-  _sidebarTab:    'detail',
+  _sidebarTab:    'strategy',
 
   // ── 今日日期 key ──
   _todayKey() {
@@ -4103,9 +4103,16 @@ const Renderer = {
     CONFIG.macroSymbols.forEach(m => { if (m.sublabel) sublabelMap[m.label] = m.sublabel; });
     el.innerHTML = data.map((m, i) => {
       const sub = sublabelMap[m.label] || '';
+      // VIX 絕對值染色：≥25 紅、≥20 黃
+      let vixStyle = '';
+      if (m.label === 'VIX') {
+        const vixVal = parseFloat(m.val);
+        if (vixVal >= 25)      vixStyle = 'color:var(--down);font-weight:700;';
+        else if (vixVal >= 20) vixStyle = 'color:var(--warn);font-weight:600;';
+      }
       return `<div class="macro-cell">
         <div class="macro-label">${m.label}${sub ? `<span style="font-size:10px;color:var(--text-5);margin-left:4px;">${sub}</span>` : ''}</div>
-        <div class="macro-val">${m.val} <span class="${m.dir}">${m.chg}</span></div>
+        <div class="macro-val" style="${vixStyle}">${m.val} <span class="${m.dir}">${m.chg}</span></div>
       </div>`;
     }).join('');
     // 觸發閃爍
