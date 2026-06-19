@@ -772,13 +772,47 @@ function closeFillModal(e) {
     document.getElementById('fillOverlay').classList.remove('open');
 }
 
+// 族群名稱 → 代表股 fallback（舊訊號無 stocks 欄位時使用）
+const SECTOR_STOCKS_FALLBACK = {
+  'AI 伺服器 / ODM':       ['2382.TW','2356.TW'],
+  'CoWoS 先進封裝':         ['2330.TW','3711.TW'],
+  'AI 散熱 / 液冷':         ['3017.TW','1590.TW'],
+  '交換器 / 網通設備':       ['2345.TW','3596.TW'],
+  'IC 設計 / 繪圖晶片':     ['2454.TW','2379.TW'],
+  'ASIC / 客製晶片':        ['2454.TW','3443.TW'],
+  'ABF 載板 / PCB':         ['3037.TW','8046.TWO'],
+  '矽光子 / CPO':           ['2330.TW','3711.TW'],
+  '電力設備 / 變壓器':       ['1519.TW','1513.TW'],
+  '鴻海 / 代工龍頭':        ['2317.TW','2357.TW'],
+  '光學鏡頭':               ['3008.TW','3406.TW'],
+  '機器人 / 精密傳動':       ['2049.TW','1590.TW'],
+  'ETF / 大盤追蹤':         ['0050.TW','2330.TW'],
+  '壽險 / 金控':            ['2882.TW','2881.TW'],
+  '功率半導體 / 電源管理':   ['6415.TW','8081.TW'],
+  'HBM / 高頻寬記憶體':     ['2408.TW','2344.TW'],
+  '被動元件':               ['2327.TW','2351.TW'],
+  'NOR Flash / 利基記憶體': ['2337.TW','2344.TW'],
+  'EV 充電樁 / 充電設備':   ['2308.TW','2301.TW'],
+  '貨櫃航運':               ['2603.TW','2609.TW'],
+  '散裝航運':               ['2603.TW','2609.TW'],
+  '鋼鐵':                   ['2002.TW'],
+  '石化 / 塑化':            ['1301.TW','1303.TW'],
+  '矽晶圓':                 ['6488.TWO','3450.TW'],
+  'IC 測試 / 封測':         ['3711.TW','6239.TW'],
+};
+
 async function autoFillPrice() {
   const s = STATE.signals.find(x => x.id === STATE.fillId);
   if (!s) return;
 
-  const stocks = s.stocks || [];
+  // 優先用存好的 stocks，沒有就從 fallback 查（去掉「台股 」前綴後比對）
+  let stocks = s.stocks || [];
   if (!stocks.length) {
-    showToast('此訊號無代表股資訊，請手動輸入漲幅', '');
+    const key = (s.sector || '').replace(/^台股\s*/, '');
+    stocks = SECTOR_STOCKS_FALLBACK[key] || [];
+  }
+  if (!stocks.length) {
+    showToast('找不到代表股，請手動輸入漲幅', '');
     return;
   }
 
