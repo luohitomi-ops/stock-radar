@@ -64,15 +64,27 @@ async function fetchQuote(symbol) {
   });
   if (!res.ok) throw new Error(`Yahoo ${symbol}: HTTP ${res.status}`);
   const data = await res.json();
-  const meta = data?.chart?.result?.[0]?.meta;
+  const result = data?.chart?.result?.[0];
+  const meta   = result?.meta;
   if (!meta) throw new Error(`No meta for ${symbol}`);
-  const price     = meta.regularMarketPrice;
-  const prevClose = meta.chartPreviousClose || meta.previousClose;
-  if (!price || !prevClose) throw new Error(`No price data for ${symbol}`);
-  const chgPct = ((price - prevClose) / prevClose) * 100;
-  // regularMarketTime 用來驗證數據新鮮度（Unix timestamp）
+
+  // 用 close series 最後兩根算 1 日報酬（避免 chartPreviousClose 是 5 天前的坑）
+  const closes = result?.indicators?.quote?.[0]?.close?.filter(v => v != null);
+  let chgPct;
+  if (closes && closes.length >= 2) {
+    const prev = closes[closes.length - 2];
+    const last = closes[closes.length - 1];
+    chgPct = ((last - prev) / prev) * 100;
+  } else {
+    // fallback：用 meta.previousClose（1日前），不用 chartPreviousClose（5日前）
+    const price     = meta.regularMarketPrice;
+    const prevClose = meta.previousClose;
+    if (!price || !prevClose) throw new Error(`No price data for ${symbol}`);
+    chgPct = ((price - prevClose) / prevClose) * 100;
+  }
+
   const marketTime = meta.regularMarketTime ?? null;
-  return { symbol, price, chgPct, marketTime };
+  return { symbol, price: meta.regularMarketPrice, chgPct, marketTime };
 }
 
 // ── 批次取報價（串行，追蹤失敗）──
