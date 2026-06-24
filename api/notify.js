@@ -313,8 +313,10 @@ export default async function handler(req, res) {
   // Vercel 2024+ 改用 Authorization: Bearer <CRON_SECRET>，舊版用 x-vercel-cron: 1
   const cronSecret   = process.env.CRON_SECRET;
   const authHeader   = req.headers['authorization'];
-  const isVercelCron = req.headers['x-vercel-cron'] === '1' ||
-    (cronSecret && authHeader === `Bearer ${cronSecret}`);
+  // x-vercel-cron 可能是 '1' 或其他 truthy 值（不同 Vercel 版本不同）
+  const isVercelCron = req.headers['x-vercel-cron'] !== undefined ||
+    (cronSecret && authHeader === `Bearer ${cronSecret}`) ||
+    authHeader === `Bearer ${SECRET}`; // fallback：用 NOTIFY_SECRET 也能當 cron auth
   const manualSecret = req.query?.secret;
 
   if (!isVercelCron && manualSecret !== SECRET) {

@@ -88,8 +88,9 @@ export default async function handler(req, res) {
   const secret     = req.query.secret;
   const cronSecret = process.env.CRON_SECRET;
   const authHeader = req.headers['authorization'];
-  const isCron     = req.headers['x-vercel-cron'] === '1' ||
-    (cronSecret && authHeader === `Bearer ${cronSecret}`);
+  const isCron     = req.headers['x-vercel-cron'] !== undefined ||
+    (cronSecret && authHeader === `Bearer ${cronSecret}`) ||
+    authHeader === `Bearer ${process.env.NOTIFY_SECRET || 'stockradar2026'}`;
   if (!isCron && secret !== (process.env.NOTIFY_SECRET || 'stockradar2026')) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
