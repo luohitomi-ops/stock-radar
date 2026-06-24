@@ -87,18 +87,23 @@ async function fetchQuote(symbol) {
   return { symbol, price: meta.regularMarketPrice, chgPct, marketTime };
 }
 
-// ── 批次取報價（串行，追蹤失敗）──
-async function fetchAll(symbols) {
-  const result  = {};
-  const failed  = [];
-  for (const sym of symbols) {
-    try {
-      result[sym] = await fetchQuote(sym);
-      await new Promise(r => setTimeout(r, 300));
-    } catch (e) {
-      console.warn(`fetchQuote failed: ${sym}`, e.message);
-      result[sym] = null;
-      failed.push(`${sym}(${e.message.slice(0, 40)})`);
+// ── 批次取報價（並行，分批避免 rate limit，追蹤失敗）──
+async function fetchAll(symbols, batchSize = 6, delayMs = 200) {
+  const result = {};
+  const failed = [];
+  for (let i = 0; i < symbols.length; i += batchSize) {
+    const batch = symbols.slice(i, i + batchSize);
+    await Promise.all(batch.map(async sym => {
+      try {
+        result[sym] = await fetchQuote(sym);
+      } catch (e) {
+        console.warn(`fetchQuote failed: ${sym}`, e.message);
+        result[sym] = null;
+        failed.push(`${sym}(${e.message.slice(0, 40)})`);
+      }
+    }));
+    if (i + batchSize < symbols.length) {
+      await new Promise(r => setTimeout(r, delayMs));
     }
   }
   return { quotes: result, failed };
