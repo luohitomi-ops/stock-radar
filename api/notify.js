@@ -46,6 +46,10 @@ const WATCH_SECTORS = [
   { sector:'台股 貨櫃航運',                driveIndex:'SPX',  stocks:['2603.TW','2609.TW'] },
   { sector:'台股 銅箔基板 / CCL',          driveIndex:'SOX',  stocks:['2383.TW','6213.TW'] },
   { sector:'台股 BBU / 備援電池',          driveIndex:'SOX',  stocks:['3211.TWO','4931.TWO'] },
+  { sector:'台股 伺服器滑軌 / 機構件',      driveIndex:'SOX',  stocks:['2059.TW','8210.TW'] },
+  { sector:'台股 AI 高速連接器',           driveIndex:'SOX',  stocks:['6197.TW','3665.TW'] },
+  { sector:'台股 均熱片 / 散熱模組',        driveIndex:'SOX',  stocks:['3653.TW','3324.TWO'] },
+  { sector:'台股 DRAM 模組',               driveIndex:'SOX',  stocks:['3260.TWO','4967.TW'] },
 ];
 
 const VIX_SYMBOL = '^VIX';

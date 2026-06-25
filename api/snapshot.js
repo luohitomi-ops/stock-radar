@@ -145,10 +145,10 @@ export default async function handler(req, res) {
       { sector:'台股 鋼鐵',                    driveIndex:'SPX', stockSymbols:['2002.TW'] },
       { sector:'台股 石化 / 塑化',             driveIndex:'SPX', stockSymbols:['1301.TW','1303.TW'] },
       { sector:'台股 工業電腦 / 嵌入式',       driveIndex:'SPX', stockSymbols:['2382.TW','2353.TW'] },
-      { sector:'台股 連接器 / 線材',           driveIndex:'SOX', stockSymbols:['2308.TW','2301.TW'] },
+      { sector:'台股 AI 高速連接器',           driveIndex:'SOX', stockSymbols:['6197.TW','3665.TW','3023.TW'] },
       { sector:'台股 汽車電子 / 車用 IC',      driveIndex:'N225', stockSymbols:['6415.TW','2301.TW'] },
       { sector:'台股 伺服器 / 機櫃',           driveIndex:'SOX', stockSymbols:['2356.TW','3017.TW'] },
-      { sector:'台股 NAND Flash / SSD 控制',   driveIndex:'SOX', stockSymbols:['8299.TW','3260.TW'] },
+      { sector:'台股 NAND Flash / SSD 控制',   driveIndex:'SOX', stockSymbols:['8299.TW','3260.TWO'] },
       { sector:'台股 探針卡 / 半導體設備',      driveIndex:'SOX', stockSymbols:['6515.TW','3016.TW'] },
       { sector:'台股 成熟製程代工',             driveIndex:'SOX', stockSymbols:['2303.TW','5347.TW'] },
       { sector:'台股 電源供應器 / UPS',         driveIndex:'SOX', stockSymbols:['2308.TW','6415.TW'] },
@@ -156,11 +156,14 @@ export default async function handler(req, res) {
       { sector:'台股 元宇宙 / AR 顯示',        driveIndex:'SOX', stockSymbols:['3008.TW','2454.TW'] },
       { sector:'台股 ABF 材料 / 基板材料',     driveIndex:'SOX', stockSymbols:['6274.TWO','3189.TW'] },
       { sector:'台股 技嘉 / 主板顯卡',         driveIndex:'SOX', stockSymbols:['2376.TW','2357.TW'] },
-      { sector:'台股 液態冷卻 / 冷板',         driveIndex:'SOX', stockSymbols:['3324.TW','3017.TW','2421.TW'] },
+      { sector:'台股 液態冷卻 / 冷板',         driveIndex:'SOX', stockSymbols:['3324.TWO','3017.TW','2421.TW'] },
       { sector:'台股 高速傳輸 / 光纖模組',     driveIndex:'SOX', stockSymbols:['3536.TW','3664.TWO','3630.TWO'] },
       { sector:'台股 IP 授權 / 矽智財',        driveIndex:'SOX', stockSymbols:['6643.TWO','3661.TW','3051.TW'] },
       { sector:'台股 玻璃基板 / 先進封裝材料', driveIndex:'SOX', stockSymbols:['2383.TW','6213.TW','8046.TWO'] },
       { sector:'台股 工業自動化 / 機器手臂',   driveIndex:'N225', stockSymbols:['2049.TW','1590.TW','2308.TW'] },
+      { sector:'台股 伺服器滑軌 / 機構件',      driveIndex:'SOX', stockSymbols:['2059.TW','8210.TW','3693.TWO'] },
+      { sector:'台股 均熱片 / 散熱模組',        driveIndex:'SOX', stockSymbols:['3653.TW','3324.TWO','3017.TW'] },
+      { sector:'台股 DRAM 模組',               driveIndex:'SOX', stockSymbols:['3260.TWO','4967.TW','8271.TW'] },
     ];
 
     // 3. 抓各族群個股報價並計算 Gap

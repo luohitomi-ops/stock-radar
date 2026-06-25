@@ -1375,6 +1375,17 @@ const CONFIG = {
     '3211': '3211.TWO',  // 順達（BBU，上櫃）
     '4931': '4931.TWO',  // 新盛力（BBU，上櫃）
     '3323': '3323.TWO',  // 加百裕（BBU，上櫃）
+    '2059': '2059.TW',   // 川湖（伺服器滑軌）
+    '8210': '8210.TW',   // 勤誠（機殼）
+    '3693': '3693.TWO',  // 營邦（機殼，上櫃）
+    '6197': '6197.TW',   // 嘉澤（高速連接器）
+    '3665': '3665.TW',   // 貿聯-KY（高速連接器）
+    '3023': '3023.TW',   // 信邦（高速連接器）
+    '3653': '3653.TW',   // 健策（均熱片）
+    '3324': '3324.TWO',  // 雙鴻（散熱，上櫃，修正既有 .TW 錯誤）
+    '3260': '3260.TWO',  // 威剛（DRAM，上櫃，修正既有 .TW 錯誤）
+    '4967': '4967.TW',   // 十銓（DRAM）
+    '8271': '8271.TW',   // 宇瞻（DRAM）
     '3189': '3189.TW',   // 景碩
     '2327': '2327.TW',   // 國巨
     '2351': '2351.TW',   // 順德
@@ -1599,6 +1610,27 @@ const CONFIG = {
         {id:'4931',name:'新盛力', price:95,  chg:null, role:'核心', seed:7005},
         {id:'3323',name:'加百裕', price:130, chg:null, role:'觀察', seed:7006},
       ]},
+    { hot:true,  sector:'台股 伺服器滑軌 / 機構件', exp:null, act:null, gap:null,
+      market:'US', driveName:'美股 費城半導體', driveIndex:'SOX', driveChg:null, cover:75,
+      stocks:[
+        {id:'2059',name:'川湖',   price:7315, chg:null, role:'龍頭', seed:7007},
+        {id:'8210',name:'勤誠',   price:1285, chg:null, role:'核心', seed:7008},
+        {id:'3693',name:'營邦',   price:504,  chg:null, role:'觀察', seed:7009},
+      ]},
+    { hot:true,  sector:'台股 均熱片 / 散熱模組', exp:null, act:null, gap:null,
+      market:'US', driveName:'美股 費城半導體', driveIndex:'SOX', driveChg:null, cover:75,
+      stocks:[
+        {id:'3653',name:'健策',   price:3390, chg:null, role:'龍頭', seed:7010},
+        {id:'3324',name:'雙鴻',   price:1010, chg:null, role:'核心', seed:7011},
+        {id:'3017',name:'奇鋐',   price:320,  chg:null, role:'觀察', seed:7012},
+      ]},
+    { hot:true,  sector:'台股 DRAM 模組', exp:null, act:null, gap:null,
+      market:'US', driveName:'美股 費城半導體', driveIndex:'SOX', driveChg:null, cover:75,
+      stocks:[
+        {id:'3260',name:'威剛',   price:409,  chg:null, role:'龍頭', seed:7013},
+        {id:'4967',name:'十銓',   price:276,  chg:null, role:'核心', seed:7014},
+        {id:'8271',name:'宇瞻',   price:204,  chg:null, role:'觀察', seed:7015},
+      ]},
 
     // ════ 次熱門（hot: false，搜尋才出現）════
 
@@ -1657,11 +1689,12 @@ const CONFIG = {
         {id:'2382',name:'廣達', price:310, chg:null, role:'龍頭', seed:3001},
         {id:'2353',name:'宏碁', price:38,  chg:null, role:'核心', seed:3002},
       ]},
-    { hot:false, sector:'台股 連接器 / 線材', exp:null, act:null, gap:null,
+    { hot:true,  sector:'台股 AI 高速連接器', exp:null, act:null, gap:null,
       market:'US', driveName:'美股 費城半導體', driveIndex:'SOX', driveChg:null, cover:75,
       stocks:[
-        {id:'2308',name:'台達電', price:380, chg:null, role:'龍頭', seed:3101},
-        {id:'2301',name:'光寶科', price:112, chg:null, role:'核心', seed:3102},
+        {id:'6197',name:'嘉澤',    price:373,  chg:null, role:'龍頭', seed:3101},
+        {id:'3665',name:'貿聯-KY', price:1920, chg:null, role:'核心', seed:3102},
+        {id:'3023',name:'信邦',    price:325,  chg:null, role:'觀察', seed:3103},
       ]},
     { hot:false, sector:'台股 汽車電子 / 車用 IC', exp:null, act:null, gap:null,
       market:'JP', driveName:'日股 日經225', driveIndex:'N225', driveChg:null, cover:75,
