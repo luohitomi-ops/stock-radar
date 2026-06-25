@@ -1371,6 +1371,10 @@ const CONFIG = {
     '3044': '3044.TW',   // 健鼎
     '2374': '2374.TW',   // 精英
     '6274': '6274.TWO',  // 台燿
+    '6213': '6213.TW',   // 聯茂
+    '3211': '3211.TWO',  // 順達（BBU，上櫃）
+    '4931': '4931.TWO',  // 新盛力（BBU，上櫃）
+    '3323': '3323.TWO',  // 加百裕（BBU，上櫃）
     '3189': '3189.TW',   // 景碩
     '2327': '2327.TW',   // 國巨
     '2351': '2351.TW',   // 順德
@@ -1514,14 +1518,14 @@ const CONFIG = {
 
     // ── SPX / N225 驅動 ──
     { hot:true,  sector:'台股 鴻海 / 代工龍頭', exp:null, act:null, gap:null,
-      market:'US', driveName:'美股 S&P500', driveIndex:'SPX', driveChg:null, cover:100,
+      market:'US', driveName:'美股 費城半導體', driveIndex:'SOX', driveChg:null, cover:100,
       stocks:[
         {id:'2317',name:'鴻海',   price:210, chg:null, role:'龍頭', seed:1701},
         {id:'2357',name:'華碩',   price:580, chg:null, role:'核心', seed:1702},
         {id:'3231',name:'緯創',   price:68,  chg:null, role:'觀察', seed:1703},
       ]},
     { hot:true,  sector:'台股 光學鏡頭', exp:null, act:null, gap:null,
-      market:'JP', driveName:'日股 日經225', driveIndex:'N225', driveChg:null, cover:100,
+      market:'US', driveName:'美股 費城半導體', driveIndex:'SOX', driveChg:null, cover:100,
       stocks:[
         {id:'3008',name:'大立光', price:2400,chg:null, role:'龍頭', seed:1301},
         {id:'3406',name:'玉晶光', price:310, chg:null, role:'核心', seed:1302},
@@ -1538,17 +1542,10 @@ const CONFIG = {
         {id:'0050',name:'元大台灣50', price:198, chg:null, role:'龍頭', seed:2001},
         {id:'2330',name:'台積電',     price:2300,chg:null, role:'核心', seed:2002},
       ]},
-    { hot:true,  sector:'台股 壽險 / 金控', exp:null, act:null, gap:null,
-      market:'US', driveName:'美股 S&P500', driveIndex:'SPX', driveChg:null, cover:100,
-      stocks:[
-        {id:'2882',name:'國泰金', price:72, chg:null, role:'龍頭', seed:1201},
-        {id:'2881',name:'富邦金', price:98, chg:null, role:'核心', seed:1202},
-        {id:'2891',name:'中信金', price:42, chg:null, role:'觀察', seed:1203},
-      ]},
 
     // ── 🔄 週期性族群（排熱門末，需搭配景氣方向）──
     { hot:true,  sector:'台股 功率半導體 / 電源管理', exp:null, act:null, gap:null,
-      market:'JP', driveName:'日股 日經225', driveIndex:'N225', driveChg:null, cover:100,
+      market:'US', driveName:'美股 費城半導體', driveIndex:'SOX', driveChg:null, cover:100,
       stocks:[
         {id:'6415',name:'矽力-KY', price:580, chg:null, role:'龍頭', seed:1001},
         {id:'8081',name:'致新',    price:238, chg:null, role:'核心', seed:1002},
@@ -1575,7 +1572,7 @@ const CONFIG = {
         {id:'8299',name:'群聯',   price:480, chg:null, role:'觀察', seed:1503},
       ]},
     { hot:true,  sector:'台股 EV 充電樁 / 充電設備', exp:null, act:null, gap:null,
-      market:'JP', driveName:'日股 日經225', driveIndex:'N225', driveChg:null, cover:100,
+      market:'US', driveName:'美股 費城半導體', driveIndex:'SOX', driveChg:null, cover:100,
       stocks:[
         {id:'2308',name:'台達電', price:380, chg:null, role:'龍頭', seed:1601},
         {id:'2301',name:'光寶科', price:112, chg:null, role:'核心', seed:1602},
@@ -1587,6 +1584,20 @@ const CONFIG = {
         {id:'2603',name:'長榮', price:185, chg:null, role:'龍頭', seed:1101},
         {id:'2609',name:'陽明', price:92,  chg:null, role:'核心', seed:1102},
         {id:'2615',name:'萬海', price:78,  chg:null, role:'觀察', seed:1103},
+      ]},
+    { hot:true,  sector:'台股 銅箔基板 / CCL', exp:null, act:null, gap:null,
+      market:'US', driveName:'美股 費城半導體', driveIndex:'SOX', driveChg:null, cover:75,
+      stocks:[
+        {id:'2383',name:'台光電', price:680, chg:null, role:'龍頭', seed:7001},
+        {id:'6213',name:'聯茂',   price:155, chg:null, role:'核心', seed:7002},
+        {id:'6274',name:'台燿',   price:240, chg:null, role:'觀察', seed:7003},
+      ]},
+    { hot:true,  sector:'台股 BBU / 備援電池', exp:null, act:null, gap:null,
+      market:'US', driveName:'美股 費城半導體', driveIndex:'SOX', driveChg:null, cover:75,
+      stocks:[
+        {id:'3211',name:'順達',   price:180, chg:null, role:'龍頭', seed:7004},
+        {id:'4931',name:'新盛力', price:95,  chg:null, role:'核心', seed:7005},
+        {id:'3323',name:'加百裕', price:130, chg:null, role:'觀察', seed:7006},
       ]},
 
     // ════ 次熱門（hot: false，搜尋才出現）════
@@ -1726,7 +1737,7 @@ const CONFIG = {
         {id:'3664',name:'波若威', price:95,  chg:null, role:'核心', seed:5012},
         {id:'3630',name:'新鉅科', price:75,  chg:null, role:'核心', seed:5013},
       ]},
-    { hot:false, sector:'台股 IP 授權 / 矽智財', exp:null, act:null, gap:null,
+    { hot:true,  sector:'台股 IP 授權 / 矽智財', exp:null, act:null, gap:null,
       market:'US', driveName:'美股 費城半導體', driveIndex:'SOX', driveChg:null, cover:75,
       stocks:[
         {id:'6643',name:'M31',     price:380,  chg:null, role:'龍頭', seed:5051},

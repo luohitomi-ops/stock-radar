@@ -33,17 +33,19 @@ const WATCH_SECTORS = [
   { sector:'台股 ABF 載板 / PCB',          driveIndex:'SOX',  stocks:['3037.TW','8046.TWO'] },
   { sector:'台股 矽光子 / CPO',            driveIndex:'SOX',  stocks:['2330.TW','3711.TW'] },
   { sector:'台股 電力設備 / 變壓器',        driveIndex:'SOX',  stocks:['1519.TW','1513.TW'] },
-  { sector:'台股 鴻海 / 代工龍頭',         driveIndex:'SPX',  stocks:['2317.TW','2357.TW'] },
-  { sector:'台股 光學鏡頭',                driveIndex:'N225', stocks:['3008.TW','3406.TW'] },
+  { sector:'台股 鴻海 / 代工龍頭',         driveIndex:'SOX',  stocks:['2317.TW','2357.TW'] },
+  { sector:'台股 光學鏡頭',                driveIndex:'SOX',  stocks:['3008.TW','3406.TW'] },
   { sector:'台股 機器人 / 精密傳動',        driveIndex:'N225', stocks:['2049.TW','1590.TW'] },
   { sector:'台股 ETF / 大盤追蹤',          driveIndex:'SPX',  stocks:['0050.TW','2330.TW'] },
   { sector:'台股 壽險 / 金控',             driveIndex:'SPX',  stocks:['2882.TW','2881.TW'] },
-  { sector:'台股 功率半導體 / 電源管理',    driveIndex:'N225', stocks:['6415.TW','8081.TW'] },
+  { sector:'台股 功率半導體 / 電源管理',    driveIndex:'SOX',  stocks:['6415.TW','8081.TW'] },
   { sector:'台股 HBM / 高頻寬記憶體',      driveIndex:'SOX',  stocks:['2408.TW','2344.TW'] },
   { sector:'台股 被動元件',                driveIndex:'SOX',  stocks:['2327.TW','2351.TW'] },
   { sector:'台股 NOR Flash / 利基記憶體',  driveIndex:'SOX',  stocks:['2337.TW','2344.TW'] },
-  { sector:'台股 EV 充電樁 / 充電設備',    driveIndex:'N225', stocks:['2308.TW','2301.TW'] },
+  { sector:'台股 EV 充電樁 / 充電設備',    driveIndex:'SOX',  stocks:['2308.TW','2301.TW'] },
   { sector:'台股 貨櫃航運',                driveIndex:'SPX',  stocks:['2603.TW','2609.TW'] },
+  { sector:'台股 銅箔基板 / CCL',          driveIndex:'SOX',  stocks:['2383.TW','6213.TW'] },
+  { sector:'台股 BBU / 備援電池',          driveIndex:'SOX',  stocks:['3211.TWO','4931.TWO'] },
 ];
 
 const VIX_SYMBOL = '^VIX';
