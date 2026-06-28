@@ -80,8 +80,9 @@ tr:last-child td { border-bottom: none; }
 
 <div class="toc">
   <div class="toc-title">目錄</div>
+  <a href="#sim">🦦 快速上手：懶人包 ＋ 開盤實戰</a>
   <a href="#core">一、核心邏輯：什麼是 Gap？</a>
-  <a href="#workflow">二、標準使用流程（08:00–09:30）</a>
+  <a href="#workflow">二、標準使用流程（08:30–09:30）</a>
   <a href="#filters">三、篩選條件說明</a>
   <a href="#sidebar">四、族群側邊欄解讀</a>
   <a href="#vix">五、VIX Gate 風險閥門</a>
@@ -89,6 +90,28 @@ tr:last-child td { border-bottom: none; }
   <a href="#portfolio">七、模擬倉位使用</a>
   <a href="#tg">八、Telegram 警示說明</a>
   <a href="#faq">九、常見問題</a>
+</div>
+
+<!-- ── 0 ── 快速上手 -->
+<h2 id="sim">🦦 快速上手：懶人包 ＋ 開盤實戰</h2>
+
+<div class="callout green">
+<strong>30 秒懶人包</strong><br>
+• <strong>這是什麼</strong>：開盤前看「台股哪些族群落後外盤、可能補漲」<br>
+• <strong>每天</strong>：08:30 收 TG → 看正 Gap 族群 ＋ VIX → 09:00 看開盤量 → 進場記訊號<br>
+• <strong>Gap</strong>：正 ＝台股落後有機會／負 ＝過熱警訊<br>
+• <strong>VIX</strong>：&lt;20 正常／20–25 減碼／≥25 別玩<br>
+• <strong>鐵律</strong>：正 Gap 是機會不是保證，停損先設好，獲利才加碼
+</div>
+
+<h3>開盤前實戰（第一人稱模擬）</h3>
+<p>跟著走完一個交易日早晨，每個動作都對應工具功能。</p>
+<div class="step-grid">
+  <div class="step"><div class="step-num">08:30</div><div class="step-body"><strong>手機叮一聲，TG 來了</strong>：只先看三件事 — SOX 昨夜漲多少、哪些族群正 Gap、VIX 幾度。例：SOX +2.8%、AI 伺服器 Gap +2.4pp、VIX 17.2 → 記住最強那個。</div></div>
+  <div class="step"><div class="step-num">08:35</div><div class="step-body"><strong>打開網頁，確認不是假訊號</strong>：① VIX 17.2 綠燈 ② 點側邊欄看 R²＝0.71（&gt;0.3 才可信）③ 近 5 日 Gap 是不是連續正。有 🔄 的週期股更保守。</div></div>
+  <div class="step"><div class="step-num">09:00</div><div class="step-body"><strong>看開盤量能才是真的</strong>：代表股開盤量 &gt; 昨日均量＝有人真追、訊號成立；&lt; 昨均量 50%＝雷聲大雨點小，觀望。</div></div>
+  <div class="step"><div class="step-num">09:30</div><div class="step-body"><strong>進場就記錄</strong>：到訊號追蹤頁記一筆，進場理由必填（「SOX+2.8%、AI 伺服器 Gap+2.4pp、開盤爆量」），系統自動算損益、+10% 停利／−5% 停損。</div></div>
+  <div class="step"><div class="step-num">收盤</div><div class="step-body"><strong>把結果餵回大腦</strong>：兌現或沒兌現都記下來，累積「什麼 Gap 條件真的會兌現」。</div></div>
 </div>
 
 <!-- ── 1 ── -->
@@ -122,13 +145,13 @@ Gap = （驅動指數漲跌 × Beta）− 台灣族群平均漲跌
 <p>部分族群（航運、鋼鐵、石化、記憶體等）受供需週期影響大，Gap 邏輯準確度較低。這些族群標有 <strong>🔄</strong> 符號，側邊欄會顯示提醒。即使 Gap 觸發，也需要自行確認產業週期位置。</p>
 
 <!-- ── 2 ── -->
-<h2 id="workflow">② 標準使用流程（08:00–09:30）</h2>
+<h2 id="workflow">② 標準使用流程（08:30–09:30）</h2>
 
 <div class="step-grid">
   <div class="step">
     <div class="step-num">1</div>
     <div class="step-body">
-      <strong>08:00 收到 Telegram 警示</strong>
+      <strong>08:30 收到 Telegram 警示</strong>
       查看今日有哪些族群超過 ±2pp 閾值。正 Gap 族群 = 候選補漲名單。
     </div>
   </div>
@@ -249,7 +272,7 @@ VIX 高時市場呈 risk-off 模式，族群間相關性趨近 1（全部同跌�
 <p>系統每 5 分鐘自動更新現價。現價觸及停利或停損時，自動移至已出場紀錄，並計算含手續費的實際損益。</p>
 
 <div class="callout info">
-手續費計算：買進 0.1425% + 賣出 0.1425% + 交易稅 0.3%（賣方）
+手續費計算：買進 0.1425% + 賣出 0.1425% + 交易稅 0.3%（賣方，個股）<br>※ ETF 證交稅為 0.1%（如 0050、00990A）
 </div>
 
 <!-- ── 8 ── -->
