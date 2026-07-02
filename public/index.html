@@ -4056,47 +4056,58 @@ const BetaEngine = {
 const SectorState = {
   get(r) {
     const gap      = r.gap      ?? null;
+    const act      = r.act      ?? null;
+    const exp      = r.exp      ?? null;
     const beta     = r.beta     ?? null;
     const r2       = r.r2       ?? null;
     const volRatio = r.volRatio ?? null;
-    const driveUp  = (r.driveChg ?? 0) >= 0;  // 海外今日是否上漲
+    const driveChg = r.driveChg ?? null;
 
-    if (gap === null) return { key:'watch', label:'👀 觀望', cls:'watch' };
+    if (gap === null || driveChg === null) return { key:'watch', label:'👀 觀望', cls:'watch' };
 
-    const hasVol  = volRatio !== null;
-    const volHigh = hasVol && volRatio >= 1.3;
-    const volLow  = hasVol && volRatio <= 0.7;
+    const driveUp = driveChg >= 0;
+    const volLow  = volRatio !== null && volRatio <= 0.7;
 
-    // 主力：海外漲 + Gap 大 + Beta / R² 有支撐（條件放寬至 0.6/0.3，資料不足時仍可觸發）
-    if (driveUp && gap >= 2 && beta !== null && beta >= 0.6 && r2 !== null && r2 >= 0.3 && !volLow)
-      return { key:'bull', label:'🔥 主力', cls:'bull' };
+    if (driveUp) {
+      // ── 海外上漲：正 Gap = 台股沒跟上（補漲空間）──
+      // 主力：Gap 大 + Beta / R² 有支撐
+      if (gap >= 2 && beta !== null && beta >= 0.6 && r2 !== null && r2 >= 0.3 && !volLow)
+        return { key:'bull', label:'🔥 主力', cls:'bull' };
+      // 已超漲：台股漲幅超過海外預期
+      if (gap <= -2)
+        return { key:'retreat', label:'⚠️ 已超漲', cls:'retreat' };
+      // 輪動：有正 Gap，台股尚未跟上
+      if (gap >= 0.5)
+        return { key:'rotate', label:'🔄 輪動', cls:'rotate' };
+      return { key:'watch', label:'👀 觀望', cls:'watch' };
+    }
 
-    // 已超漲：海外漲但台股漲幅超過預期（gap 負值是台股跑太快，不是退潮）
-    if (driveUp && gap <= -2)
-      return { key:'retreat', label:'⚠️ 已超漲', cls:'retreat' };
-
-    // 輪動：海外漲 + 正 Gap（還沒跟上，值得關注）
-    if (driveUp && gap >= 0.5)
-      return { key:'rotate', label:'🔄 輪動', cls:'rotate' };
-
-    // 退潮：海外跌 + 台股跌幅超過預期（真正的退潮）
-    if (!driveUp && gap <= -1.5)
+    // ── 海外下跌：不能只看 gap 符號（台股逆勢漲會讓 gap 極負，那是強勢不是退潮）──
+    // 改看台股實際漲跌 act 判斷相對強弱
+    // 逆勢強：海外跌，台股逆勢上漲 —— 最強勢，波段最該關注
+    if (act !== null && act > 0.3)
+      return { key:'bull', label:'💪 逆勢強', cls:'bull' };
+    // 抗跌：台股有跌，但跌幅明顯小於海外預期（act 高於 exp）
+    if (act !== null && exp !== null && act > exp + 0.5)
+      return { key:'rotate', label:'🛡️ 抗跌', cls:'rotate' };
+    // 退潮：台股跟跌甚至跌得比預期更多（act 低於 exp，gap 為正）
+    if (gap >= 1)
       return { key:'retreat', label:'🌊 退潮', cls:'retreat' };
-
     return { key:'watch', label:'👀 觀望', cls:'watch' };
   },
 
   badge(r) {
     const s = this.get(r);
-    const tooltips = {
-      bull:    '🔥 主力：海外漲＋Gap 大＋Beta 有支撐，補漲動能最強',
-      rotate:  '🔄 輪動：海外漲＋有正 Gap，台股尚未跟上',
-      watch:   '👀 觀望：Gap 接近 0 或方向不明',
-      retreat: s.label === '⚠️ 已超漲'
-        ? '⚠️ 已超漲：台股漲幅已超過海外預期，不建議追高'
-        : '🌊 退潮：海外下跌＋台股跌幅超過預期，資金退出中',
+    const byLabel = {
+      '🔥 主力':   '🔥 主力：海外漲＋Gap 大＋Beta 有支撐，補漲動能最強',
+      '💪 逆勢強': '💪 逆勢強：海外下跌，台股逆勢上漲，資金相對強勢，波段最該關注',
+      '🔄 輪動':   '🔄 輪動：海外漲＋有正 Gap，台股尚未跟上',
+      '🛡️ 抗跌':   '🛡️ 抗跌：海外下跌，但台股跌幅明顯小於預期，相對抗跌',
+      '👀 觀望':   '👀 觀望：Gap 接近 0 或方向不明',
+      '⚠️ 已超漲': '⚠️ 已超漲：台股漲幅已超過海外預期，不建議追高',
+      '🌊 退潮':   '🌊 退潮：海外下跌＋台股跟跌甚至跌更多，資金退出中',
     };
-    return `<span class="sector-state ${s.cls}" title="${tooltips[s.key] || s.label}">${s.label}</span>`;
+    return `<span class="sector-state ${s.cls}" title="${byLabel[s.label] || s.label}">${s.label}</span>`;
   },
 };
 
