@@ -289,6 +289,12 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
 .sector-state.watch   { background:rgba(107,122,142,0.12);color:var(--text-4);border:0.5px solid var(--border); }
 .sector-state.retreat { background:rgba(239,68,68,0.1);   color:var(--down); border:0.5px solid rgba(239,68,68,0.3); }
 
+.sector-breakdown {
+  display:inline-flex; align-items:center; font-size:9px; padding:1px 5px; border-radius:3px;
+  font-weight:500; white-space:nowrap; margin-left:3px; vertical-align:middle;
+  background:var(--bg-3); color:var(--text-5); border:0.5px solid var(--border); cursor:help;
+}
+
 /* ── Gap 方向警示橫幅 ── */
 .gap-direction-banner { display:none; margin: 0 0 10px 0; padding: 9px 14px; border-radius: 6px; font-size: 12px; line-height: 1.6; border: 0.5px solid; animation: fadeIn 0.3s ease; }
 .gap-direction-banner.warning  { background:#2a1500; border-color:#5a3500; color:#fbbf24; }
@@ -4109,6 +4115,16 @@ const SectorState = {
     return { key:'watch', label:'👀 觀望', cls:'watch' };
   },
 
+  // ── 個股漲跌細分：幾檔漲、幾檔跌，用來判斷族群平均值是否被單一個股撐起來 ──
+  breakdown(r) {
+    const withChg = (r.stocks || []).filter(s => s.chg !== null && s.chg !== undefined);
+    if (!withChg.length) return null;
+    const up   = withChg.filter(s => s.chg > 0).length;
+    const down = withChg.filter(s => s.chg < 0).length;
+    const flat = withChg.length - up - down;
+    return { total: withChg.length, up, down, flat };
+  },
+
   badge(r) {
     const s = this.get(r);
     const byLabel = {
@@ -4120,7 +4136,12 @@ const SectorState = {
       '⚠️ 已超漲': '⚠️ 已超漲：台股漲幅已超過海外預期，不建議追高',
       '🌊 退潮':   '🌊 退潮：海外下跌＋台股跟跌甚至跌更多，資金退出中',
     };
-    return `<span class="sector-state ${s.cls}" title="${byLabel[s.label] || s.label}">${s.label}</span>`;
+    const bd = this.breakdown(r);
+    // 平均值可能被單一個股撐起來：漲跌互見（同時有漲有跌）時提示細分
+    const bdTag = (bd && bd.up > 0 && bd.down > 0)
+      ? `<span class="sector-breakdown" title="${bd.total} 檔中：${bd.up} 漲・${bd.down} 跌${bd.flat ? '・'+bd.flat+' 平' : ''}（族群標籤是平均值，個股表現可能分歧）">${bd.total}檔中${bd.up}漲${bd.down}跌</span>`
+      : '';
+    return `<span class="sector-state ${s.cls}" title="${byLabel[s.label] || s.label}">${s.label}</span>${bdTag}`;
   },
 };
 
