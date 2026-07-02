@@ -2092,8 +2092,11 @@ const StrategyEngine = {
   // ── 根據族群屬性篩選推薦策略 ──
   getRecommendations(sector) {
     const market  = sector.market;   // 'US' or 'JP'
-    const gap     = sector.gap;      // 數值
-    const gapDir  = gap === null ? 'any' : gap > 0.5 ? 'pos' : gap < -0.5 ? 'neg' : 'any';
+    // 方向判斷改用 SectorState（與海外漲跌方向一致，避免海外跌時逆勢族群被誤判成 'neg'）
+    const stateKey = sector.gap === null || sector.driveChg == null ? null : SectorState.get(sector).key;
+    const gapDir  = stateKey === 'bull' || stateKey === 'rotate' ? 'pos'
+                  : stateKey === 'retreat' ? 'neg'
+                  : 'any';
     const isJP    = market === 'JP';
 
     return this.STRATEGIES.map(s => {
@@ -2126,18 +2129,28 @@ const StrategyEngine = {
       : '—';
     const gapColor = gap === null ? 'var(--text-5)' : gap > 0 ? 'var(--up)' : gap < 0 ? 'var(--down)' : 'var(--text-4)';
 
-    // Gap 情境說明
+    // Gap 情境說明（與 SectorState 同一套邏輯：海外下跌時看台股實際漲跌，不能純看 gap 符號）
     let contextMsg = '';
-    if (gap === null) {
+    if (gap === null || sector.driveChg == null) {
       contextMsg = '尚無今日 Gap 資料，顯示通用策略推薦。';
-    } else if (gap > 2) {
-      contextMsg = `Gap <strong style="color:${gapColor}">${gapStr}</strong>，補漲空間明顯。優先考慮動能突破和趨勢跟蹤策略，等待放量啟動。`;
-    } else if (gap > 0.5) {
-      contextMsg = `Gap <strong style="color:${gapColor}">${gapStr}</strong>，有輕微補漲機會。建議搭配量能確認後再進場。`;
-    } else if (gap > -0.5) {
-      contextMsg = `Gap <strong style="color:var(--text-3)">${gapStr}</strong>，已跟上海外走勢。以趨勢跟蹤為主，不適合追漲。`;
     } else {
-      contextMsg = `Gap <strong style="color:${gapColor}">${gapStr}</strong>，已超漲。逆勢操作風險高，建議等回測後再評估。`;
+      const stateKey = SectorState.get(sector).key;
+      const driveUp  = sector.driveChg >= 0;
+      if (stateKey === 'bull' && driveUp) {
+        contextMsg = `Gap <strong style="color:${gapColor}">${gapStr}</strong>，補漲空間明顯。優先考慮動能突破和趨勢跟蹤策略，等待放量啟動。`;
+      } else if (stateKey === 'bull') {
+        contextMsg = `海外下跌但台股逆勢上漲（<strong style="color:var(--up)">${(sector.act>0?'+':'')}${sector.act?.toFixed(2)}%</strong>），相對強勢。可留意是否有資金提前卡位，但逆勢時仍需嚴設停損。`;
+      } else if (stateKey === 'rotate' && driveUp) {
+        contextMsg = `Gap <strong style="color:${gapColor}">${gapStr}</strong>，有輕微補漲機會。建議搭配量能確認後再進場。`;
+      } else if (stateKey === 'rotate') {
+        contextMsg = `海外下跌，台股跌幅明顯小於預期，相對抗跌。可觀察是否止穩，暫不建議主動加碼。`;
+      } else if (stateKey === 'retreat' && driveUp) {
+        contextMsg = `Gap <strong style="color:${gapColor}">${gapStr}</strong>，已超漲。逆勢操作風險高，建議等回測後再評估。`;
+      } else if (stateKey === 'retreat') {
+        contextMsg = `海外下跌，台股跟跌甚至跌更多，資金退出訊號。不建議進場，優先觀望或考慮防守。`;
+      } else {
+        contextMsg = `Gap <strong style="color:var(--text-3)">${gapStr}</strong>，方向不明顯。以趨勢跟蹤為主，不適合追漲。`;
+      }
     }
 
     // 依類別分組（只顯示 top + mid）
