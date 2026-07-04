@@ -167,21 +167,49 @@ export default async function handler(req, res) {
     ];
 
     // 3. 抓各族群個股報價並計算 Gap
+    // 先去重所有 symbol（49 族群共用不少個股），再分批併發，避免一次打爆 Yahoo Finance 被限流
+    const allSymbols = [...new Set(SECTOR_CONFIG.flatMap(cfg => cfg.stockSymbols))];
+    const quoteMap = {};
+    const batchSize = 8;
+    for (let i = 0; i < allSymbols.length; i += batchSize) {
+      const batch = allSymbols.slice(i, i + batchSize);
+      const results = await Promise.all(batch.map(s => fetchQuote(s)));
+      batch.forEach((s, idx) => { quoteMap[s] = results[idx]; });
+      if (i + batchSize < allSymbols.length) await new Promise(r => setTimeout(r, 200));
+    }
+
     const snap = {};
-    await Promise.all(SECTOR_CONFIG.map(async cfg => {
-      const quotes = await Promise.all(cfg.stockSymbols.map(s => fetchQuote(s)));
+    const failedSectors = [];
+    for (const cfg of SECTOR_CONFIG) {
+      const quotes = cfg.stockSymbols.map(s => quoteMap[s]);
       const valid  = quotes.filter(q => q && q.chgPct != null);
-      if (!valid.length) return;
+      if (!valid.length) { failedSectors.push(cfg.sector); continue; }
       const act = valid.reduce((s, q) => s + q.chgPct, 0) / valid.length;
       const driveChg = macroResults[cfg.driveIndex] ?? null;
       // beta 依驅動指數查表（SOX=0.8 / SPX=0.6 / N225=0.7）
       const beta = BETA_MAP[cfg.driveIndex] ?? 0.6;
       const gap = driveChg != null ? parseFloat((driveChg * beta - act).toFixed(2)) : null;
       if (gap != null) snap[cfg.sector] = gap;
-    }));
+    }
 
     if (!Object.keys(snap).length) {
-      return res.status(200).json({ ok: false, message: '無法取得資料，可能是非交易日' });
+      // 全部失敗：發 TG 通知，避免 snapshot:latest 靜默卡在舊日期沒人發現
+      const tgToken  = process.env.TELEGRAM_TOKEN;
+      const tgChatId = process.env.TELEGRAM_CHAT_ID;
+      if (tgToken && tgChatId) {
+        try {
+          await fetch(`https://api.telegram.org/bot${tgToken}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: tgChatId,
+              text: `🔴 <b>Stock Radar 快照失敗</b>\n所有 ${allSymbols.length} 檔個股報價均抓取失敗（可能被 Yahoo Finance 限流，或非交易日）。\n快照未更新，請至網站手動按「立即更新快照」重試。`,
+              parse_mode: 'HTML',
+            }),
+          });
+        } catch { /* ignore */ }
+      }
+      return res.status(200).json({ ok: false, message: '無法取得資料，可能是非交易日或被限流' });
     }
 
     // 4. 存入 Redis（手動建構台灣時間字串，避免 zh-TW locale 在 Vercel 回傳 ROC 民國年）
@@ -192,7 +220,8 @@ export default async function handler(req, res) {
     await kvSet(kvUrl, kvToken, `snapshot:${today}`, snap);
     await kvSet(kvUrl, kvToken, 'snapshot:latest', today, 86400 * 7); // latest 7天TTL
 
-    console.log(`[Snapshot] ${today} saved ${Object.keys(snap).length} sectors`);
+    console.log(`[Snapshot] ${today} saved ${Object.keys(snap).length} sectors` +
+      (failedSectors.length ? `, ${failedSectors.length} 失敗: ${failedSectors.join(', ')}` : ''));
 
     // 5. 發 Telegram 確認通知
     const tgToken  = process.env.TELEGRAM_TOKEN;
