@@ -260,6 +260,7 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
 
   <!-- HISTORY -->
   <div id="panelHistory" style="display:none;">
+    <div id="strategyStats" style="margin-bottom:12px;"></div>
     <div class="table-wrap">
       <div class="table-header-row history-grid">
         <span>代號</span><span>族群</span><span>進場價</span><span>出場價</span>
@@ -303,6 +304,13 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
           <input type="number" id="fLots" placeholder="1" min="1" step="1" value="1"/>
         </div>
       </div>
+      <div class="form-group">
+        <label>出場策略</label>
+        <select id="fExitMode" onchange="onExitModeChange()">
+          <option value="fixed">固定 %（現有：+6% 停利 / −3% 停損）</option>
+          <option value="smart">智慧動態（ATR 停損 + 移動停利 + 持倉週期）</option>
+        </select>
+      </div>
       <div class="form-row">
         <div class="form-group">
           <label>停利價（元）<span id="tpHint" style="color:var(--up);font-size:10px;margin-left:4px;"></span></label>
@@ -313,7 +321,7 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
           <input type="number" id="fStopLoss" placeholder="留空=不設定" step="0.01" min="0" oninput="updateHints()"/>
         </div>
       </div>
-      <div class="form-hint" style="margin-top:-6px;">
+      <div class="form-hint" style="margin-top:-6px;" id="exitModeHint">
         停利 / 停損預設 +6% / −3%，可手動覆蓋
         <span style="float:right;cursor:pointer;color:var(--accent-text);" onclick="autoCalcTPSL()">⚡ 重新計算</span>
       </div>
@@ -501,14 +509,47 @@ async function refreshPrices() {
 // ═══════════════════════════════════════════
 // AUTO EXIT
 // ═══════════════════════════════════════════
+function holdDaysOf(pos) {
+  return pos.entryDate ? Math.floor((Date.now() - new Date(pos.entryDate).getTime()) / 86400000) : null;
+}
+
+// 智慧動態出場：更新移動停利 + 判斷持倉週期是否失去動能
+// 移動停利：獲利達 +3% 後，停損跟漲到「進場後最高價 − 2×ATR」，只上調不下修，讓波段留得住
+// 週期停損：持倉 ≥10 天但從未創過像樣新高（含手續費緩衝 2%），視為動能已死，時間到就出場
+function updateSmartExit(pos, price) {
+  if (pos.exitMode !== 'smart' || price == null) return;
+  pos.highSinceEntry = Math.max(pos.highSinceEntry ?? pos.entryPrice, price);
+  const gainPct = (price - pos.entryPrice) / pos.entryPrice * 100;
+  if (gainPct >= 3 && pos.atr) {
+    const trailingSL = parseFloat((pos.highSinceEntry - 2 * pos.atr).toFixed(2));
+    if (!pos.stopLoss || trailingSL > pos.stopLoss) {
+      pos.stopLoss = trailingSL;
+      pos.trailingActive = true;
+    }
+  }
+}
+
 function checkAutoExit() {
   let changed = false;
   STATE.active = STATE.active.filter(pos => {
     const price = STATE.prices[pos.symbol];
     if (price == null) return true;
+    if (pos.exitMode === 'smart') updateSmartExit(pos, price);
+
     let reason = null;
-    if (pos.takeProfit && price >= pos.takeProfit) reason = 'tp';
-    else if (pos.stopLoss && price <= pos.stopLoss) reason = 'sl';
+    if (pos.trailingActive) {
+      // 移動停利啟動後不再設獲利上限，只看停損是否被觸發
+      if (pos.stopLoss && price <= pos.stopLoss) reason = 'trailing';
+    } else {
+      if (pos.takeProfit && price >= pos.takeProfit) reason = 'tp';
+      else if (pos.stopLoss && price <= pos.stopLoss) reason = 'sl';
+    }
+    if (!reason && pos.exitMode === 'smart') {
+      const holdDays = holdDaysOf(pos);
+      if (holdDays != null && holdDays >= 10 && pos.highSinceEntry <= pos.entryPrice * 1.02) {
+        reason = 'cycle';
+      }
+    }
     if (reason) {
       exitPosition(pos, price, reason, false);
       changed = true;
@@ -537,6 +578,8 @@ function exitPosition(pos, exitPrice, reason, rerender = true) {
   Storage.saveHistory(STATE.history);
   if (reason === 'tp') showToast(`🟢 ${pos.symbol} 停利出場 +${pnlPct}%（含費）`, 'tp');
   else if (reason === 'sl') showToast(`🔴 ${pos.symbol} 停損出場 ${pnlPct}%（含費）`, 'sl');
+  else if (reason === 'trailing') showToast(`📈 ${pos.symbol} 移動停利出場 ${pnlPct >= 0 ? '+' : ''}${pnlPct}%（含費）`, pnlPct >= 0 ? 'tp' : 'sl');
+  else if (reason === 'cycle') showToast(`⏱ ${pos.symbol} 週期出場（10天未創新高）${pnlPct >= 0 ? '+' : ''}${pnlPct}%（含費）`, '');
   else showToast(`${pos.symbol} 手動出場 ${pnlPct >= 0 ? '+' : ''}${pnlPct}%（含費）`, '');
   if (rerender) {
     STATE.active = STATE.active.filter(p => p.id !== pos.id);
@@ -614,11 +657,14 @@ function renderActive() {
     const pnlClass = pnlPct == null ? '' : pnlPct >= 0 ? 'up' : 'down';
     const sourceTag = pos.source === 'gap' ? '<span class="badge gap">Gap</span>' : '';
     // 計算持倉天數
-    const holdDays = pos.entryDate
-      ? Math.floor((Date.now() - new Date(pos.entryDate).getTime()) / 86400000)
-      : null;
+    const holdDays = holdDaysOf(pos);
     const holdStr = holdDays != null ? `${holdDays}天` : '—';
     const holdCls = holdDays != null && holdDays >= 10 ? 'style="color:var(--warn);"' : '';
+    const slTag = pos.exitMode === 'smart'
+      ? (pos.trailingActive
+          ? '<span title="移動停利已啟動：停損跟漲，只上調不下修" style="font-size:9px;color:var(--up);margin-left:3px;">📈移動</span>'
+          : '<span title="' + (pos.atr ? `ATR14=${pos.atr}，停損=進場價−2×ATR` : '智慧動態（ATR 抓取失敗，暫用固定 −3%）') + '" style="font-size:9px;color:var(--text-5);margin-left:3px;">🎯ATR</span>')
+      : '';
     return `<div class="position-row active-grid ${rowClass}" data-id="${pos.id}">
       <span class="cell sym">${pos.symbol}</span>
       <span class="cell tag">${pos.sector || '—'}</span>
@@ -629,8 +675,8 @@ function renderActive() {
       <span class="cell">${value != null ? '$'+fmt(value) : '—'}</span>
       <span class="cell ${pnlClass}">${pnlPct != null ? (pnlPct>=0?'+':'')+pnlPct.toFixed(2)+'%' : '—'}</span>
       <span class="cell muted" ${holdCls} title="${pos.entryDate || ''}">${holdStr}</span>
-      <span class="cell col-tp">${pos.takeProfit ? fmtPrice(pos.takeProfit) : '—'}</span>
-      <span class="cell col-sl">${pos.stopLoss ? fmtPrice(pos.stopLoss) : '—'}</span>
+      <span class="cell col-tp">${pos.trailingActive ? '不設上限' : (pos.takeProfit ? fmtPrice(pos.takeProfit) : '—')}</span>
+      <span class="cell col-sl">${pos.stopLoss ? fmtPrice(pos.stopLoss) : '—'}${slTag}</span>
       <span class="cell">
         <div class="row-actions">
           ${sourceTag}
@@ -652,7 +698,13 @@ function renderHistory() {
   }
   el.innerHTML = history.map(h => {
     const pnlClass = h.pnlPct >= 0 ? 'up' : 'down';
-    const reasonMap = { tp: '<span class="badge tp">停利</span>', sl: '<span class="badge sl">停損</span>', manual: '<span class="badge manual">手動</span>' };
+    const reasonMap = {
+      tp: '<span class="badge tp">停利</span>',
+      sl: '<span class="badge sl">停損</span>',
+      trailing: '<span class="badge tp" title="移動停利：ATR 動態出場">📈移動停利</span>',
+      cycle: '<span class="badge manual" title="持倉10天未創新高，週期出場">⏱週期出場</span>',
+      manual: '<span class="badge manual">手動</span>',
+    };
     const reason = reasonMap[h.exitReason] || `<span class="badge manual">${h.exitReason||'—'}</span>`;
     return `<div class="position-row history-grid">
       <span class="cell sym">${h.symbol}</span>
@@ -691,7 +743,47 @@ function render() {
   renderSummary();
   renderActive();
   renderHistory();
+  renderStrategyStats();
   renderStoryCheck();
+}
+
+// ── 長期驗證：依出場原因分組計算勝率 / 平均損益，驗證各種出場邏輯準不準 ──
+function renderStrategyStats() {
+  const el = document.getElementById('strategyStats');
+  if (!el) return;
+  const history = STATE.history;
+  if (history.length < 3) { el.innerHTML = ''; return; } // 樣本太少不顯示，避免誤導
+
+  const groups = {
+    fixed_tp:  { label: '固定停利', rows: [] },
+    fixed_sl:  { label: '固定停損', rows: [] },
+    trailing:  { label: '📈 移動停利（ATR）', rows: [] },
+    cycle:     { label: '⏱ 週期出場（ATR）', rows: [] },
+    manual:    { label: '手動出場', rows: [] },
+  };
+  history.forEach(h => {
+    if (h.exitReason === 'tp') groups.fixed_tp.rows.push(h);
+    else if (h.exitReason === 'sl') groups.fixed_sl.rows.push(h);
+    else if (h.exitReason === 'trailing') groups.trailing.rows.push(h);
+    else if (h.exitReason === 'cycle') groups.cycle.rows.push(h);
+    else groups.manual.rows.push(h);
+  });
+
+  const cards = Object.values(groups).filter(g => g.rows.length > 0).map(g => {
+    const n = g.rows.length;
+    const wins = g.rows.filter(r => r.pnlPct > 0).length;
+    const winRate = (wins / n * 100).toFixed(0);
+    const avgPct = (g.rows.reduce((s, r) => s + r.pnlPct, 0) / n).toFixed(2);
+    const avgColor = avgPct >= 0 ? 'var(--up)' : 'var(--down)';
+    return `<div style="background:var(--bg-2);border:0.5px solid var(--border);border-radius:8px;padding:10px 14px;min-width:120px;">
+      <div style="font-size:11px;color:var(--text-4);margin-bottom:4px;">${g.label}（${n}筆）</div>
+      <div style="font-size:16px;font-weight:700;">${winRate}% <span style="font-size:10px;font-weight:400;color:var(--text-5);">勝率</span></div>
+      <div style="font-size:11px;color:${avgColor};">平均 ${avgPct >= 0 ? '+' : ''}${avgPct}%</div>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = `<div style="font-size:11px;color:var(--text-5);margin-bottom:6px;">📊 出場策略長期驗證（樣本數越多越準）</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">${cards}</div>`;
 }
 
 // ═══════════════════════════════════════════
@@ -718,6 +810,30 @@ function autoCalcTPSL() {
   updateHints();
 }
 
+function onExitModeChange() {
+  const mode = document.getElementById('fExitMode').value;
+  const hintEl = document.getElementById('exitModeHint');
+  if (mode === 'smart') {
+    hintEl.innerHTML = '⚡ 停損將依 ATR14（近期真實波動）動態計算，取代固定 −3%；獲利達 +3% 後停損會跟漲（移動停利）；持倉 10 天仍未創新高則自動出場（週期停損）。<br>停利價欄位僅供參考，不會限制獲利上限。';
+  } else {
+    hintEl.innerHTML = '停利 / 停損預設 +6% / −3%，可手動覆蓋<span style="float:right;cursor:pointer;color:var(--accent-text);" onclick="autoCalcTPSL()">⚡ 重新計算</span>';
+  }
+}
+
+// 智慧動態模式：抓 ATR14，算出動態停損（entry - 2*ATR），失敗則退回固定 -3%
+async function fetchAtrStopLoss(symbol, entry) {
+  const sym = /^\d+$/.test(symbol) ? symbol + '.TW' : symbol;
+  try {
+    const res  = await fetch(`/api/atr?symbols=${encodeURIComponent(sym)}`);
+    const data = await res.json();
+    const atr  = data?.results?.[sym]?.atr14;
+    if (atr && atr > 0) {
+      return { atr, stopLoss: parseFloat((entry - 2 * atr).toFixed(2)) };
+    }
+  } catch {}
+  return { atr: null, stopLoss: parseFloat((entry * 0.97).toFixed(2)) }; // fallback 固定 -3%
+}
+
 function openAddModal(prefill = null) {
   STATE.editId = null;
   STATE.prefill = prefill;
@@ -730,6 +846,8 @@ function openAddModal(prefill = null) {
   document.getElementById('fStopLoss').value  = '';
   document.getElementById('tpHint').textContent = '';
   document.getElementById('slHint').textContent = '';
+  document.getElementById('fExitMode').value  = 'fixed';
+  onExitModeChange();
   document.getElementById('fDate').value      = new Date().toISOString().slice(0,10);
   document.getElementById('gapSourceTag').style.display = prefill ? 'block' : 'none';
   document.getElementById('addOverlay').classList.add('open');
@@ -762,6 +880,8 @@ function editPosition(id) {
   document.getElementById('fLots').value       = pos.lots;
   document.getElementById('fTakeProfit').value  = pos.takeProfit || '';
   document.getElementById('fStopLoss').value   = pos.stopLoss || '';
+  document.getElementById('fExitMode').value   = pos.exitMode || 'fixed';
+  onExitModeChange();
   document.getElementById('fDate').value       = pos.entryDate || '';
   setTimeout(updateHints, 50);
   document.getElementById('gapSourceTag').style.display = 'none';
@@ -783,23 +903,39 @@ function closeModal(e) {
   if (e.target === document.getElementById('addOverlay')) closeAddModal();
 }
 
-function savePosition() {
+async function savePosition() {
   const symbol     = document.getElementById('fSymbol').value.trim().toUpperCase();
   const sector     = document.getElementById('fSector').value.trim();
   const entryPrice = parseFloat(document.getElementById('fEntryPrice').value);
   const lots       = parseInt(document.getElementById('fLots').value) || 1;
-  const takeProfit = parseFloat(document.getElementById('fTakeProfit').value) || null;
-  const stopLoss   = parseFloat(document.getElementById('fStopLoss').value) || null;
+  let   takeProfit = parseFloat(document.getElementById('fTakeProfit').value) || null;
+  let   stopLoss   = parseFloat(document.getElementById('fStopLoss').value) || null;
   const entryDate  = document.getElementById('fDate').value;
+  const exitMode   = document.getElementById('fExitMode').value;
 
   if (!symbol) { showToast('請輸入股票代號', ''); return; }
   if (isNaN(entryPrice) || entryPrice <= 0) { showToast('請輸入正確的買入價', ''); return; }
+
+  let atr = null;
+  if (exitMode === 'smart') {
+    const btn = document.querySelector('#addOverlay .btn-primary');
+    if (btn) { btn.textContent = '計算 ATR 中…'; btn.disabled = true; }
+    const r = await fetchAtrStopLoss(symbol, entryPrice);
+    atr = r.atr;
+    stopLoss = r.stopLoss; // 智慧動態一律用 ATR（或 fallback -3%）算出的停損，忽略手動輸入
+    if (btn) { btn.textContent = '確認新增'; btn.disabled = false; }
+    showToast(atr ? `ATR14 = ${atr}，動態停損 ${stopLoss}` : `ATR 抓取失敗，改用固定 −3% 停損`, atr ? '' : 'sl');
+  }
+
+  const smartFields = exitMode === 'smart'
+    ? { exitMode: 'smart', atr, highSinceEntry: entryPrice, trailingActive: false }
+    : { exitMode: 'fixed', atr: null, highSinceEntry: null, trailingActive: false };
 
   if (STATE.editId) {
     const idx = STATE.active.findIndex(p => p.id === STATE.editId);
     if (idx >= 0) {
       const oldSymbol = STATE.active[idx].symbol;
-      STATE.active[idx] = { ...STATE.active[idx], symbol, sector, entryPrice, lots, takeProfit, stopLoss, entryDate };
+      STATE.active[idx] = { ...STATE.active[idx], symbol, sector, entryPrice, lots, takeProfit, stopLoss, entryDate, ...smartFields };
       Storage.saveActive(STATE.active);
       // 代號改變時清掉舊現價，重新抓取
       if (oldSymbol !== symbol) {
@@ -817,6 +953,7 @@ function savePosition() {
       symbol, sector, entryPrice, lots, takeProfit, stopLoss, entryDate,
       source: STATE.prefill ? 'gap' : 'manual',
       createdAt: new Date().toISOString(),
+      ...smartFields,
     };
     STATE.active.unshift(pos);
     Storage.saveActive(STATE.active);
