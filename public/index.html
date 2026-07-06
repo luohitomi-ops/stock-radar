@@ -622,31 +622,6 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
 }
 .strategy-gap-context strong { color: var(--text-2); }
 
-/* ── AI 分析區塊 ── */
-.ai-analysis-wrap {
-  background: var(--bg-2); border: 0.5px solid var(--border);
-  border-radius: var(--radius); padding: 10px 12px; margin-bottom: 14px;
-}
-.ai-analysis-header {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 6px;
-}
-.ai-analysis-label { font-size: 10px; color: var(--text-5); letter-spacing: 0.5px; }
-.ai-analysis-btn {
-  font-size: 10px; padding: 2px 8px; border-radius: 10px; cursor: pointer;
-  background: var(--bg-3); border: 0.5px solid var(--border); color: var(--text-3);
-  white-space: nowrap;
-}
-.ai-analysis-btn:hover { border-color: var(--accent); color: var(--accent-text); }
-.ai-analysis-btn:disabled { opacity: 0.4; cursor: default; }
-.ai-analysis-text {
-  font-size: 11px; color: var(--text-3); line-height: 1.75; min-height: 18px;
-  white-space: pre-wrap;
-}
-.ai-analysis-text.loading { color: var(--text-5); }
-.ai-analysis-cursor { display: inline-block; animation: blink 0.8s step-end infinite; }
-@keyframes blink { 50% { opacity: 0; } }
-
 .auto-refresh-wrap { display: flex; align-items: center; gap: 6px; }
 .auto-refresh-select {
   height: 26px; padding: 0 6px; border-radius: var(--radius);
@@ -2187,16 +2162,8 @@ const StrategyEngine = {
         </div>`;
     };
 
-    const autoTrigger = gap !== null && Math.abs(gap) >= 2;
     body.innerHTML = `
       <div class="strategy-tab-content">
-        <div class="ai-analysis-wrap">
-          <div class="ai-analysis-header">
-            <span class="ai-analysis-label">🤖 AI 盤前分析</span>
-            <button class="ai-analysis-btn" id="aiAnalysisBtn">${autoTrigger ? '分析中…' : '生成分析'}</button>
-          </div>
-          <div class="ai-analysis-text" id="aiAnalysisText">${autoTrigger ? '<span class="ai-analysis-cursor">▊</span>' : '點擊右上按鈕生成 AI 分析'}</div>
-        </div>
         <div class="strategy-gap-context">${contextMsg}</div>
         ${topRecs.length ? `
           <div class="strategy-section">
@@ -2212,109 +2179,6 @@ const StrategyEngine = {
           ※ 以上為技術指標參考，非買賣建議。實際操作需自行判斷風險。
         </div>
       </div>`;
-
-    const aiBtn  = document.getElementById('aiAnalysisBtn');
-    const aiText = document.getElementById('aiAnalysisText');
-    const _sector = sector;
-    aiBtn.onclick = () => AiAnalysis.generate(_sector, aiText, aiBtn);
-    if (autoTrigger) AiAnalysis.generate(_sector, aiText, aiBtn);
-  },
-};
-
-/* ═══════════════════════════════════════════════════════════
-   AI ANALYSIS ENGINE  — 呼叫本機 OpenAI 相容 API 生成中文分析
-   ═══════════════════════════════════════════════════════════ */
-const AiAnalysis = {
-  _API: 'http://127.0.0.1:8000/v1/chat/completions',
-  _MODEL: 'copilot',
-  _KEY: 'free',
-
-  _buildPrompt(sector) {
-    const gap      = sector.gap      != null ? `${sector.gap > 0 ? '+' : ''}${sector.gap.toFixed(2)}pp` : '—';
-    const act      = sector.act      != null ? `${sector.act > 0 ? '+' : ''}${sector.act.toFixed(2)}%`  : '—';
-    const exp      = sector.exp      != null ? `${sector.exp > 0 ? '+' : ''}${sector.exp.toFixed(2)}%`  : '—';
-    const driveChg = sector.driveChg != null ? `${sector.driveChg > 0 ? '+' : ''}${sector.driveChg.toFixed(2)}%` : '—';
-    const beta     = sector.beta     != null ? sector.beta.toFixed(2) : '—';
-
-    const vixItem = (STATE.macroItems || []).find(m => m.label === 'VIX');
-    const vix = vixItem ? `VIX ${parseFloat(vixItem.val).toFixed(1)}` : '';
-
-    const dir = (sector.gap ?? 0) > 0 ? '補漲空間（落後海外）' : '已超漲（領先海外）';
-
-    return `你是台股波段交易分析師，請用繁體中文寫一段簡短的盤前分析（3～5句，不超過120字）。
-
-族群：${sector.sector}
-驅動指數：${sector.driveIndex} 昨夜 ${driveChg}
-台股預期漲幅：${exp}（Beta ${beta}）
-台股實際漲幅：${act}
-Gap 缺口：${gap}（${dir}）
-${vix ? `市場恐慌指數：${vix}` : ''}
-
-請說明：
-1. 為什麼這個族群出現 Gap 訊號
-2. 開盤時應關注什麼（量能、時間點或個股）
-3. 一句風險提示
-
-直接輸出分析文字，不要標題、不要條列。`;
-  },
-
-  async generate(sector, textEl, btnEl) {
-    btnEl.disabled = true;
-    textEl.className = 'ai-analysis-text loading';
-    textEl.textContent = '分析中…';
-
-    try {
-      const res = await fetch(this._API, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this._KEY}`,
-        },
-        body: JSON.stringify({
-          model: this._MODEL,
-          messages: [{ role: 'user', content: this._buildPrompt(sector) }],
-          stream: true,
-          max_tokens: 200,
-        }),
-        signal: AbortSignal.timeout(30000),
-      });
-
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-      textEl.className = 'ai-analysis-text';
-      textEl.innerHTML = '<span class="ai-analysis-cursor">▊</span>';
-      let full = '';
-
-      const reader = res.body.getReader();
-      const dec    = new TextDecoder();
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const chunk = dec.decode(value, { stream: true });
-        for (const line of chunk.split('\n')) {
-          const trim = line.replace(/^data:\s*/, '');
-          if (!trim || trim === '[DONE]') continue;
-          try {
-            const delta = JSON.parse(trim)?.choices?.[0]?.delta?.content;
-            if (delta) {
-              full += delta;
-              textEl.innerHTML = full.replace(/\n/g, '<br>') +
-                '<span class="ai-analysis-cursor">▊</span>';
-            }
-          } catch {}
-        }
-      }
-      textEl.innerHTML = full.replace(/\n/g, '<br>');
-      btnEl.textContent = '重新分析';
-    } catch (e) {
-      textEl.className = 'ai-analysis-text';
-      const isOffline = e.message.includes('fetch') || e.message.includes('Failed');
-      textEl.textContent = isOffline
-        ? '⚠️ 本機 AI 未啟動（127.0.0.1:8000）'
-        : `⚠️ 分析失敗：${e.message}`;
-      btnEl.textContent = '重試';
-    }
-    btnEl.disabled = false;
   },
 };
 
