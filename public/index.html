@@ -893,7 +893,7 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
     </div>
   </div>
 
-  <div class="ai-summary-wrap" id="aiSummaryWrap">
+  <div class="ai-summary-wrap" id="aiSummaryWrap" style="display:none;"><!-- 暫時關閉，見上方 AISummary.generate() 註解說明 -->
     <div class="ai-summary-header">
       <div class="ai-summary-label">✦ AI 盤前摘要</div>
       <div style="display:flex;align-items:center;gap:8px;">
@@ -4989,8 +4989,9 @@ const UI = {
       // 記錄今日 gap 快照到歷史
       HistoryEngine.record(computed);
 
-      // AI 盤前摘要（資料更新後觸發）
-      AISummary.generate();
+      // AI 盤前摘要：暫時關閉（2026-07-08，Anthropic 額度用罄，Gemini 免費 key 待補），
+      // 見 memory freegpt-pack-failed / project-stock-radar。要復原就取消下面這行註解。
+      // AISummary.generate();
     } catch (err) {
       console.warn('refresh failed:', err);
       Renderer.macroGrid(CONFIG.macroFallback);
