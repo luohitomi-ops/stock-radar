@@ -3288,6 +3288,23 @@ const AutoRefresh = {
   // 圓環周長（r=8, circumference = 2π×8 ≈ 50.3）
   CIRCUMFERENCE: 50.3,
 
+  // 把前端算好的真實 OLS beta 同步到 Redis，給 TG/快照讀取（取代固定常數）
+  // fire-and-forget：失敗不影響網站本身運作，只是 TG 繼續用 fallback 常數
+  _syncBetas(computed) {
+    const betas = {};
+    computed.forEach(r => {
+      if (r.beta != null && r.r2 != null && r.r2 >= 0.3) {
+        betas[r.sector] = { beta: r.beta, r2: r.r2 };
+      }
+    });
+    if (!Object.keys(betas).length) return;
+    fetch('/api/beta-sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ betas }),
+    }).catch(() => {}); // 靜默失敗，不影響網站
+  },
+
   init() {
     const sel = document.getElementById('autoRefreshSelect');
     if (!sel) return;
@@ -4950,6 +4967,11 @@ const UI = {
 
       // 3. 寫回 CONFIG（讓 getAll() 拿到最新資料）
       CONFIG.sectorData = computed;
+
+      // 3b. 把算好的真實 beta 同步到 Redis，讓 TG/快照也能用同一組真實值
+      // （取代原本固定 SOX=0.8/SPX=0.6/N225=0.7，避免同族群同一天 TG 跟網站 Gap 對不上）
+      // 只送 r2 >= 0.3（有基本解釋力）的，避免雜訊 beta 污染後端
+      this._syncBetas(computed);
 
       // 4. 更新 macro grid
       Renderer.macroGrid(macroItems);

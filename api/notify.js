@@ -122,8 +122,24 @@ function isStaleData(marketTime) {
   return diffDays > 4; // 週末最多差 3 天（週五→週一）
 }
 
+// ── 讀取前端同步過來的真實 OLS beta（取代固定 BETA_MAP，見 api/beta-sync.js）──
+async function fetchRealBetas(kvUrl, kvToken) {
+  if (!kvUrl || !kvToken) return {};
+  try {
+    const res = await fetch(`${kvUrl}/get/betas:latest`, {
+      headers: { Authorization: `Bearer ${kvToken}` },
+      signal: AbortSignal.timeout(5000),
+    });
+    const data = await res.json();
+    return data.result ? JSON.parse(data.result) : {};
+  } catch (e) {
+    console.warn('[notify] fetchRealBetas failed:', e.message);
+    return {};
+  }
+}
+
 // ── 計算各族群 gap ──
-async function computeGaps(threshold) {
+async function computeGaps(threshold, realBetas = {}) {
   const allStockSyms = [...new Set(WATCH_SECTORS.flatMap(s => s.stocks))];
   const allDriveSyms = [...new Set(WATCH_SECTORS.map(s => DRIVE_SYMBOLS[s.driveIndex]))];
   const allSyms      = [...allStockSyms, ...allDriveSyms];
@@ -153,7 +169,9 @@ async function computeGaps(threshold) {
     if (!stockChgs.length) continue;
 
     const act  = stockChgs.reduce((a, b) => a + b, 0) / stockChgs.length;
-    const beta = BETA_MAP[sector.driveIndex] ?? 0.6;
+    // 優先用網站算好的真實 beta（同族群同天跟網站一致），沒有才退回固定常數
+    const realBeta = realBetas[sector.sector]?.beta;
+    const beta = typeof realBeta === 'number' ? realBeta : (BETA_MAP[sector.driveIndex] ?? 0.6);
     const exp  = driveQ.chgPct * beta;
     const gap  = parseFloat((exp - act).toFixed(2));
     const entry = {
@@ -163,6 +181,7 @@ async function computeGaps(threshold) {
       exp:       parseFloat(exp.toFixed(2)),
       driveChg:  parseFloat(driveQ.chgPct.toFixed(2)),
       driveName: sector.driveIndex,
+      betaSource: typeof realBeta === 'number' ? 'real' : 'fallback',
     };
     allGaps.push(entry);
     if (Math.abs(gap) >= threshold) alerts.push(entry);
@@ -277,7 +296,8 @@ function formatMessage(alerts, threshold, streaks = {}, vixLevel = null, driveSt
         ? ` ✅雙確認`
         : ` ⚠️單指數`;
     }
-    return `${icon} <b>${a.sector.replace('台股 ', '')}${streakTag}${confirmTag}</b>\n   Gap: <b>${gapStr}</b>　驅動: ${driveStr}\n   預期: ${a.exp > 0 ? '+' : ''}${a.exp}%　實際: ${a.act > 0 ? '+' : ''}${a.act}%`;
+    const betaTag = a.betaSource === 'fallback' ? ' ⚙️通用beta' : '';
+    return `${icon} <b>${a.sector.replace('台股 ', '')}${streakTag}${confirmTag}${betaTag}</b>\n   Gap: <b>${gapStr}</b>　驅動: ${driveStr}\n   預期: ${a.exp > 0 ? '+' : ''}${a.exp}%　實際: ${a.act > 0 ? '+' : ''}${a.act}%`;
   });
 
   const vixLine = vixLevel != null
@@ -337,7 +357,8 @@ export default async function handler(req, res) {
   try {
     console.log(`[notify] triggered at ${new Date().toISOString()}`);
 
-    const { alerts, allGaps, failed, driveStatus } = await computeGaps(THRESHOLD);
+    const realBetas = await fetchRealBetas(kvUrl, kvToken);
+    const { alerts, allGaps, failed, driveStatus } = await computeGaps(THRESHOLD, realBetas);
     const streaks  = await fetchStreaks(kvUrl, kvToken);
 
     // VIX 絕對值（單獨抓，不影響 gap 計算）

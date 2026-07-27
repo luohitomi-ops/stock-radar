@@ -166,6 +166,9 @@ export default async function handler(req, res) {
       { sector:'台股 DRAM 模組',               driveIndex:'SOX', stockSymbols:['3260.TWO','4967.TW','8271.TW'] },
     ];
 
+    // 2b. 讀取前端同步過來的真實 OLS beta（見 api/beta-sync.js），沒有才退回固定常數
+    const realBetas = (await kvGet(kvUrl, kvToken, 'betas:latest')) || {};
+
     // 3. 抓各族群個股報價並計算 Gap
     // 先去重所有 symbol（49 族群共用不少個股），再分批併發，避免一次打爆 Yahoo Finance 被限流
     const allSymbols = [...new Set(SECTOR_CONFIG.flatMap(cfg => cfg.stockSymbols))];
@@ -186,8 +189,9 @@ export default async function handler(req, res) {
       if (!valid.length) { failedSectors.push(cfg.sector); continue; }
       const act = valid.reduce((s, q) => s + q.chgPct, 0) / valid.length;
       const driveChg = macroResults[cfg.driveIndex] ?? null;
-      // beta 依驅動指數查表（SOX=0.8 / SPX=0.6 / N225=0.7）
-      const beta = BETA_MAP[cfg.driveIndex] ?? 0.6;
+      // 優先用網站算好的真實 beta（跟網站一致），沒有才退回固定常數（SOX=0.8/SPX=0.6/N225=0.7）
+      const realBeta = realBetas[cfg.sector]?.beta;
+      const beta = typeof realBeta === 'number' ? realBeta : (BETA_MAP[cfg.driveIndex] ?? 0.6);
       const gap = driveChg != null ? parseFloat((driveChg * beta - act).toFixed(2)) : null;
       if (gap != null) snap[cfg.sector] = gap;
     }
