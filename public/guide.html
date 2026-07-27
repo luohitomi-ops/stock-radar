@@ -98,8 +98,8 @@ tr:last-child td { border-bottom: none; }
 <div class="callout green">
 <strong>30 秒懶人包</strong><br>
 • <strong>這是什麼</strong>：開盤前看「台股哪些族群落後外盤、可能補漲」<br>
-• <strong>每天</strong>：08:30 收 TG → 看正 Gap 族群 ＋ VIX → 09:00 看開盤量 → 進場記訊號<br>
-• <strong>Gap</strong>：正 ＝台股落後有機會／負 ＝過熱警訊<br>
+• <strong>每天</strong>：08:30 收 TG → 看標籤是「補漲空間/逆勢強/抗跌」的族群 ＋ VIX → 09:00 看開盤量 → 進場記訊號<br>
+• <strong>Gap</strong>：意義會依海外漲跌反轉，直接看標籤文字（不要自己心算正負號，見下方詳解）<br>
 • <strong>VIX</strong>：&lt;20 正常／20–25 減碼／≥25 別玩<br>
 • <strong>鐵律</strong>：正 Gap 是機會不是保證，停損先設好，獲利才加碼
 </div>
@@ -123,10 +123,18 @@ tr:last-child td { border-bottom: none; }
 Gap = （驅動指數漲跌 × Beta）− 台灣族群平均漲跌
 </div>
 
-<div class="badge-row">
-  <span class="badge red">正 Gap（+pp）→ 台灣落後海外 → 補漲空間</span>
-  <span class="badge green">負 Gap（−pp）→ 台灣已超漲 → 超漲警示</span>
+<div class="callout red">
+  <strong>⚠️ 重要：Gap 正負號的意義，海外漲跟海外跌是「反的」，不能一律套用</strong><br>
+  這是 2026-07-27 才修正的重大 bug：以前不管海外漲跌，一律「正Gap=補漲、負Gap=已超漲」，
+  結果海外重挫但台股抗跌時，會被誤判成「已超漲」，方向整個講反。
 </div>
+
+<table>
+  <tr><th>情境</th><th>Gap 為正</th><th>Gap 為負</th></tr>
+  <tr><td><strong>海外上漲</strong></td><td class="badge red" style="display:inline-block;">🔴 補漲空間（台灣沒跟上）</td><td class="badge green" style="display:inline-block;">🟢 已超漲（台灣衝過頭）</td></tr>
+  <tr><td><strong>海外下跌</strong></td><td class="badge green" style="display:inline-block;">🌊 退潮（台灣跟跌更多，真的要小心）</td><td class="badge red" style="display:inline-block;">💪 逆勢強／🛡️抗跌（台灣沒跟跌，是好消息）</td></tr>
+</table>
+<p style="font-size:13px;color:#888;">看訊號時永遠先看「驅動指數是漲是跌」，再看 Gap 正負號，兩者合在一起才知道方向。程式的 SectorState / TG 已經自動幫你判斷好，側邊欄跟 TG 圖示看標籤文字（逆勢強/抗跌/已超漲/退潮）即可，不用自己心算。</p>
 
 <h3>驅動指數 & Beta 係數</h3>
 <table>
@@ -152,7 +160,7 @@ Gap = （驅動指數漲跌 × Beta）− 台灣族群平均漲跌
     <div class="step-num">1</div>
     <div class="step-body">
       <strong>08:30 收到 Telegram 警示</strong>
-      查看今日有哪些族群超過 ±2pp 閾值。正 Gap 族群 = 候選補漲名單。
+      查看今日有哪些族群超過 ±2% 閾值。標籤是「補漲空間/逆勢強/抗跌」的才是候選名單，「已超漲/退潮」要迴避。
     </div>
   </div>
   <div class="step">
@@ -206,7 +214,7 @@ Gap = （驅動指數漲跌 × Beta）− 台灣族群平均漲跌
 <ul>
   <li><strong>預期</strong>：驅動指數 × Beta 計算出的預期漲幅</li>
   <li><strong>實際</strong>：族群代表股平均實際漲幅</li>
-  <li><strong>落差（Gap）</strong>：預期 − 實際，正值 = 落後 = 補漲機會</li>
+  <li><strong>落差（Gap）</strong>：預期 − 實際；意義依海外漲跌反轉，見上方「核心邏輯」表格，不要只看正負號</li>
   <li><strong>Beta / R²</strong>：聯動強度 / 統計解釋力，R² &lt; 0.3 時 Gap 參考性低</li>
   <li><strong>近 5 日 Gap 走勢</strong>：連續同向標 ⚡連N日，累積信號比單日更可信</li>
 </ul>
