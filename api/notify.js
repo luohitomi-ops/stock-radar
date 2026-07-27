@@ -50,6 +50,7 @@ const WATCH_SECTORS = [
   { sector:'台股 AI 高速連接器',           driveIndex:'SOX',  stocks:['6197.TW','3665.TW'] },
   { sector:'台股 均熱片 / 散熱模組',        driveIndex:'SOX',  stocks:['3653.TW','3324.TWO'] },
   { sector:'台股 DRAM 模組',               driveIndex:'SOX',  stocks:['3260.TWO','4967.TW'] },
+  { sector:'台股 傳輸介面 IC',             driveIndex:'SOX',  stocks:['5269.TW','4966.TWO'] },
 ];
 
 const VIX_SYMBOL = '^VIX';
