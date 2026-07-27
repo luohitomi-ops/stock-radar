@@ -282,7 +282,7 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
     </div>
     <div class="modal-body">
       <div id="gapSourceTag" style="display:none;">
-        <div class="source-tag gap-source">⚡ 由 Gap 警示自動帶入</div>
+        <div class="source-tag gap-source">⚡ 由補漲空間警示自動帶入</div>
       </div>
       <div class="form-row">
         <div class="form-group">
@@ -655,7 +655,7 @@ function renderActive() {
     const hitSL = price != null && pos.stopLoss  && price <= pos.stopLoss;
     const rowClass = hitTP ? 'hit-tp' : hitSL ? 'hit-sl' : '';
     const pnlClass = pnlPct == null ? '' : pnlPct >= 0 ? 'up' : 'down';
-    const sourceTag = pos.source === 'gap' ? '<span class="badge gap">Gap</span>' : '';
+    const sourceTag = pos.source === 'gap' ? '<span class="badge gap" title="從補漲空間警示一鍵加入">補漲</span>' : '';
     // 計算持倉天數
     const holdDays = holdDaysOf(pos);
     const holdStr = holdDays != null ? `${holdDays}天` : '—';
@@ -846,7 +846,7 @@ function openAddModal(prefill = null) {
   document.getElementById('fStopLoss').value  = '';
   document.getElementById('tpHint').textContent = '';
   document.getElementById('slHint').textContent = '';
-  document.getElementById('fExitMode').value  = 'fixed';
+  document.getElementById('fExitMode').value  = prefill?.exitMode === 'smart' ? 'smart' : 'fixed';
   onExitModeChange();
   document.getElementById('fDate').value      = new Date().toISOString().slice(0,10);
   document.getElementById('gapSourceTag').style.display = prefill ? 'block' : 'none';
@@ -1010,9 +1010,10 @@ function checkUrlPrefill() {
   const params = new URLSearchParams(location.search);
   if (params.has('add') || params.has('sector')) {
     openAddModal({
-      symbol: params.get('add')    || '',
-      sector: params.get('sector') || '',
-      price:  params.get('price')  || '',
+      symbol:   params.get('add')      || '',
+      sector:   params.get('sector')   || '',
+      price:    params.get('price')    || '',
+      exitMode: params.get('exitMode') || '',
     });
     history.replaceState({}, '', '/portfolio.html');
   }

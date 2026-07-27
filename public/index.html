@@ -920,7 +920,7 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
         <input class="search-input" type="text" id="searchInput" placeholder="例：半導體、EV、光學...">
       </div>
       <div class="filter-group">
-        <div class="filter-label">落差範圍 (pp)</div>
+        <div class="filter-label">補漲空間範圍 (%)</div>
         <div style="display:flex;align-items:center;gap:6px;">
           <input class="range-input" type="number" id="gapMin" placeholder="最小" step="0.1">
           <span class="range-sep">—</span>
@@ -953,7 +953,7 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
       </div>
       <div class="filter-sep"></div>
       <div class="filter-group">
-        <div class="filter-label">Beta ≥</div>
+        <div class="filter-label">連動係數 ≥<span style="cursor:help;color:var(--text-4);font-size:11px;margin-left:3px;" title="連動係數：這個族群跟海外驅動指數的連動強弱，數字越大代表海外漲跌對台股影響越大">ⓘ</span></div>
         <div style="display:flex;align-items:center;gap:6px;">
           <input class="range-input" type="number" id="betaMin" placeholder="0.5" step="0.1" style="width:72px;">
         </div>
@@ -966,13 +966,13 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
         </div>
       </div>
       <div class="filter-group">
-        <div class="filter-label">Gap 警示閾值
+        <div class="filter-label">補漲空間警示閾值
           <span style="cursor:help;color:var(--text-4);font-size:11px;margin-left:3px;"
-            title="Gap 絕對值超過此閾值時觸發警示（橘色高亮 + 跳動橘點）。&#10;&#10;正 Gap = 補漲空間；負 Gap = 已超漲。&#10;兩個方向都會觸發，例如設定 1.5pp：&#10;• +2pp → 觸發（補漲方向）&#10;• -2pp → 觸發（超漲警示）&#10;&#10;建議值：平常盤 1.5pp，大跌後 1.0pp">ⓘ</span>
+            title="補漲空間絕對值超過此閾值時觸發警示（橘色高亮 + 跳動橘點）。&#10;&#10;正值 = 有補漲空間；負值 = 已超漲。&#10;兩個方向都會觸發，例如設定 1.5%：&#10;• +2% → 觸發（補漲方向）&#10;• -2% → 觸發（超漲警示）&#10;&#10;建議值：平常盤 1.5%，大跌後 1.0%">ⓘ</span>
         </div>
         <div style="display:flex;align-items:center;gap:6px;">
-          <input class="range-input" type="number" id="gapAlert" placeholder="pp" step="0.5" style="width:72px;" title="Gap 絕對值超過此值觸發警示，正負 Gap 都算">
-          <span class="range-sep">pp</span>
+          <input class="range-input" type="number" id="gapAlert" placeholder="%" step="0.5" style="width:72px;" title="補漲空間絕對值超過此值觸發警示，正負都算">
+          <span class="range-sep">%</span>
         </div>
       </div>
       <div class="filter-group">
@@ -1003,10 +1003,10 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
     <div class="result-count" id="resultCount"></div>
     <div class="sort-row">
       排序：
-      <button class="sort-btn active" data-sort="gap">↓ 落差</button>
-      <button class="sort-btn" data-sort="exp">↓ 預期</button>
-      <button class="sort-btn" data-sort="act">↓ 實際</button>
-      <button class="sort-btn" data-sort="beta">↓ Beta</button>
+      <button class="sort-btn active" data-sort="gap">↓ 補漲空間</button>
+      <button class="sort-btn" data-sort="exp">↓ 預期漲幅</button>
+      <button class="sort-btn" data-sort="act">↓ 實際漲幅</button>
+      <button class="sort-btn" data-sort="beta">↓ 連動係數</button>
       <button class="btn" style="margin-left:8px;font-size:11px;padding:3px 10px;" onclick="CustomSector.openManage()">＋ 自訂族群</button>
     </div>
   </div>
@@ -1028,10 +1028,10 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
               <th style="width:28px;"></th>
               <th style="width:36px;">#</th>
               <th>台股族群</th>
-              <th data-sort="exp">預期 <span>↕</span></th>
-              <th data-sort="act">實際 <span>↕</span></th>
-              <th data-sort="gap" class="sorted">落差 <span>↓</span></th>
-              <th data-sort="beta">Beta <span>↕</span></th>
+              <th data-sort="exp">預期漲幅 <span>↕</span></th>
+              <th data-sort="act">實際漲幅 <span>↕</span></th>
+              <th data-sort="gap" class="sorted">補漲空間 <span>↓</span></th>
+              <th data-sort="beta">連動係數 <span>↕</span></th>
               <th>海外驅動</th>
               <th>代表股</th>
               <th>覆蓋</th>
@@ -1049,9 +1049,9 @@ body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Ne
         <div class="sidebar-meta" id="sidebarMeta">點選左側族群查看詳情</div>
       </div>
       <div class="sidebar-tabs">
-        <div class="sidebar-tab active" id="tabStrategy" onclick="UI.switchSidebarTab('strategy')">策略推薦</div>
-        <div class="sidebar-tab"        id="tabDetail"   onclick="UI.switchSidebarTab('detail')">個股詳情</div>
-        <div class="sidebar-tab"        id="tabHistory"  onclick="UI.switchSidebarTab('history')">歷史 Gap</div>
+        <div class="sidebar-tab active" id="tabDetail"   onclick="UI.switchSidebarTab('detail')">補漲個股</div>
+        <div class="sidebar-tab"        id="tabStrategy" onclick="UI.switchSidebarTab('strategy')">策略推薦</div>
+        <div class="sidebar-tab"        id="tabHistory"  onclick="UI.switchSidebarTab('history')">歷史走勢</div>
       </div>
       <div class="sidebar-body" id="sidebarBody">
         <div class="sidebar-placeholder">
@@ -2099,7 +2099,7 @@ const StrategyEngine = {
     const recs  = this.getRecommendations(sector);
     const gap   = sector.gap;
     const gapStr = gap !== null
-      ? `${gap > 0 ? '+' : ''}${gap.toFixed(2)}pp`
+      ? `${gap > 0 ? '+' : ''}${gap.toFixed(2)}%`
       : '—';
     const gapColor = gap === null ? 'var(--text-5)' : gap > 0 ? 'var(--up)' : gap < 0 ? 'var(--down)' : 'var(--text-4)';
 
@@ -2237,7 +2237,7 @@ const HistoryEngine = {
   STORAGE_KEY: 'stockRadar_gapHistory',
   MAX_DAYS:    90,
   _sidebarSector: null,  // 當前側邊欄選取的族群名稱
-  _sidebarTab:    'strategy',
+  _sidebarTab:    'detail',
 
   // ── 今日日期 key ──
   _todayKey() {
@@ -2405,12 +2405,12 @@ const HistoryEngine = {
           <div class="bt-stat-val">${stats.length} 個</div>
         </div>
         <div class="bt-stat">
-          <div class="bt-stat-label">平均正 Gap 族群</div>
+          <div class="bt-stat-label">平均有補漲空間族群</div>
           <div class="bt-stat-val pct-up">${stats.filter(s => s.avg > 0).length} 個</div>
         </div>
       </div>
       <div style="font-size:11px;color:var(--text-5);margin-bottom:10px;">
-        族群排行（按平均 Gap 降序）・正值代表補漲潛力
+        族群排行（按平均補漲空間降序）・正值代表補漲潛力
       </div>
       <div id="btRows">
         ${stats.map(s => {
@@ -2421,7 +2421,7 @@ const HistoryEngine = {
           <div class="bt-row" onclick="HistoryEngine.showSectorDetail('${s.name.replace(/'/g,"\\'")}')">
             <div class="bt-row-name">${s.name.replace('台股 ','')}</div>
             <div class="bt-bar-wrap"><div class="bt-bar-fill" style="width:${barW}%;background:${barColor};"></div></div>
-            <div class="bt-avg" style="color:${avgColor};">${s.avg > 0 ? '+' : ''}${s.avg.toFixed(2)}pp</div>
+            <div class="bt-avg" style="color:${avgColor};">${s.avg > 0 ? '+' : ''}${s.avg.toFixed(2)}%</div>
             <div class="bt-row-days" style="color:var(--text-6);">${s.days}天 ${Math.round(s.posRatio*100)}%↑</div>
           </div>`;
         }).join('')}
@@ -2439,19 +2439,19 @@ const HistoryEngine = {
       <div style="font-size:14px;font-weight:500;color:var(--text-2);margin-bottom:12px;">${name}</div>
       <div class="bt-stat-grid">
         <div class="bt-stat">
-          <div class="bt-stat-label">平均 Gap</div>
-          <div class="bt-stat-val ${s.avg>=0?'pct-up':'pct-down'}">${s.avg>=0?'+':''}${s.avg.toFixed(2)}pp</div>
+          <div class="bt-stat-label">平均補漲空間</div>
+          <div class="bt-stat-val ${s.avg>=0?'pct-up':'pct-down'}">${s.avg>=0?'+':''}${s.avg.toFixed(2)}%</div>
         </div>
         <div class="bt-stat">
           <div class="bt-stat-label">正值天數</div>
           <div class="bt-stat-val pct-up">${Math.round(s.posRatio*100)}%</div>
         </div>
         <div class="bt-stat">
-          <div class="bt-stat-label">最大 Gap</div>
-          <div class="bt-stat-val pct-up">+${s.maxGap.toFixed(2)}pp</div>
+          <div class="bt-stat-label">最大補漲空間</div>
+          <div class="bt-stat-val pct-up">+${s.maxGap.toFixed(2)}%</div>
         </div>
       </div>
-      <div style="font-size:11px;color:var(--text-5);margin-bottom:6px;">歷史 Gap 走勢（${series.length} 個交易日）</div>
+      <div style="font-size:11px;color:var(--text-5);margin-bottom:6px;">歷史補漲空間走勢（${series.length} 個交易日）</div>
       <div class="gap-history-chart" id="detailChart"></div>
       <div style="margin-top:14px;">
         <div style="font-size:11px;color:var(--text-5);margin-bottom:8px;">每日記錄</div>
@@ -2459,7 +2459,7 @@ const HistoryEngine = {
           ${[...series].reverse().map(d => `
             <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:0.5px solid var(--border);font-size:11px;">
               <span style="color:var(--text-5);">${d.date}</span>
-              <span class="${d.gap>=0?'pct-up':'pct-down'}" style="font-weight:500;">${d.gap>=0?'+':''}${d.gap.toFixed(2)}pp</span>
+              <span class="${d.gap>=0?'pct-up':'pct-down'}" style="font-weight:500;">${d.gap>=0?'+':''}${d.gap.toFixed(2)}%</span>
             </div>`).join('')}
         </div>
       </div>`;
@@ -2489,8 +2489,8 @@ const HistoryEngine = {
       <div class="history-tab-content">
         <div class="bt-stat-grid">
           <div class="bt-stat">
-            <div class="bt-stat-label">平均 Gap</div>
-            <div class="bt-stat-val ${s.avg>=0?'pct-up':'pct-down'}">${s.avg>=0?'+':''}${s.avg.toFixed(2)}pp</div>
+            <div class="bt-stat-label">平均補漲空間</div>
+            <div class="bt-stat-val ${s.avg>=0?'pct-up':'pct-down'}">${s.avg>=0?'+':''}${s.avg.toFixed(2)}%</div>
           </div>
           <div class="bt-stat">
             <div class="bt-stat-label">正值天數</div>
@@ -2502,13 +2502,13 @@ const HistoryEngine = {
           </div>
         </div>
         <div id="sidebarHitRate" style="margin-top:8px;"></div>
-        <div style="font-size:11px;color:var(--text-5);margin-bottom:6px;margin-top:4px;">Gap 歷史走勢</div>
+        <div style="font-size:11px;color:var(--text-5);margin-bottom:6px;margin-top:4px;">補漲空間歷史走勢</div>
         <div class="gap-history-chart" id="sidebarHistoryChart"></div>
         <div style="margin-top:10px;max-height:200px;overflow-y:auto;">
           ${[...series].reverse().slice(0,20).map(d => `
             <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:0.5px solid var(--border);font-size:11px;">
               <span style="color:var(--text-5);">${d.date}</span>
-              <span class="${d.gap>=0?'pct-up':'pct-down'}">${d.gap>=0?'+':''}${d.gap.toFixed(2)}pp</span>
+              <span class="${d.gap>=0?'pct-up':'pct-down'}">${d.gap>=0?'+':''}${d.gap.toFixed(2)}%</span>
             </div>`).join('')}
         </div>
       </div>`;
@@ -2994,8 +2994,8 @@ const StockLookup = {
       const isLead = diff != null && diff > 0.5;
 
       html += `<div class="lookup-row" style="flex-wrap:wrap;gap:8px;">
-        <div><div class="lookup-label">族群 Gap</div><div class="lookup-value ${(gap??0)>=0?'pct-up':'pct-down'}">${gap!=null?(gap>=0?'+':'')+gap.toFixed(2)+'pp':'—'}</div></div>
-        <div><div class="lookup-label">族群 Beta</div><div class="lookup-value">${beta!=null?beta.toFixed(2):'—'}</div></div>
+        <div><div class="lookup-label">族群補漲空間</div><div class="lookup-value ${(gap??0)>=0?'pct-up':'pct-down'}">${gap!=null?(gap>=0?'+':'')+gap.toFixed(2)+'%':'—'}</div></div>
+        <div><div class="lookup-label">族群連動係數</div><div class="lookup-value">${beta!=null?beta.toFixed(2):'—'}</div></div>
         <div><div class="lookup-label">族群平均漲跌</div><div class="lookup-value ${avgChg>=0?'pct-up':'pct-down'}">${avgChg>=0?'+':''}${avgChg.toFixed(2)}%</div></div>
         <div><div class="lookup-label">個股 vs 族群</div><div class="lookup-value ${diff!=null?(diff>=0?'pct-up':'pct-down'):''}">${diff!=null?(diff>=0?'+':'')+diff.toFixed(2)+'%':'—'}</div></div>
       </div>`;
@@ -3003,13 +3003,13 @@ const StockLookup = {
       // 建議
       let verdict = '', vClass = 'neutral';
       if (isLag && (gap??0) > 0) {
-        verdict = `📈 ${foundStock?.name||raw} 今日漲幅落後族群平均 ${Math.abs(diff).toFixed(1)}%，且族群有正 Gap，是補漲候選。`;
+        verdict = `📈 ${foundStock?.name||raw} 今日漲幅落後族群平均 ${Math.abs(diff).toFixed(1)}%，且族群還有補漲空間，是補漲候選。`;
         vClass = 'lag';
       } else if (isLead) {
         verdict = `⚠️ ${foundStock?.name||raw} 今日漲幅領先族群平均 ${diff.toFixed(1)}%，已超漲，追高需謹慎。`;
         vClass = 'lead';
       } else if ((gap??0) > 0) {
-        verdict = `→ ${foundStock?.name||raw} 與族群同步，族群整體有正 Gap ${gap?.toFixed(2)}pp，可搭配量能確認。`;
+        verdict = `→ ${foundStock?.name||raw} 與族群同步，族群整體有補漲空間 ${gap?.toFixed(2)}%，可搭配成交量確認。`;
         vClass = 'neutral';
       } else {
         verdict = `→ ${foundStock?.name||raw} 所屬族群 Gap 為負值，補跌風險較高，建議觀望。`;
@@ -3101,9 +3101,9 @@ const CompareUI = {
       <thead>
         <tr>
           <th>族群</th>
-          <th>Gap 落差</th>
-          <th>Beta</th>
-          <th>R²</th>
+          <th>補漲空間</th>
+          <th>連動係數</th>
+          <th>可信度</th>
           <th>今日實際</th>
           <th>海外驅動</th>
           <th>覆蓋率</th>
@@ -3123,9 +3123,9 @@ const CompareUI = {
               <div class="compare-sector-name">${r.sector.replace('台股 ','')}</div>
               <div class="compare-sector-tag">${r.driveName || r.market}</div>
             </td>
-            <td class="${gapCls}">${rankBadge(gapRank[r.sector])}${gap}${r.gap != null ? 'pp' : ''}</td>
+            <td class="${gapCls}">${rankBadge(gapRank[r.sector])}${gap}${r.gap != null ? '%' : ''}</td>
             <td class="${betaCls}">${rankBadge(betaRank[r.sector])}${beta}</td>
-            <td class="${r2Cls}">${r2}</td>
+            <td class="${r2Cls}">${r.r2 != null ? (r.r2*100).toFixed(0)+'%' : '—'}</td>
             <td class="${(r.act??0) >= 0 ? 'pct-up' : 'pct-down'}">${act}</td>
             <td><span class="overseas-tag ${r.market==='JP'?'jp':''}">${r.market}</span></td>
             <td>${r.cover}%</td>
@@ -3138,11 +3138,11 @@ const CompareUI = {
     const best = rows.reduce((a, b) => (a.gap ?? -999) > (b.gap ?? -999) ? a : b);
     const bestBeta = rows.filter(r => r.beta != null).reduce((a, b) => a.beta > b.beta ? a : b, rows[0]);
     let verdict = `<div class="compare-verdict">`;
-    verdict += `📊 <strong>${best.sector.replace('台股 ','')}</strong> Gap 落差最大（${best.gap?.toFixed(2)}pp），補漲空間最明顯。`;
+    verdict += `📊 <strong>${best.sector.replace('台股 ','')}</strong> 補漲空間最大（${best.gap?.toFixed(2)}%）。`;
     if (bestBeta && bestBeta.sector !== best.sector) {
-      verdict += `<br>⚡ <strong>${bestBeta.sector.replace('台股 ','')}</strong> Beta 最高（${bestBeta.beta?.toFixed(2)}），海外反彈時彈性最大。`;
+      verdict += `<br>⚡ <strong>${bestBeta.sector.replace('台股 ','')}</strong> 連動係數最高（${bestBeta.beta?.toFixed(2)}），海外反彈時彈性最大。`;
     }
-    verdict += `<br>💡 優先選 Gap 大 + Beta 高 + R² > 0.5 的族群，訊號可信度最高。</div>`;
+    verdict += `<br>💡 優先選補漲空間大 + 連動係數高 + 可信度 > 50% 的族群，訊號最可信。</div>`;
 
     el.innerHTML = tableHtml + verdict;
   },
@@ -3639,7 +3639,7 @@ const DataLayer = {
         // US10Y：Yahoo 給的是 yield 數字如 4.56，顯示成 4.56%
         val = q.price.toFixed(m.decimals) + '%';
         const chgPp = (q.chgAbs).toFixed(2);
-        chg = (q.chgAbs >= 0 ? '+' : '') + chgPp + 'pp';
+        chg = (q.chgAbs >= 0 ? '+' : '') + chgPp + '個百分點';
       } else {
         val = q.price >= 1000
           ? q.price.toLocaleString('en-US', { maximumFractionDigits: m.decimals })
@@ -4036,11 +4036,11 @@ const SectorState = {
   badge(r) {
     const s = this.get(r);
     const byLabel = {
-      '🔥 主力':   '🔥 主力：海外漲＋Gap 大＋Beta 有支撐，補漲動能最強',
+      '🔥 主力':   '🔥 主力：海外漲＋補漲空間大＋連動係數有支撐，補漲動能最強',
       '💪 逆勢強': '💪 逆勢強：海外下跌，台股逆勢上漲，資金相對強勢，波段最該關注',
-      '🔄 輪動':   '🔄 輪動：海外漲＋有正 Gap，台股尚未跟上',
+      '🔄 輪動':   '🔄 輪動：海外漲＋還有補漲空間，台股尚未跟上',
       '🛡️ 抗跌':   '🛡️ 抗跌：海外下跌，但台股跌幅明顯小於預期，相對抗跌',
-      '👀 觀望':   '👀 觀望：Gap 接近 0 或方向不明',
+      '👀 觀望':   '👀 觀望：補漲空間接近 0 或方向不明',
       '⚠️ 已超漲': '⚠️ 已超漲：台股漲幅已超過海外預期，不建議追高',
       '🌊 退潮':   '🌊 退潮：海外下跌＋台股跟跌甚至跌更多，資金退出中',
     };
@@ -4325,14 +4325,14 @@ const Renderer = {
       const isAlert   = STATE.gapAlert !== null && gap !== null && Math.abs(gap) >= STATE.gapAlert;
       const sectorStateKey = SectorState.get(r).key;
       const isRetreating  = sectorStateKey === 'retreat'; // 退潮時不顯示入場按鈕
-      const alertDot  = isAlert ? `<span class="gap-alert-dot" title="Gap 絕對值 ${Math.abs(gap).toFixed(2)}pp 超過警示閾值 ${STATE.gapAlert}pp&#10;${(gap??0)>=0?'正 Gap：補漲空間（海外漲時）或補跌壓力（海外跌時）':'負 Gap：已超漲（海外漲時）或跌超預期（海外跌時）'}"></span>` : '';
+      const alertDot  = isAlert ? `<span class="gap-alert-dot" title="補漲空間絕對值 ${Math.abs(gap).toFixed(2)}% 超過警示閾值 ${STATE.gapAlert}%&#10;${(gap??0)>=0?'正值：有補漲空間（海外漲時）或補跌壓力（海外跌時）':'負值：已超漲（海外漲時）或跌超預期（海外跌時）'}"></span>` : '';
 
       const betaCell = (r.beta !== null && r.beta !== undefined)
         ? `<div style="font-size:12px;font-weight:500;color:var(--text-2);">${(+r.beta).toFixed(2)}</div>
            ${(r.r2 !== null && r.r2 !== undefined) ? `
            <div class="r2-wrap">
              <div class="r2-bar-bg"><div class="r2-bar-fill" style="width:${((+r.r2)*100).toFixed(0)}%"></div></div>
-             <div class="r2-text">R² ${(+r.r2).toFixed(2)}</div>
+             <div class="r2-text" title="可信度：這個連動係數的統計解釋力，越高代表越可信">可信度 ${((+r.r2)*100).toFixed(0)}%</div>
            </div>` : ''}`
         : `<span style="color:var(--text-6);">—</span>`;
 
@@ -4354,7 +4354,7 @@ const Renderer = {
         <td><span class="pct ${(r.exp??0)>=0?'pct-up':'pct-down'}">${this.fmtOrDash(r.exp)}</span></td>
         <td><span class="pct ${(r.act??0)>=0?'pct-up':'pct-down'}">${this.fmtOrDash(r.act)}</span></td>
         <td>
-          <span class="pct ${(gap??0)>=0?'pct-down':'pct-up'}" style="font-weight:600;">${this.fmtOrDash(gap,'pp')}${alertDot}</span>
+          <span class="pct ${(gap??0)>=0?'pct-down':'pct-up'}" style="font-weight:600;">${this.fmtOrDash(gap)}${alertDot}</span>
           ${gap !== null ? `<div class="gap-bar" style="width:${gapBarW}%;background:${gapBarColor};"></div>` : ''}
           ${gap !== null ? '<div style="margin-top:3px;display:flex;gap:4px;flex-wrap:wrap;">' + (isRetreating ? '<span class="portfolio-add-btn" style="background:rgba(107,122,142,0.1);border-color:var(--border);color:var(--text-4);cursor:default;" title="板塊退潮中，不建議入場">🌊 退潮中</span>' : Renderer._entryBtn(r, gap)) + '<a class="portfolio-add-btn" href="/signal.html?sector=' + encodeURIComponent(r.sector) + '&gap=' + (gap?.toFixed(2)||'') + '&beta=' + (r.beta?.toFixed(2)||'') + '&r2=' + (r.r2?.toFixed(2)||'') + '&market=' + r.market + '" target="_blank" onclick="event.stopPropagation()" style="background:rgba(245,158,11,0.1);border-color:#5a3500;color:var(--warn);">📓 記錄訊號</a></div>' : ''}
         </td>
@@ -4394,35 +4394,35 @@ const Renderer = {
 
     const isJP = r.market === 'JP';
     const betaStr = r.beta !== null && r.beta !== undefined
-      ? `<span style="font-size:10px;color:var(--text-5);">β = ${r.beta.toFixed(2)}</span>`
-      : `<span style="font-size:10px;color:var(--text-6);">β 計算中</span>`;
+      ? `<span style="font-size:10px;color:var(--text-5);">連動係數 ${r.beta.toFixed(2)}</span>`
+      : `<span style="font-size:10px;color:var(--text-6);">連動係數計算中</span>`;
 
     // VIX Gate 警告
     const vixItem  = (STATE.macroItems||[]).find(m => m.label === 'VIX');
     const vixLevel = parseFloat(vixItem?.val) || 0;
     const vixGate  = vixLevel >= 25
-      ? `<div style="margin-bottom:10px;padding:8px 12px;background:rgba(239,68,68,0.1);border:0.5px solid rgba(239,68,68,0.4);border-radius:6px;font-size:11px;color:var(--down);">🛑 <b>VIX ${vixLevel.toFixed(1)}（高恐慌）</b>　Gap 補漲訊號可靠度低，市場 risk-off，建議觀望</div>`
+      ? `<div style="margin-bottom:10px;padding:8px 12px;background:rgba(239,68,68,0.1);border:0.5px solid rgba(239,68,68,0.4);border-radius:6px;font-size:11px;color:var(--down);">🛑 <b>VIX ${vixLevel.toFixed(1)}（高恐慌）</b>　補漲訊號可靠度低，市場恐慌性賣壓，建議觀望</div>`
       : vixLevel >= 20
-      ? `<div style="margin-bottom:10px;padding:8px 12px;background:rgba(251,191,36,0.08);border:0.5px solid rgba(251,191,36,0.35);border-radius:6px;font-size:11px;color:var(--warn,#fbbf24);">⚠️ <b>VIX ${vixLevel.toFixed(1)}（偏高）</b>　Gap 訊號需搭配量能確認，避免倉位過重</div>`
+      ? `<div style="margin-bottom:10px;padding:8px 12px;background:rgba(251,191,36,0.08);border:0.5px solid rgba(251,191,36,0.35);border-radius:6px;font-size:11px;color:var(--warn,#fbbf24);">⚠️ <b>VIX ${vixLevel.toFixed(1)}（偏高）</b>　訊號需搭配成交量確認，避免倉位過重</div>`
       : '';
 
     let html = `
-      <button class="compare-btn">+ 比較落差組合</button>
+      <button class="compare-btn">+ 比較補漲空間</button>
       ${vixGate}
       <div class="sidebar-metric" style="margin-top:14px;">
         <div>
-          <div class="s-metric-label">預期 ${betaStr}</div>
+          <div class="s-metric-label">預期漲幅 ${betaStr}</div>
           <div class="s-metric-val ${(r.exp??0)>=0?'pct-up':'pct-down'}">${this.fmtOrDash(r.exp)}</div>
         </div>
         <div>
-          <div class="s-metric-label">實際</div>
+          <div class="s-metric-label">實際漲幅</div>
           <div class="s-metric-val ${(r.act??0)>=0?'pct-up':'pct-down'}">${this.fmtOrDash(r.act)}</div>
         </div>
         <div>
-          <div class="s-metric-label">落差</div>
+          <div class="s-metric-label">${r.gap !== null && r.gap < 0 ? '已超漲幅度' : '補漲空間'}</div>
           <div class="s-metric-val">
             ${r.gap !== null
-              ? `<span class="gap-pill">${this.fmt(r.gap)}pp</span>`
+              ? `<span class="gap-pill">${r.gap >= 0 ? '+' : ''}${Math.abs(r.gap).toFixed(2)}%</span>`
               : `<span style="color:var(--text-6);">—</span>`}
           </div>
         </div>
@@ -4435,7 +4435,7 @@ const Renderer = {
           const pos = d.gap >= 0;
           const color = pos ? 'var(--up)' : 'var(--down)';
           const bg    = pos ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)';
-          const label = (pos ? '+' : '') + d.gap.toFixed(1) + 'pp';
+          const label = (pos ? '+' : '') + d.gap.toFixed(1) + '%';
           const dateStr = d.date.slice(5);
           return `<span title="${dateStr}: ${label}" style="display:inline-flex;align-items:center;justify-content:center;min-width:38px;padding:2px 5px;border-radius:4px;background:${bg};color:${color};font-size:10px;font-weight:600;border:0.5px solid ${color}30;">${label}</span>`;
         }).join('<span style="color:var(--text-6);font-size:9px;padding:0 1px;">›</span>');
@@ -4511,11 +4511,12 @@ const Renderer = {
 
     r.stocks.forEach((s, i) => {
       const sSym = CONFIG.stockSymbolMap[s.id] || (s.id + '.TW');
-      const sUrl = '/portfolio.html?add=' + encodeURIComponent(sSym) + '&sector=' + encodeURIComponent(r.sector) + '&price=' + (s.price || '');
+      const sUrl = '/portfolio.html?add=' + encodeURIComponent(sSym) + '&sector=' + encodeURIComponent(r.sector) + '&price=' + (s.price || '') + '&exitMode=smart';
       const sGap = (r.exp !== null && s.chg !== null) ? parseFloat((r.exp - s.chg).toFixed(2)) : null;
+      const sGapLabel = sGap === null ? '' : sGap >= 0 ? '補漲空間 ' : '已超漲 ';
       const sGapHtml = sGap !== null
-        ? `<span style="color:${sGap >= 0 ? 'var(--down)' : 'var(--up)'};">${sGap >= 0 ? '+' : ''}${sGap}pp</span>`
-        : '<span style="color:var(--text-6);">—</span>';
+        ? `<span style="color:${sGap >= 0 ? 'var(--down)' : 'var(--up)'};">${sGapLabel}${sGap >= 0 ? '+' : ''}${Math.abs(sGap)}%</span>`
+        : '<span style="color:var(--text-6);">此股暫無補漲空間資料</span>';
       html += `
         <div class="stock-sparkline-card ${i === STATE.selectedStock ? 'selected' : ''}" onclick="UI.selectStock(${i})" id="ssc_${i}">
           <div class="ssc-header">
@@ -4536,8 +4537,8 @@ const Renderer = {
             <span>${s.price ? s.price.toLocaleString() + ' TWD' : '—'}</span>
           </div>
           <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 8px 4px;border-top:0.5px solid var(--border);margin-top:2px;">
-            <span style="font-size:10px;color:var(--text-5);">個股落差 ${sGapHtml}</span>
-            <a class="portfolio-add-btn" href="${sUrl}" target="_blank" onclick="event.stopPropagation()" title="${s.id} ${s.name} 加入模擬倉位">＋ 加倉</a>
+            <span style="font-size:10px;">${sGapHtml}</span>
+            <a class="portfolio-add-btn" href="${sUrl}" target="_blank" onclick="event.stopPropagation()" title="一鍵加入模擬倉位並自動監控（智慧動態出場）">＋ 一鍵加入模擬倉</a>
           </div>
         </div>`;
     });
@@ -4554,7 +4555,7 @@ const Renderer = {
         const isLag = diff < -0.3;
         const isLead = diff > 0.3;
         const cSym = CONFIG.stockSymbolMap[s.id] || (s.id + '.TW');
-        const cUrl = '/portfolio.html?add=' + encodeURIComponent(cSym) + '&sector=' + encodeURIComponent(r.sector) + '&price=' + (s.price || '');
+        const cUrl = '/portfolio.html?add=' + encodeURIComponent(cSym) + '&sector=' + encodeURIComponent(r.sector) + '&price=' + (s.price || '') + '&exitMode=smart';
         html += `<div class="catchup-row ${isLead ? 'leader' : ''}">
           <div class="catchup-left">
             <div class="catchup-rank ${isLag ? 'lag' : ''}">${i + 1}</div>
@@ -4567,7 +4568,7 @@ const Renderer = {
             <div class="catchup-chg ${(s.chg??0)>=0?'pct-up':'pct-down'}">${s.chg >= 0 ? '+' : ''}${s.chg.toFixed(2)}%</div>
             ${isLag  ? `<span class="catchup-badge lag-badge">落後 ${Math.abs(diff).toFixed(1)}%</span>` : ''}
             ${isLead ? `<span class="catchup-badge lead-badge">領先 ${diff.toFixed(1)}%</span>` : ''}
-            <a class="portfolio-add-btn" href="${cUrl}" target="_blank" onclick="event.stopPropagation()" style="margin-top:3px;">＋ 加倉</a>
+            <a class="portfolio-add-btn" href="${cUrl}" target="_blank" onclick="event.stopPropagation()" style="margin-top:3px;" title="一鍵加入模擬倉位並自動監控（智慧動態出場）">＋ 一鍵加入</a>
           </div>
         </div>`;
       });
@@ -4802,16 +4803,16 @@ const Renderer = {
     const sym   = encodeURIComponent(CONFIG.stockSymbolMap[s0?.id] || s0?.id || '');
     const sec   = encodeURIComponent(r.sector);
     const price = s0?.price || '';
-    const url   = '/portfolio.html?add=' + sym + '&sector=' + sec + '&price=' + price;
+    const url   = '/portfolio.html?add=' + sym + '&sector=' + sec + '&price=' + price + '&exitMode=smart';
 
     if (dc >= 0 && gv > 0)
-      return '<a class="portfolio-add-btn" href="' + url + '" target="_blank" onclick="event.stopPropagation()" title="海外上漲＋正 Gap，補漲機會">＋ 模擬倉位</a>';
+      return '<a class="portfolio-add-btn" href="' + url + '" target="_blank" onclick="event.stopPropagation()" title="海外上漲，台股還有補漲空間">＋ 一鍵加入模擬倉</a>';
     if (dc < 0 && gv < 0)
-      return '<a class="portfolio-add-btn" href="' + url + '" target="_blank" onclick="event.stopPropagation()" title="跌幅超過預期，可能反彈" style="background:rgba(139,92,246,0.15);border-color:#5b21b6;color:#a78bfa;">＋ 模擬倉位（反彈）</a>';
+      return '<a class="portfolio-add-btn" href="' + url + '" target="_blank" onclick="event.stopPropagation()" title="跌幅超過預期，可能反彈" style="background:rgba(139,92,246,0.15);border-color:#5b21b6;color:#a78bfa;">＋ 一鍵加入（反彈）</a>';
     if (dc >= 0 && gv < 0)
       return '<span class="portfolio-add-btn" style="background:rgba(107,122,142,0.1);border-color:var(--border);color:var(--text-4);cursor:default;" title="台股已超漲，不建議追">⚠️ 已超漲</span>';
     if (dc < 0 && gv > 0)
-      return '<span class="portfolio-add-btn" style="background:rgba(239,68,68,0.1);border-color:#5a1515;color:var(--down);cursor:default;" title="海外下跌＋正 Gap，補跌壓力">⚠️ 補跌風險</span>';
+      return '<span class="portfolio-add-btn" style="background:rgba(239,68,68,0.1);border-color:#5a1515;color:var(--down);cursor:default;" title="海外下跌，台股還有跟跌空間，補跌壓力較大">⚠️ 補跌風險</span>';
     return '';
   },
 
@@ -4852,8 +4853,8 @@ const Renderer = {
 
     if (worstDrive <= -5) {
       type  = 'danger';
-      title = `⚠️ 海外驅動今日暴跌 ${worstDrive.toFixed(1)}%，Gap 為補跌方向`;
-      sub   = `${posPct}% 族群出現正 Gap，代表台股尚未充分反映跌幅，明日開盤留意補跌風險。不建議在確認止跌前進場。`;
+      title = `⚠️ 海外驅動今日暴跌 ${worstDrive.toFixed(1)}%，留意補跌風險`;
+      sub   = `${posPct}% 族群顯示還有補漲空間，代表台股尚未充分反映跌幅，明日開盤留意補跌風險。不建議在確認止跌前進場。`;
     } else if (techWeak && djiaOk) {
       // SOX 跌但道瓊撐住 = 科技賣壓、資金輪傳統
       type  = 'warning';
@@ -4861,17 +4862,17 @@ const Renderer = {
       sub   = `科技族群補跌壓力大，傳統產業族群相對穩定。建議迴避半導體族群，可觀察連動 SPX 的非科技族群。`;
     } else if (worstDrive <= -2) {
       type  = 'warning';
-      title = `⚡ 海外驅動今日下跌 ${worstDrive.toFixed(1)}%，正 Gap 需確認方向`;
-      sub   = `正 Gap 可能是補漲空間，也可能是補跌壓力。建議搭配成交量與均線方向確認後再進場。`;
+      title = `⚡ 海外驅動今日下跌 ${worstDrive.toFixed(1)}%，補漲空間需確認方向`;
+      sub   = `補漲空間可能是真的補漲機會，也可能是補跌壓力。建議搭配成交量與均線方向確認後再進場。`;
     } else if (techStrong && avgGap >= 1.5) {
       // SOX + NASDAQ 雙強 = 科技補漲訊號最強
       type  = 'positive';
       title = `✅ SOX +${soxChg?.toFixed(1)}% ／ NASDAQ +${nasdaqChg?.toFixed(1)}%，科技補漲訊號強`;
-      sub   = `半導體與科技大盤雙強，${posPct}% 族群有正 Gap。優先關注 SOX 連動族群（Beta > 0.8，R² > 0.5）。`;
+      sub   = `半導體與科技大盤雙強，${posPct}% 族群還有補漲空間。優先關注 SOX 連動族群（連動係數 > 0.8，可信度 > 50%）。`;
     } else if (avgGap >= 1.5 && posPct >= 60) {
       type  = 'positive';
-      title = `✅ 今日 ${posPct}% 族群有正 Gap，海外表現穩定`;
-      sub   = `平均落差 +${avgGap.toFixed(2)}pp，補漲訊號明確。優先關注 Beta > 0.8 且 R² > 0.5 的族群。`;
+      title = `✅ 今日 ${posPct}% 族群還有補漲空間，海外表現穩定`;
+      sub   = `平均補漲空間 +${avgGap.toFixed(2)}%，補漲訊號明確。優先關注連動係數 > 0.8 且可信度 > 50% 的族群。`;
     } else {
       el.style.display = 'none';
       return;

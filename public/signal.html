@@ -204,9 +204,9 @@ body{background:var(--bg-0);color:var(--text-1);font-family:'Helvetica Neue','Pi
       <div class="signal-row pending-grid header-row">
         <span class="cell header">記錄日期</span>
         <span class="cell header">族群</span>
-        <span class="cell header">Gap</span>
-        <span class="cell header">Beta</span>
-        <span class="cell header">R²</span>
+        <span class="cell header">補漲空間</span>
+        <span class="cell header">連動係數</span>
+        <span class="cell header">可信度</span>
         <span class="cell header">觀察週期</span>
         <span class="cell header">到期日</span>
         <span class="cell header">狀態</span>
@@ -222,8 +222,8 @@ body{background:var(--bg-0);color:var(--text-1);font-family:'Helvetica Neue','Pi
       <div class="signal-row done-grid header-row">
         <span class="cell header">記錄日期</span>
         <span class="cell header">族群</span>
-        <span class="cell header">Gap</span>
-        <span class="cell header">Beta</span>
+        <span class="cell header">補漲空間</span>
+        <span class="cell header">連動係數</span>
         <span class="cell header">實際漲幅</span>
         <span class="cell header">觀察週期</span>
         <span class="cell header">結果</span>
@@ -237,11 +237,11 @@ body{background:var(--bg-0);color:var(--text-1);font-family:'Helvetica Neue','Pi
   <div id="panelStats" style="display:none;">
     <div class="stats-grid">
       <div class="stats-card">
-        <div class="stats-title">依 GAP 範圍</div>
+        <div class="stats-title">依補漲空間範圍</div>
         <div id="statsByGap"><div class="stats-empty">尚無足夠數據</div></div>
       </div>
       <div class="stats-card">
-        <div class="stats-title">依 BETA 範圍</div>
+        <div class="stats-title">依連動係數範圍</div>
         <div id="statsByBeta"><div class="stats-empty">尚無足夠數據</div></div>
       </div>
       <div class="stats-card">
@@ -257,7 +257,7 @@ body{background:var(--bg-0);color:var(--text-1);font-family:'Helvetica Neue','Pi
 <div class="overlay" id="addOverlay" onclick="closeModal(event)">
   <div class="modal" onclick="event.stopPropagation()">
     <div class="modal-header">
-      <span class="modal-title" id="modalTitle">記錄 Gap 訊號</span>
+      <span class="modal-title" id="modalTitle">記錄補漲訊號</span>
       <button class="modal-close" onclick="closeAddModal()">✕</button>
     </div>
     <div class="modal-body">
@@ -276,17 +276,17 @@ body{background:var(--bg-0);color:var(--text-1);font-family:'Helvetica Neue','Pi
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label>Gap 落差（pp）*</label>
+          <label>補漲空間（%）*</label>
           <input type="number" id="fGap" placeholder="例：2.5" step="0.1"/>
         </div>
         <div class="form-group">
-          <label>Beta</label>
+          <label>連動係數</label>
           <input type="number" id="fBeta" placeholder="例：0.85" step="0.01"/>
         </div>
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label>R²</label>
+          <label>可信度（0~1）</label>
           <input type="number" id="fR2" placeholder="例：0.62" step="0.01" min="0" max="1"/>
         </div>
         <div class="form-group">
@@ -315,11 +315,11 @@ body{background:var(--bg-0);color:var(--text-1);font-family:'Helvetica Neue','Pi
       <div class="story-label">📖 Lynch 測試（兩分鐘故事）</div>
       <div class="form-group">
         <label>進場故事 <span style="color:var(--down);">*</span> <span style="color:var(--text-5);font-size:10px;">必填 — 兩句話說清楚為什麼進這筆</span></label>
-        <textarea id="fStory" rows="2" placeholder="例：SOX 大漲 8%，IC設計 Gap +5pp，補漲可能在 1-2 天出現" style="border-color: var(--border);" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor=this.value?'var(--border)':'var(--down)'"></textarea>
+        <textarea id="fStory" rows="2" placeholder="例：SOX 大漲 8%，IC設計還有 5% 補漲空間，補漲可能在 1-2 天出現" style="border-color: var(--border);" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor=this.value?'var(--border)':'var(--down)'"></textarea>
       </div>
       <div class="form-group">
         <label>出場條件（故事結束的信號）</label>
-        <input type="text" id="fExitCondition" placeholder="例：Gap 收斂到 0、SOX 轉跌超 2%、開盤量能不足"/>
+        <input type="text" id="fExitCondition" placeholder="例：補漲空間收斂到 0、SOX 轉跌超 2%、開盤量能不足"/>
       </div>
     </div>
     <div class="modal-footer">
@@ -487,13 +487,13 @@ function renderSummary() {
   document.getElementById('sumPending').textContent  = `${pending.length} 筆待回填`;
   document.getElementById('sumAvgGain').textContent  = avgGain !== null ? `+${avgGain.toFixed(2)}%` : '—';
 
-  // 最佳條件：找命中率最高的 Gap 範圍
-  const groups = { '1-2pp':[], '2-3pp':[], '3pp+':[] };
+  // 最佳條件：找命中率最高的補漲空間範圍
+  const groups = { '1-2%':[], '2-3%':[], '3%以上':[] };
   done.forEach(s => {
     const g = s.gap;
-    if (g < 2) groups['1-2pp'].push(s);
-    else if (g < 3) groups['2-3pp'].push(s);
-    else groups['3pp+'].push(s);
+    if (g < 2) groups['1-2%'].push(s);
+    else if (g < 3) groups['2-3%'].push(s);
+    else groups['3%以上'].push(s);
   });
   let bestKey = null, bestRate = -1;
   Object.entries(groups).forEach(([k,v]) => {
@@ -502,7 +502,7 @@ function renderSummary() {
       if (r > bestRate) { bestRate = r; bestKey = k; }
     }
   });
-  document.getElementById('sumBestCondition').textContent    = bestKey ? `Gap ${bestKey}` : '—';
+  document.getElementById('sumBestCondition').textContent    = bestKey ? `補漲空間 ${bestKey}` : '—';
   document.getElementById('sumBestConditionSub').textContent = bestKey ? `命中率 ${Math.round(bestRate*100)}%（${groups[bestKey].length} 筆）` : '累積更多數據後顯示';
 }
 
@@ -539,7 +539,7 @@ function renderPending() {
         <div class="cell sym" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${s.sector.replace('台股 ','')}</div>
         ${s.story ? `<div class="signal-story" title="${s.story}">${s.story}</div>` : ''}
       </span>
-      <span class="cell ${(s.gap??0)>=0?'up':'down'}">${(s.gap??0)>=0?'+':''}${fmt(s.gap)}pp</span>
+      <span class="cell ${(s.gap??0)>=0?'up':'down'}">${(s.gap??0)>=0?'+':''}${fmt(s.gap)}%</span>
       <span class="cell">${fmt(s.beta)}</span>
       <span class="cell muted">${fmt(s.r2)}</span>
       <span class="cell muted">${daysLabel}</span>
@@ -576,7 +576,7 @@ function renderDone() {
         <div class="cell sym" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${s.sector.replace('台股 ','')}</div>
         ${s.story ? `<div class="signal-story" title="${s.story}">${s.story}</div>` : ''}
       </span>
-      <span class="cell ${(s.gap??0)>=0?'up':'down'}">${(s.gap??0)>=0?'+':''}${fmt(s.gap)}pp</span>
+      <span class="cell ${(s.gap??0)>=0?'up':'down'}">${(s.gap??0)>=0?'+':''}${fmt(s.gap)}%</span>
       <span class="cell">${fmt(s.beta)}</span>
       <span class="cell ${gainCls}">${gainStr}</span>
       <span class="cell muted">${daysLabel}</span>
@@ -621,23 +621,23 @@ function renderStats() {
     }).join('') || `<div class="stats-empty">尚無足夠數據</div>`;
   };
 
-  // Gap 分組
+  // 補漲空間分組
   const gapMap = makeGroups({}, s => {
     if (s.gap < 1) return null;
-    if (s.gap < 2) return '1-2 pp';
-    if (s.gap < 3) return '2-3 pp';
-    return '3pp 以上';
+    if (s.gap < 2) return '1-2%';
+    if (s.gap < 3) return '2-3%';
+    return '3%以上';
   });
-  document.getElementById('statsByGap').innerHTML = renderGroupHtml(gapMap, ['1-2 pp','2-3 pp','3pp 以上']);
+  document.getElementById('statsByGap').innerHTML = renderGroupHtml(gapMap, ['1-2%','2-3%','3%以上']);
 
-  // Beta 分組
+  // 連動係數分組
   const betaMap = makeGroups({}, s => {
     if (!s.beta) return null;
-    if (s.beta < 0.5) return 'Beta < 0.5';
-    if (s.beta < 1)   return 'Beta 0.5-1';
-    return 'Beta > 1';
+    if (s.beta < 0.5) return '連動係數 < 0.5';
+    if (s.beta < 1)   return '連動係數 0.5-1';
+    return '連動係數 > 1';
   });
-  document.getElementById('statsByBeta').innerHTML = renderGroupHtml(betaMap, ['Beta < 0.5','Beta 0.5-1','Beta > 1']);
+  document.getElementById('statsByBeta').innerHTML = renderGroupHtml(betaMap, ['連動係數 < 0.5','連動係數 0.5-1','連動係數 > 1']);
 
   // 觀察天數分組
   const daysMap = makeGroups({}, s => DAYS_LABELS[s.days] || `${s.days}天`);
@@ -703,7 +703,7 @@ function saveSignal() {
   const exitCondition = document.getElementById('fExitCondition').value.trim();
 
   if (!sector) { showToast('請輸入族群名稱', ''); return; }
-  if (isNaN(gap)) { showToast('請輸入正確的 Gap 值', ''); return; }
+  if (isNaN(gap)) { showToast('請輸入正確的補漲空間數值', ''); return; }
   if (!story) { showToast('請填寫進場故事（兩分鐘測試）', ''); return; }
 
   const stocks = JSON.parse(document.getElementById('addOverlay').dataset.stocks || '[]');
@@ -756,7 +756,7 @@ function openFill(id) {
   if (!s) return;
   STATE.fillId = id;
   document.getElementById('fillInfo').innerHTML =
-    `<strong>${s.sector}</strong>　Gap +${fmt(s.gap)}pp　Beta ${fmt(s.beta)}　R² ${fmt(s.r2)}<br>
+    `<strong>${s.sector}</strong>　補漲空間 +${fmt(s.gap)}%　連動係數 ${fmt(s.beta)}　可信度 ${fmt(s.r2)}<br>
      記錄日：${s.recordDate}　到期日：${s.dueDate}　命中門檻：漲幅 ≥ ${s.threshold}%`
     + (s.story ? `<br><span style="color:var(--text-4);font-size:11px;">📖 故事：${s.story}</span>` : '')
     + (s.exitCondition ? `<br><span style="color:var(--warn);font-size:11px;">🚪 出場條件：${s.exitCondition}</span>` : '');
