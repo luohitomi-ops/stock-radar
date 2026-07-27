@@ -30,7 +30,7 @@ const WATCH_SECTORS = [
   { sector:'台股 交換器 / 網通設備',        driveIndex:'SOX',  stocks:['2345.TW','3596.TW'] },
   { sector:'台股 IC 設計 / 繪圖晶片',      driveIndex:'SOX',  stocks:['2454.TW','2379.TW'] },
   { sector:'台股 ASIC / 客製晶片',         driveIndex:'SOX',  stocks:['2454.TW','3443.TW'] },
-  { sector:'台股 ABF 載板 / PCB',          driveIndex:'SOX',  stocks:['3037.TW','8046.TWO'] },
+  { sector:'台股 ABF 載板 / PCB',          driveIndex:'SOX',  stocks:['3037.TW','8046.TW'] },
   { sector:'台股 矽光子 / CPO',            driveIndex:'SOX',  stocks:['2330.TW','3711.TW'] },
   { sector:'台股 電力設備 / 變壓器',        driveIndex:'SOX',  stocks:['1519.TW','1513.TW'] },
   { sector:'台股 鴻海 / 代工龍頭',         driveIndex:'SOX',  stocks:['2317.TW','2357.TW'] },

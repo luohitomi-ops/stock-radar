@@ -1326,16 +1326,16 @@ const CONFIG = {
     '6770': '6770.TW',   // 力積電
     '6415': '6415.TW',   // 矽力-KY
     '8081': '8081.TW',   // 致新
-    '5347': '5347.TW',   // 世界先進
+    '5347': '5347.TWO',  // 世界先進（上櫃，2026-07-27 修正：原.TW抓不到資料）
     '3443': '3443.TW',   // 創意
-    '8299': '8299.TW',   // 群聯
+    '8299': '8299.TWO',  // 群聯（上櫃，2026-07-27 修正：原.TW抓不到資料）
     '3260': '3260.TW',   // 威剛
     '6515': '6515.TW',   // 穎崴
     '3016': '3016.TW',   // 嘉晶
     '6523': '6523.TW',   // 達興材料（ABF 載板材料）
     '2345': '2345.TW',   // 智邦
     '3596': '3596.TW',   // 智易
-    '4524': '4524.TWO',  // 中磊
+    '3380': '3380.TW',   // 中磊（Alpha Networks，2026-07-27 修正：原代號4524整個打錯，正確為3380）
     '6116': '6116.TWO',  // 彩晶（矽光子/CPO）
     '3014': '3014.TW',   // 聯陽（矽光子）
     '2356': '2356.TW',   // 英業達
@@ -1389,10 +1389,7 @@ const CONFIG = {
     '6488': '6488.TWO',  // 環球晶
     '3450': '3450.TW',   // 聯鈞
     '2376': '2376.TW',   // 技嘉
-      '3324': '3324.TW',   // 雙鴻
-      '3017': '3017.TW',   // 奇鋐
       '2421': '2421.TW',   // 建準
-      '3536': '3536.TW',   // 台晶科
       '3664': '3664.TWO',  // 波若威
       '3630': '3630.TWO',  // 新鉅科
       '2634': '2634.TW',   // 漢翔
@@ -1408,9 +1405,6 @@ const CONFIG = {
       '3661': '3661.TW',   // 世芯-KY
       '3051': '3051.TW',   // 智原
       '2383': '2383.TW',   // 台光電
-      '6213': '6213.TW',   // 聯茂
-      '8046': '8046.TWO',  // 南電
-      '2049': '2049.TW',   // 上銀
     '3231': '3231.TW',   // 緯創
     '2618': '2618.TW',   // 長榮航
     '2610': '2610.TW',   // 華航
@@ -1470,7 +1464,7 @@ const CONFIG = {
       stocks:[
         {id:'2345',name:'智邦', price:520, chg:null, role:'龍頭', seed:701},
         {id:'3596',name:'智易', price:178, chg:null, role:'核心', seed:702},
-        {id:'4524',name:'中磊', price:96,  chg:null, role:'觀察', seed:703},
+        {id:'3380',name:'中磊', price:30,  chg:null, role:'觀察', seed:703},
       ]},
     { hot:true,  sector:'台股 IC 設計 / 繪圖晶片', exp:null, act:null, gap:null,
       market:'US', driveName:'美股 費城半導體', driveIndex:'SOX', driveChg:null, cover:100,
@@ -1747,8 +1741,7 @@ const CONFIG = {
     { hot:false, sector:'台股 高速傳輸 / 光纖模組', exp:null, act:null, gap:null,
       market:'US', driveName:'美股 費城半導體', driveIndex:'SOX', driveChg:null, cover:75,
       stocks:[
-        {id:'3536',name:'台晶科', price:180, chg:null, role:'龍頭', seed:5011},
-        {id:'3664',name:'波若威', price:95,  chg:null, role:'核心', seed:5012},
+        {id:'3664',name:'波若威', price:95,  chg:null, role:'龍頭', seed:5012},
         {id:'3630',name:'新鉅科', price:75,  chg:null, role:'核心', seed:5013},
       ]},
     { hot:true,  sector:'台股 IP 授權 / 矽智財', exp:null, act:null, gap:null,
