@@ -95,6 +95,9 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
+  // 測試模式：?dryRun=1 → 只回傳計算結果，不寫 Redis、不發 TG。給部署驗證用，避免每次測試都推播/覆蓋資料。
+  const dryRun = req.query.dryRun === '1';
+
   const kvUrl   = process.env.UPSTASH_REDIS_REST_URL;
   const kvToken = process.env.UPSTASH_REDIS_REST_TOKEN;
   if (!kvUrl || !kvToken) {
@@ -222,16 +225,18 @@ export default async function handler(req, res) {
     const pad = n => String(n).padStart(2, '0');
     const today = `${nowTW.getFullYear()}-${pad(nowTW.getMonth()+1)}-${pad(nowTW.getDate())}`;
 
-    await kvSet(kvUrl, kvToken, `snapshot:${today}`, snap);
-    await kvSet(kvUrl, kvToken, 'snapshot:latest', today, 86400 * 7); // latest 7天TTL
+    if (!dryRun) {
+      await kvSet(kvUrl, kvToken, `snapshot:${today}`, snap);
+      await kvSet(kvUrl, kvToken, 'snapshot:latest', today, 86400 * 7); // latest 7天TTL
+    }
 
-    console.log(`[Snapshot] ${today} saved ${Object.keys(snap).length} sectors` +
+    console.log(`[Snapshot]${dryRun ? ' [dryRun]' : ''} ${today} saved ${Object.keys(snap).length} sectors` +
       (failedSectors.length ? `, ${failedSectors.length} 失敗: ${failedSectors.join(', ')}` : ''));
 
-    // 5. 發 Telegram 確認通知
+    // 5. 發 Telegram 確認通知（dryRun 時不發，避免驗證測試洗版使用者的 TG）
     const tgToken  = process.env.TELEGRAM_TOKEN;
     const tgChatId = process.env.TELEGRAM_CHAT_ID;
-    if (tgToken && tgChatId) {
+    if (!dryRun && tgToken && tgChatId) {
       const sampleText = Object.entries(snap)
         .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))
         .slice(0, 3)
@@ -251,6 +256,7 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       ok: true,
+      dryRun,
       date: today,
       sectors: Object.keys(snap).length,
       sample: Object.entries(snap).slice(0, 3),

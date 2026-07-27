@@ -383,6 +383,11 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
+  // 測試模式：?dryRun=1 → 算完照樣回傳訊息文字，但不真的發 TG。給部署驗證用，
+  // 避免每次測試都推播打擾使用者（2026-07-27 教訓：之前用 /api/notify 測試誤發過真訊息）
+  const dryRun = req.query.dryRun === '1';
+  const maybeSend = (text) => dryRun ? Promise.resolve() : sendTelegram(TOKEN, CHAT_ID, text);
+
   try {
     console.log(`[notify] triggered at ${new Date().toISOString()}`);
 
@@ -415,9 +420,9 @@ export default async function handler(req, res) {
         ``,
         `請手動查閱後操作，或至 Vercel Logs 確認錯誤詳情。`,
       ].filter(Boolean).join('\n');
-      await sendTelegram(TOKEN, CHAT_ID, errMsg);
+      await maybeSend(errMsg);
       console.error('[notify] drive indices all failed');
-      return res.status(200).json({ sent: true, type: 'error', failed });
+      return res.status(200).json({ sent: !dryRun, dryRun, type: 'error', failed, message: dryRun ? errMsg : undefined });
     }
 
     // ── 情況 2：數據有效但有部分失敗 → 附帶警告 ──
@@ -434,9 +439,9 @@ export default async function handler(req, res) {
         if (failed.length) warn.push(`⚠️ ${failed.length} 個 symbol 抓取失敗：${failed.join(', ')}`);
         message += `\n\n${warn.join('\n')}`;
       }
-      await sendTelegram(TOKEN, CHAT_ID, message);
-      console.log(`[notify] sent ${alerts.length} alerts`);
-      return res.status(200).json({ sent: true, alerts: alerts.length, sectors: alerts.map(a => a.sector) });
+      await maybeSend(message);
+      console.log(`[notify]${dryRun ? ' [dryRun]' : ''} sent ${alerts.length} alerts`);
+      return res.status(200).json({ sent: !dryRun, dryRun, alerts: alerts.length, sectors: alerts.map(a => a.sector), message: dryRun ? message : undefined });
     }
 
     // ── 情況 4：無警示（低於閾值）→ 發平靜摘要 ──
@@ -458,18 +463,20 @@ export default async function handler(req, res) {
       top3 ? `\n最大補漲空間（僅供參考）：\n${top3}` : '',
       failed.length ? `\n⚠️ ${failed.length} 個 symbol 抓取失敗：${failed.join(', ')}` : '',
     ].filter(Boolean).join('\n');
-    await sendTelegram(TOKEN, CHAT_ID, quietMsg);
-    console.log(`[notify] quiet — no alerts above ${THRESHOLD}%`);
-    return res.status(200).json({ sent: true, type: 'quiet', allGaps: allGaps.length });
+    await maybeSend(quietMsg);
+    console.log(`[notify]${dryRun ? ' [dryRun]' : ''} quiet — no alerts above ${THRESHOLD}%`);
+    return res.status(200).json({ sent: !dryRun, dryRun, type: 'quiet', allGaps: allGaps.length, message: dryRun ? quietMsg : undefined });
 
   } catch (err) {
     console.error('[notify] error:', err.message);
-    // 即使 handler 崩潰也發 TG
-    try {
-      await sendTelegram(TOKEN, CHAT_ID,
-        `🔴 <b>Stock Radar 執行錯誤</b>\n${err.message}\n請至 Vercel Logs 查詳情`);
-    } catch { /* ignore */ }
-    return res.status(500).json({ error: err.message });
+    // 即使 handler 崩潰也發 TG（dryRun 時不發）
+    if (!dryRun) {
+      try {
+        await sendTelegram(TOKEN, CHAT_ID,
+          `🔴 <b>Stock Radar 執行錯誤</b>\n${err.message}\n請至 Vercel Logs 查詳情`);
+      } catch { /* ignore */ }
+    }
+    return res.status(500).json({ error: err.message, dryRun });
   }
 }
  
