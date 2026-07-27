@@ -9,7 +9,7 @@
  *   TELEGRAM_TOKEN   — Bot Token
  *   TELEGRAM_CHAT_ID — Chat ID
  *   NOTIFY_SECRET    — 手動觸發的保護密鑰（自訂任意字串）
- *   GAP_THRESHOLD    — 觸發通知的 gap 閾值（pp），預設 2.0
+ *   GAP_THRESHOLD    — 觸發通知的補漲空間閾值（%），預設 2.0
  */
 
 // ── 族群設定（與前端 CONFIG.sectorData 同步）──
@@ -277,8 +277,24 @@ function driveContext(alerts) {
   if (maxAbs >= 5)
     return `⚡ 驅動幅度異常（最大 ${maxAbs.toFixed(1)}%），可能有重大消息面（財報/Fed/政策），建議開盤前確認來源再操作`;
   if (maxAbs >= 3)
-    return `📊 驅動幅度中等（最大 ${maxAbs.toFixed(1)}%），Gap 機會可信度普通，建議搭配開盤量能確認`;
-  return `📉 驅動幅度偏小（${maxAbs.toFixed(1)}%），Gap 機會需特別確認是否有持續性`;
+    return `📊 驅動幅度中等（最大 ${maxAbs.toFixed(1)}%），補漲空間可信度普通，建議搭配開盤量能確認`;
+  return `📉 驅動幅度偏小（${maxAbs.toFixed(1)}%），補漲空間需特別確認是否有持續性`;
+}
+
+// ── 判斷族群方向標籤（與網站 SectorState 邏輯一致：海外下跌時不能只看 Gap 符號，
+//    要看台股實際表現，否則「海外跌+台股抗跌/逆勢漲」會被誤判成「已超漲」）──
+function classifySignal(driveChg, gap, act, exp) {
+  const driveUp = driveChg >= 0;
+  if (driveUp) {
+    return gap > 0
+      ? { icon: '🔴', label: '補漲空間', isOverextended: false }
+      : { icon: '🟢', label: '已超漲',   isOverextended: true };
+  }
+  // 海外下跌：改看台股實際漲跌 act 判斷相對強弱
+  if (act > 0.3)              return { icon: '💪', label: '逆勢強（海外跌但台股逆勢漲）', isOverextended: false };
+  if (act > exp + 0.5)        return { icon: '🛡️', label: '抗跌（跌幅小於預期）',         isOverextended: false };
+  if (gap >= 1)                return { icon: '🌊', label: '退潮（跟跌甚至跌更多）',       isOverextended: true };
+  return { icon: '👀', label: '觀望', isOverextended: false };
 }
 
 // ── 格式化通知訊息 ──
@@ -289,8 +305,8 @@ function formatMessage(alerts, threshold, streaks = {}, vixLevel = null, driveSt
   const now = `${nowTW.getFullYear()}/${pad(nowTW.getMonth()+1)}/${pad(nowTW.getDate())} ${pad(nowTW.getHours())}:${pad(nowTW.getMinutes())}`;
 
   const lines = alerts.map(a => {
-    const icon    = a.gap > 0 ? '🔴' : '🟢';
-    const gapStr  = a.gap > 0 ? `+${a.gap}pp` : `${a.gap}pp`;
+    const sig     = classifySignal(a.driveChg, a.gap, a.act, a.exp);
+    const gapStr  = a.gap > 0 ? `+${a.gap}%` : `${a.gap}%`;
     const driveStr = `${a.driveName} ${a.driveChg > 0 ? '+' : ''}${a.driveChg}%`;
     const streak   = streaks[a.sector];
     const streakTag = streak && streak.count >= 2 ? ` ⚡連續${streak.count}日` : '';
@@ -306,11 +322,11 @@ function formatMessage(alerts, threshold, streaks = {}, vixLevel = null, driveSt
         : ` ⚠️單指數`;
     }
     const betaTag = a.betaSource === 'fallback' ? ' ⚙️通用beta' : '';
-    // 連續未兌現：|Gap|>=2pp 持續 3 天以上還沒被市場修正，可能有基本面因素抵銷技術性補漲/補跌
-    const unresolvedLine = (streak?.unresolvedCount ?? 0) >= 3
+    // 連續未兌現：只在「真的已超漲/退潮」時才警告，避免海外跌+台股抗跌被誤判成價值陷阱
+    const unresolvedLine = (sig.isOverextended && (streak?.unresolvedCount ?? 0) >= 3)
       ? `\n   ⚠️ 連續${streak.unresolvedCount}日未兌現，留意是否為價值陷阱`
       : '';
-    return `${icon} <b>${a.sector.replace('台股 ', '')}${streakTag}${confirmTag}${betaTag}</b>\n   Gap: <b>${gapStr}</b>　驅動: ${driveStr}\n   預期: ${a.exp > 0 ? '+' : ''}${a.exp}%　實際: ${a.act > 0 ? '+' : ''}${a.act}%${unresolvedLine}`;
+    return `${sig.icon} <b>${a.sector.replace('台股 ', '')}（${sig.label}）${streakTag}${confirmTag}${betaTag}</b>\n   補漲空間: <b>${gapStr}</b>　驅動: ${driveStr}\n   預期: ${a.exp > 0 ? '+' : ''}${a.exp}%　實際: ${a.act > 0 ? '+' : ''}${a.act}%${unresolvedLine}`;
   });
 
   const vixLine = vixLevel != null
@@ -322,14 +338,14 @@ function formatMessage(alerts, threshold, streaks = {}, vixLevel = null, driveSt
     : null;
 
   return [
-    `📡 <b>Stock Radar Gap 警示</b>`,
-    `閾值 ±${threshold}pp 以上共 ${alerts.length} 個族群`,
+    `📡 <b>Stock Radar 補漲空間警示</b>`,
+    `閾值 ±${threshold}% 以上共 ${alerts.length} 個族群`,
     vixLine ? `\n${vixLine}` : '',
     ``,
     lines.join('\n\n'),
     ``,
     `⏰ ${now}`,
-    `🔴 = 補漲空間　🟢 = 已超漲`,
+    `🔴補漲空間　🟢已超漲　💪逆勢強　🛡️抗跌　🌊退潮`,
     ``,
     driveContext(alerts),
   ].filter(x => x !== '').join('\n');
@@ -428,21 +444,22 @@ export default async function handler(req, res) {
       .filter(([, v]) => v.chg !== null)
       .map(([k, v]) => `${k} ${parseFloat(v.chg) >= 0 ? '+' : ''}${v.chg}%`)
       .join('　');
-    const top3 = allGaps.slice(0, 3).map(a =>
-      `${a.gap > 0 ? '🔴' : '🟢'} ${a.sector.replace('台股 ','')}：${a.gap > 0 ? '+' : ''}${a.gap}pp`
-    ).join('\n');
+    const top3 = allGaps.slice(0, 3).map(a => {
+      const sig = classifySignal(a.driveChg, a.gap, a.act, a.exp);
+      return `${sig.icon} ${a.sector.replace('台股 ','')}：${a.gap > 0 ? '+' : ''}${a.gap}%`;
+    }).join('\n');
     const quietMsg = [
       `📊 <b>Stock Radar 今日掃描完成</b>`,
       `⏰ ${now}`,
       ``,
       `海外今日：${driveLines}`,
       ``,
-      `無族群超過 ±${THRESHOLD}pp 閾值，市場今日平靜。`,
-      top3 ? `\n最大 Gap（僅供參考）：\n${top3}` : '',
+      `無族群超過 ±${THRESHOLD}% 閾值，市場今日平靜。`,
+      top3 ? `\n最大補漲空間（僅供參考）：\n${top3}` : '',
       failed.length ? `\n⚠️ ${failed.length} 個 symbol 抓取失敗：${failed.join(', ')}` : '',
     ].filter(Boolean).join('\n');
     await sendTelegram(TOKEN, CHAT_ID, quietMsg);
-    console.log(`[notify] quiet — no alerts above ${THRESHOLD}pp`);
+    console.log(`[notify] quiet — no alerts above ${THRESHOLD}%`);
     return res.status(200).json({ sent: true, type: 'quiet', allGaps: allGaps.length });
 
   } catch (err) {
