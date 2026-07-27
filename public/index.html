@@ -2501,6 +2501,7 @@ const HistoryEngine = {
             <div class="bt-stat-val">${s.days} 天</div>
           </div>
         </div>
+        <div id="sidebarHitRate" style="margin-top:8px;"></div>
         <div style="font-size:11px;color:var(--text-5);margin-bottom:6px;margin-top:4px;">Gap 歷史走勢</div>
         <div class="gap-history-chart" id="sidebarHistoryChart"></div>
         <div style="margin-top:10px;max-height:200px;overflow-y:auto;">
@@ -2513,6 +2514,39 @@ const HistoryEngine = {
       </div>`;
 
     setTimeout(() => this._drawChart('sidebarHistoryChart', series), 0);
+    this._loadHitRate(sectorName);
+  },
+
+  // ── 歷史兌現率：Gap 觸發警示後，隔天是否真的收斂（訊號可信度） ──
+  _hitRateCache: null,
+  _hitRateFetchedAt: 0,
+  async _loadHitRate(sectorName) {
+    const el = document.getElementById('sidebarHitRate');
+    if (!el) return;
+    try {
+      // 快取 10 分鐘，避免每次切換族群都重打 API
+      if (!this._hitRateCache || Date.now() - this._hitRateFetchedAt > 600000) {
+        const res = await fetch('/api/hit-rate?threshold=2');
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.message || data.error || 'unknown');
+        this._hitRateCache = data;
+        this._hitRateFetchedAt = Date.now();
+      }
+      const data = this._hitRateCache;
+      if (!document.getElementById('sidebarHitRate')) return; // 使用者已切換族群
+      const entry = data.results.find(r => r.sector === sectorName);
+      if (!entry) {
+        el.innerHTML = `<div style="font-size:10px;color:var(--text-6);padding:4px 0;">📊 歷史兌現率：尚無足夠觸發樣本（累積 ${data.days} 個交易日快照）</div>`;
+        return;
+      }
+      const rateColor = entry.hitRate >= 60 ? 'var(--up)' : entry.hitRate >= 40 ? 'var(--warn)' : 'var(--down)';
+      const lowSample = entry.triggers < 5 ? ' <span style="color:var(--text-6);">（樣本少，僅供參考）</span>' : '';
+      el.innerHTML = `<div style="font-size:10px;color:var(--text-5);padding:6px 8px;background:var(--bg-2);border:0.5px solid var(--border);border-radius:4px;">
+        📊 歷史兌現率：<b style="color:${rateColor};">${entry.hitRate}%</b>（${entry.triggers} 次觸發，隔日平均收斂 ${entry.avgNextDayShrink}%）${lowSample}
+      </div>`;
+    } catch (e) {
+      el.innerHTML = '';
+    }
   },
 
   // ── SVG 折線圖繪製 ──
@@ -4422,9 +4456,26 @@ const Renderer = {
           }
         }
 
+        // 連續未兌現警告：|Gap|>=2pp 同方向持續 3 天以上，代表市場一直沒修正，可能有基本面因素
+        let unresolvedCount = 0;
+        if (recent.length) {
+          const last = recent[recent.length - 1].gap;
+          if (Math.abs(last) >= 2) {
+            unresolvedCount = 1;
+            for (let i = recent.length - 2; i >= 0; i--) {
+              if ((recent[i].gap >= 0) === (last >= 0) && Math.abs(recent[i].gap) >= 2) unresolvedCount++;
+              else break;
+            }
+          }
+        }
+        const unresolvedWarn = unresolvedCount >= 3
+          ? `<div style="margin-top:6px;padding:6px 8px;background:rgba(245,158,11,0.1);border:0.5px solid rgba(245,158,11,0.3);border-radius:4px;font-size:10px;color:var(--warn);">⚠️ 連續 ${unresolvedCount} 日 |Gap|≥2pp 未修正，可能有基本面因素抵銷技術性補漲/補跌，留意是否為價值陷阱</div>`
+          : '';
+
         return `<div style="margin:10px 0 8px;padding:8px 10px;background:var(--bg-2);border-radius:6px;border:0.5px solid var(--border);">
           <div style="font-size:10px;color:var(--text-5);margin-bottom:6px;">近 ${recent.length} 日 Gap 走勢${streakMsg}</div>
           <div style="display:flex;align-items:center;gap:4px;">${dots}</div>
+          ${unresolvedWarn}
         </div>`;
       })()}
       ${(() => {

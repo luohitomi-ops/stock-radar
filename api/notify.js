@@ -253,7 +253,15 @@ async function fetchStreaks(kvUrl, kvToken) {
         if ((series[i] >= 0) === (last >= 0)) count++;
         else break;
       }
-      streaks[sector] = { count, positive: last >= 0 };
+      // 連續未兌現：不只同方向，且 |Gap| 持續 >=2pp（技術性補漲/補跌訊號一直沒被市場修正）
+      let unresolvedCount = Math.abs(last) >= 2 ? 1 : 0;
+      if (unresolvedCount > 0) {
+        for (let i = series.length - 2; i >= 0; i--) {
+          if ((series[i] >= 0) === (last >= 0) && Math.abs(series[i]) >= 2) unresolvedCount++;
+          else break;
+        }
+      }
+      streaks[sector] = { count, positive: last >= 0, unresolvedCount };
     }
     return streaks;
   } catch (e) {
@@ -297,7 +305,11 @@ function formatMessage(alerts, threshold, streaks = {}, vixLevel = null, driveSt
         : ` ⚠️單指數`;
     }
     const betaTag = a.betaSource === 'fallback' ? ' ⚙️通用beta' : '';
-    return `${icon} <b>${a.sector.replace('台股 ', '')}${streakTag}${confirmTag}${betaTag}</b>\n   Gap: <b>${gapStr}</b>　驅動: ${driveStr}\n   預期: ${a.exp > 0 ? '+' : ''}${a.exp}%　實際: ${a.act > 0 ? '+' : ''}${a.act}%`;
+    // 連續未兌現：|Gap|>=2pp 持續 3 天以上還沒被市場修正，可能有基本面因素抵銷技術性補漲/補跌
+    const unresolvedLine = (streak?.unresolvedCount ?? 0) >= 3
+      ? `\n   ⚠️ 連續${streak.unresolvedCount}日未兌現，留意是否為價值陷阱`
+      : '';
+    return `${icon} <b>${a.sector.replace('台股 ', '')}${streakTag}${confirmTag}${betaTag}</b>\n   Gap: <b>${gapStr}</b>　驅動: ${driveStr}\n   預期: ${a.exp > 0 ? '+' : ''}${a.exp}%　實際: ${a.act > 0 ? '+' : ''}${a.act}%${unresolvedLine}`;
   });
 
   const vixLine = vixLevel != null
