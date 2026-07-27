@@ -3007,19 +3007,22 @@ const StockLookup = {
         <div><div class="lookup-label">個股 vs 族群</div><div class="lookup-value ${diff!=null?(diff>=0?'pct-up':'pct-down'):''}">${diff!=null?(diff>=0?'+':'')+diff.toFixed(2)+'%':'—'}</div></div>
       </div>`;
 
-      // 建議
+      // 建議：族群方向用 SectorState 判斷（方向感知），不能只看 gap 正負
+      // （海外跌時 gap 符號意義會反轉，退潮/抗跌不能只看數字正負判斷）
+      const sectorKey = SectorState.get(foundSector).key;
+      const sectorFavorable = sectorKey === 'bull' || sectorKey === 'rotate';
       let verdict = '', vClass = 'neutral';
-      if (isLag && (gap??0) > 0) {
+      if (isLag && sectorFavorable) {
         verdict = `📈 ${foundStock?.name||raw} 今日漲幅落後族群平均 ${Math.abs(diff).toFixed(1)}%，且族群還有補漲空間，是補漲候選。`;
         vClass = 'lag';
       } else if (isLead) {
         verdict = `⚠️ ${foundStock?.name||raw} 今日漲幅領先族群平均 ${diff.toFixed(1)}%，已超漲，追高需謹慎。`;
         vClass = 'lead';
-      } else if ((gap??0) > 0) {
-        verdict = `→ ${foundStock?.name||raw} 與族群同步，族群整體有補漲空間 ${gap?.toFixed(2)}%，可搭配成交量確認。`;
+      } else if (sectorFavorable) {
+        verdict = `→ ${foundStock?.name||raw} 與族群同步，族群整體還有補漲空間，可搭配成交量確認。`;
         vClass = 'neutral';
       } else {
-        verdict = `→ ${foundStock?.name||raw} 所屬族群 Gap 為負值，補跌風險較高，建議觀望。`;
+        verdict = `→ ${foundStock?.name||raw} 所屬族群目前偏弱（已超漲或退潮），建議觀望。`;
         vClass = 'neutral';
       }
       html += `<div class="lookup-verdict ${vClass}">${verdict}</div>`;
@@ -3142,7 +3145,14 @@ const CompareUI = {
     </table>`;
 
     // 自動產生建議
-    const best = rows.reduce((a, b) => (a.gap ?? -999) > (b.gap ?? -999) ? a : b);
+    // 用方向感知的 SectorState 判斷「有利」族群，不能只看 raw gap 最大值
+    // （海外跌時退潮族群的 gap 可能是最大正值，但那是壞消息不是最大補漲空間）
+    const favorableRows = rows.filter(r => {
+      const key = SectorState.get(r).key;
+      return key === 'bull' || key === 'rotate';
+    });
+    const best = (favorableRows.length ? favorableRows : rows)
+      .reduce((a, b) => (a.gap ?? -999) > (b.gap ?? -999) ? a : b);
     const bestBeta = rows.filter(r => r.beta != null).reduce((a, b) => a.beta > b.beta ? a : b, rows[0]);
     let verdict = `<div class="compare-verdict">`;
     verdict += `📊 <strong>${best.sector.replace('台股 ','')}</strong> 補漲空間最大（${best.gap?.toFixed(2)}%）。`;
@@ -4447,36 +4457,32 @@ const Renderer = {
           return `<span title="${dateStr}: ${label}" style="display:inline-flex;align-items:center;justify-content:center;min-width:38px;padding:2px 5px;border-radius:4px;background:${bg};color:${color};font-size:10px;font-weight:600;border:0.5px solid ${color}30;">${label}</span>`;
         }).join('<span style="color:var(--text-6);font-size:9px;padding:0 1px;">›</span>');
 
-        // 連續信號判斷（最近 N 天同向）
+        // 連續信號判斷（最近 N 天同向）── 標籤文字改用「今天」真實方向感知的 SectorState 判斷，
+        // 不能只看歷史 gap 正負（歷史快照沒存當天海外漲跌方向，海外跌+台股抗跌會被誤判成「已超漲」）
+        const todayState = SectorState.get(r).key; // bull=逆勢強/主力、rotate=輪動/抗跌、retreat=已超漲/退潮、watch=觀望
         let streakMsg = '';
+        let streak = 0;
         if (recent.length >= 2) {
-          let streak = 1;
+          streak = 1;
           const last = recent[recent.length - 1].gap;
           for (let i = recent.length - 2; i >= 0; i--) {
             if ((recent[i].gap >= 0) === (last >= 0)) streak++;
             else break;
           }
           if (streak >= 2) {
-            streakMsg = last >= 0
-              ? `<span style="color:var(--up);font-size:10px;margin-left:6px;">↑ 連續 ${streak} 日落後</span>`
-              : `<span style="color:var(--down);font-size:10px;margin-left:6px;">↓ 連續 ${streak} 日已超漲</span>`;
+            const streakLabelMap = {
+              bull:    { color: 'var(--up)',   text: `💪 連續 ${streak} 日強勢` },
+              rotate:  { color: 'var(--up)',   text: `🔄 連續 ${streak} 日待補漲` },
+              retreat: { color: 'var(--down)', text: `⚠️ 連續 ${streak} 日已超漲/退潮` },
+              watch:   { color: 'var(--text-4)', text: `連續 ${streak} 日盤整` },
+            }[todayState];
+            streakMsg = `<span style="color:${streakLabelMap.color};font-size:10px;margin-left:6px;">${streakLabelMap.text}</span>`;
           }
         }
 
-        // 連續未兌現警告：|Gap|>=2pp 同方向持續 3 天以上，代表市場一直沒修正，可能有基本面因素
-        let unresolvedCount = 0;
-        if (recent.length) {
-          const last = recent[recent.length - 1].gap;
-          if (Math.abs(last) >= 2) {
-            unresolvedCount = 1;
-            for (let i = recent.length - 2; i >= 0; i--) {
-              if ((recent[i].gap >= 0) === (last >= 0) && Math.abs(recent[i].gap) >= 2) unresolvedCount++;
-              else break;
-            }
-          }
-        }
-        const unresolvedWarn = unresolvedCount >= 3
-          ? `<div style="margin-top:6px;padding:6px 8px;background:rgba(245,158,11,0.1);border:0.5px solid rgba(245,158,11,0.3);border-radius:4px;font-size:10px;color:var(--warn);">⚠️ 連續 ${unresolvedCount} 日 |Gap|≥2pp 未修正，可能有基本面因素抵銷技術性補漲/補跌，留意是否為價值陷阱</div>`
+        // 連續未兌現警告：只在「今天真的是已超漲/退潮」時才警告，避免海外跌+台股抗跌被誤判成價值陷阱
+        const unresolvedWarn = (todayState === 'retreat' && streak >= 3)
+          ? `<div style="margin-top:6px;padding:6px 8px;background:rgba(245,158,11,0.1);border:0.5px solid rgba(245,158,11,0.3);border-radius:4px;font-size:10px;color:var(--warn);">⚠️ 連續 ${streak} 日未修正，可能有基本面因素抵銷技術性補漲，留意是否為價值陷阱</div>`
           : '';
 
         return `<div style="margin:10px 0 8px;padding:8px 10px;background:var(--bg-2);border-radius:6px;border:0.5px solid var(--border);">
@@ -4832,8 +4838,13 @@ const Renderer = {
     if (!withGap.length) { el.style.display = 'none'; return; }
 
     const avgGap = withGap.reduce((s, r) => s + r.gap, 0) / withGap.length;
-    const posCount = withGap.filter(r => r.gap > 0).length;
-    const posPct = Math.round(posCount / withGap.length * 100);
+    // 用方向感知的 SectorState 判斷「有利」族群數，不能只看 gap 正負
+    // （海外跌+台股抗跈的族群 gap 會是負值，但那是好消息，不能被排除在外）
+    const favorableCount = withGap.filter(r => {
+      const key = SectorState.get(r).key;
+      return key === 'bull' || key === 'rotate';
+    }).length;
+    const posPct = Math.round(favorableCount / withGap.length * 100);
 
     // 取海外驅動最大跌幅（含 NASDAQ / DJIA 分化判斷）
     const driveChgs = computed.map(r => r.driveChg).filter(v => v !== null);
