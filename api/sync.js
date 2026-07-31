@@ -4,7 +4,7 @@
  * POST /api/sync?key=portfolio_active  → 寫入
  */
 
-const ALLOWED_KEYS = ['portfolio_active', 'portfolio_history', 'signal_journal'];
+const ALLOWED_KEYS = ['portfolio_active', 'portfolio_history', 'signal_journal', 'mystocks_holdings'];
 const TTL = 86400 * 365;
 
 export default async function handler(req, res) {

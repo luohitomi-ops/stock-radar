@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>我的持股 — 給獺金幣</title>
+<style>
+:root {
+  --accent:       #1a6ef5;
+  --accent-dim:   #0e2040;
+  --accent-text:  #60a5fa;
+  --bg-0:   #0e1117;
+  --bg-1:   #0a0e14;
+  --bg-2:   #141922;
+  --bg-3:   #121820;
+  --border:       #1e2533;
+  --border-hover: #2a3344;
+  --text-1: #e2e8f0;
+  --text-2: #c8d8e8;
+  --text-3: #9aacbe;
+  --text-4: #6b7a8e;
+  --text-5: #4a5a6e;
+  --up:      #22c55e;
+  --up-bg:   #0d2a18;
+  --down:    #ef4444;
+  --down-bg: #2a0d0d;
+  --warn:    #f59e0b;
+  --warn-bg: #2a1e00;
+  --radius-sm: 4px;
+  --radius:    6px;
+  --radius-lg: 8px;
+  --transition: 0.15s ease;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 13px; }
+body { background: var(--bg-0); color: var(--text-1); font-family: 'Helvetica Neue', 'PingFang TC', 'Microsoft JhengHei', sans-serif; min-height: 100vh; }
+
+.topbar { position: sticky; top: 0; z-index: 100; background: rgba(10,14,20,0.85); backdrop-filter: blur(12px); border-bottom: 0.5px solid var(--border); padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; }
+.topbar-left { display: flex; align-items: center; gap: 12px; }
+.logo { display: flex; align-items: center; gap: 7px; font-size: 14px; font-weight: 600; color: var(--text-1); text-decoration: none; }
+.logo-icon { width: 26px; height: 26px; background: var(--accent); border-radius: 6px; display: flex; align-items: center; justify-content: center; overflow:hidden; }
+.page-title { font-size: 12px; color: var(--text-3); padding-left: 12px; border-left: 1px solid var(--border); }
+.topbar-right { display: flex; align-items: center; gap: 8px; }
+.btn { padding: 5px 12px; border-radius: var(--radius); border: 0.5px solid var(--border); background: var(--bg-2); color: var(--text-2); font-size: 12px; cursor: pointer; transition: var(--transition); text-decoration: none; display: inline-flex; align-items: center; gap: 4px; }
+.btn:hover { border-color: var(--border-hover); color: var(--text-1); background: var(--bg-3); }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn-primary:hover { background: #1560d0; }
+
+.page { padding: 16px; max-width: 1200px; margin: 0 auto; }
+
+/* ── 總經面板 ── */
+.macro-panel { background: var(--bg-1); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 14px; margin-bottom: 16px; }
+.macro-panel-title { font-size: 12px; font-weight: 600; color: var(--text-1); margin-bottom: 10px; display:flex; align-items:center; justify-content:space-between; }
+.macro-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 10px; }
+.macro-card { background: var(--bg-2); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 10px 12px; }
+.macro-card.up { border-left: 2px solid var(--up); }
+.macro-card.down { border-left: 2px solid var(--down); }
+.macro-label { font-size: 10px; color: var(--text-4); margin-bottom: 4px; }
+.macro-val { font-size: 15px; font-weight: 600; color: var(--text-1); font-variant-numeric: tabular-nums; }
+.macro-chg { font-size: 11px; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.macro-chg.up { color: var(--up); }
+.macro-chg.down { color: var(--down); }
+.macro-note { font-size: 11px; color: var(--text-3); line-height: 1.7; padding: 8px 10px; background: var(--bg-2); border-radius: var(--radius); border: 0.5px solid var(--border); }
+.macro-note b { color: var(--warn); }
+
+/* ── SUMMARY ── */
+.summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+.summary-card { background: var(--bg-1); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 12px 14px; }
+.summary-label { font-size: 11px; color: var(--text-4); margin-bottom: 5px; }
+.summary-value { font-size: 18px; font-weight: 600; color: var(--text-1); font-variant-numeric: tabular-nums; }
+.summary-value.up { color: var(--up); }
+.summary-value.down { color: var(--down); }
+.summary-sub { font-size: 11px; color: var(--text-4); margin-top: 3px; }
+
+/* ── TABLE ── */
+.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.section-title { font-size: 13px; font-weight: 600; color: var(--text-1); }
+.table-wrap { background: var(--bg-1); border: 0.5px solid var(--border); border-radius: var(--radius-lg); overflow-x: auto; margin-bottom: 16px; }
+.holdings-grid { display: grid; grid-template-columns: 60px 64px 56px 60px 60px 78px 68px 90px 70px 1fr 90px; gap: 6px; min-width: 900px; }
+.table-header-row { display: grid; padding: 8px 14px; border-bottom: 0.5px solid var(--border); background: var(--bg-0); }
+.table-header-row span { font-size: 11px; color: var(--text-4); font-weight: 500; }
+.holding-row { display: grid; padding: 10px 14px; border-bottom: 0.5px solid var(--border); align-items: center; transition: background var(--transition); }
+.holding-row:last-child { border-bottom: none; }
+.holding-row:hover { background: var(--bg-3); }
+.cell { font-size: 12px; color: var(--text-2); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cell.sym { font-weight: 600; color: var(--text-1); }
+.cell.up { color: var(--up); }
+.cell.down { color: var(--down); }
+.cell.muted { color: var(--text-4); font-size: 11px; }
+.tag-type { font-size: 10px; padding: 1px 7px; border-radius: 20px; border: 0.5px solid; white-space:nowrap; }
+.tag-type.fund { background: rgba(96,165,250,0.1); border-color: #1a3a6a; color: var(--accent-text); }
+.tag-type.swing { background: rgba(245,158,11,0.1); border-color: #5a3500; color: var(--warn); }
+.rel-strength { font-size: 11px; padding: 1px 6px; border-radius: 3px; }
+.rel-strength.strong { background: var(--up-bg); color: var(--up); }
+.rel-strength.weak { background: var(--down-bg); color: var(--down); }
+.rel-strength.flat { background: var(--bg-2); color: var(--text-4); }
+.note-text { font-size: 11px; color: var(--text-3); line-height: 1.5; white-space: normal; }
+.row-actions { display: flex; gap: 4px; }
+.act-btn { padding: 3px 8px; border-radius: var(--radius-sm); border: 0.5px solid var(--border); background: var(--bg-2); color: var(--text-3); font-size: 11px; cursor: pointer; transition: var(--transition); }
+.act-btn:hover { color: var(--text-1); border-color: var(--border-hover); }
+.act-btn.del { color: var(--down); border-color: #3a1515; }
+
+/* ── REFRESH BAR ── */
+.refresh-bar { display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; background: var(--bg-1); border: 0.5px solid var(--border); border-radius: var(--radius-lg); margin-bottom: 14px; }
+.refresh-info { font-size: 11px; color: var(--text-4); }
+.refresh-info span { color: var(--text-2); }
+.dot-live { width: 6px; height: 6px; border-radius: 50%; background: var(--up); display: inline-block; margin-right: 4px; animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+/* ── MODAL ── */
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.15s; }
+.overlay.open { opacity: 1; pointer-events: all; }
+.modal { background: var(--bg-1); border: 0.5px solid var(--border); border-radius: 10px; width: 420px; max-width: 95vw; overflow: hidden; transform: translateY(8px); transition: transform 0.15s; }
+.overlay.open .modal { transform: translateY(0); }
+.modal-header { padding: 14px 16px; border-bottom: 0.5px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+.modal-title { font-size: 13px; font-weight: 600; }
+.modal-close { background: none; border: none; color: var(--text-4); cursor: pointer; font-size: 16px; line-height: 1; padding: 2px; }
+.modal-body { padding: 16px; display: flex; flex-direction: column; gap: 12px; max-height: 70vh; overflow-y: auto; }
+.modal-footer { padding: 12px 16px; border-top: 0.5px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.form-group { display: flex; flex-direction: column; gap: 5px; }
+.form-group label { font-size: 11px; color: var(--text-3); }
+.form-group input, .form-group select, .form-group textarea { background: var(--bg-2); border: 0.5px solid var(--border); border-radius: var(--radius); color: var(--text-1); font-size: 12px; padding: 7px 10px; outline: none; transition: var(--transition); width: 100%; font-family: inherit; }
+.form-group textarea { resize: vertical; min-height: 50px; }
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--accent); }
+.form-hint { font-size: 11px; color: var(--text-4); }
+
+.empty { padding: 40px; text-align: center; color: var(--text-4); font-size: 12px; }
+.toast { position: fixed; bottom: 24px; right: 24px; background: var(--bg-2); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 10px 16px; font-size: 12px; color: var(--text-1); z-index: 999; box-shadow: 0 4px 20px rgba(0,0,0,0.4); transform: translateY(8px); opacity: 0; transition: all 0.2s; pointer-events: none; }
+.toast.show { transform: translateY(0); opacity: 1; }
+
+@media (max-width: 900px) {
+  .macro-grid { grid-template-columns: repeat(2, 1fr); }
+  .summary-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <a class="logo" href="/">
+      <div class="logo-icon"><img src="/otter-logo.png" width="26" height="26" style="object-fit:cover;border-radius:6px;"></div>
+      給獺金幣
+    </a>
+    <span class="page-title">📌 我的持股</span>
+  </div>
+  <div class="topbar-right">
+    <button class="btn btn-primary" onclick="openAddModal()">＋ 新增/編輯持股</button>
+    <button class="btn" onclick="refreshAll()">↻ 更新現價</button>
+    <a class="btn" href="/">← 回主頁</a>
+  </div>
+</div>
+
+<div class="page">
+
+  <!-- 總經面板 -->
+  <div class="macro-panel">
+    <div class="macro-panel-title">
+      <span>🌐 今日總經環境（判斷進出場前先看這裡）</span>
+      <span class="refresh-info" id="macroTime" style="font-size:11px;"></span>
+    </div>
+    <div class="macro-grid" id="macroGrid"></div>
+    <div class="macro-note" id="macroNote">載入中…</div>
+  </div>
+
+  <!-- SUMMARY -->
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="summary-label">總投入成本</div>
+      <div class="summary-value" id="sumCost">—</div>
+      <div class="summary-sub" id="sumCount">0 檔持股</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">目前市值</div>
+      <div class="summary-value" id="sumValue">—</div>
+      <div class="summary-sub">即時估算（含買賣手續費+證交稅）</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">未實現損益（淨額）</div>
+      <div class="summary-value" id="sumPnl">—</div>
+      <div class="summary-sub" id="sumPnlPct">—</div>
+    </div>
+  </div>
+
+  <!-- REFRESH STATUS -->
+  <div class="refresh-bar">
+    <div class="refresh-info"><span class="dot-live" id="liveDot"></span>現價更新：<span id="lastRefresh">尚未更新</span>（每5分鐘自動更新一次）</div>
+  </div>
+
+  <!-- HOLDINGS TABLE -->
+  <div class="section-header">
+    <div class="section-title">持股明細</div>
+  </div>
+  <div class="table-wrap">
+    <div class="table-header-row holdings-grid">
+      <span>代號</span><span>名稱</span><span>股數</span><span>成本</span><span>現價</span>
+      <span>市值</span><span>損益%</span><span>今日%／SOX對比</span><span>倉位性質</span><span>備註</span><span>操作</span>
+    </div>
+    <div id="holdingsList"></div>
+  </div>
+
+</div>
+
+<!-- ADD/EDIT MODAL -->
+<div class="overlay" id="addOverlay" onclick="closeModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <span class="modal-title" id="modalTitle">新增持股</span>
+      <button class="modal-close" onclick="closeAddModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>股票代號 *</label>
+          <input type="text" id="fSymbol" placeholder="例：6770" maxlength="10"/>
+        </div>
+        <div class="form-group">
+          <label>名稱</label>
+          <input type="text" id="fName" placeholder="例：力積電"/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>股數（零股，實際股數）*</label>
+          <input type="number" id="fShares" placeholder="0" min="0" step="1"/>
+        </div>
+        <div class="form-group">
+          <label>均價成本（元）*</label>
+          <input type="number" id="fCost" placeholder="0.00" step="0.01" min="0"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>倉位性質</label>
+        <select id="fType">
+          <option value="fund">長期基本面倉（出場看基本面）</option>
+          <option value="swing">波段倉（出場看技術/紀律）</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>備註（出場觸發條件、底倉/可交易分法、目標價等）</label>
+        <textarea id="fNote" placeholder="例：底倉120股永遠不動/可交易80股；出場看毛利率guidance"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeAddModal()">取消</button>
+      <button class="btn btn-primary" onclick="saveHolding()">確認儲存</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════
+// 手續費常數（台股零股，跟整張同費率）
+// ═══════════════════════════════════════════
+const FEE = { BUY_RATE: 0.001425, SELL_RATE: 0.001425, TAX_RATE: 0.003 };
+function calcFee(price, shares, side) {
+  const amount = price * shares;
+  if (side === 'buy')  return amount * FEE.BUY_RATE;
+  if (side === 'sell') return amount * (FEE.SELL_RATE + FEE.TAX_RATE);
+  return 0;
+}
+
+// ═══════════════════════════════════════════
+// PROXY / FETCH
+// ═══════════════════════════════════════════
+function _isVercel() { return location.hostname !== 'localhost' && !location.protocol.startsWith('file'); }
+function proxyUrl(url) {
+  if (_isVercel()) return `/api/proxy?url=${encodeURIComponent(url)}`;
+  return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+}
+async function fetchQuote(symbol) {
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`;
+  try {
+    const res = await fetch(proxyUrl(url));
+    const data = await res.json();
+    const meta = data?.chart?.result?.[0]?.meta;
+    if (!meta) return null;
+    const price = meta.regularMarketPrice;
+    const prev  = meta.chartPreviousClose || meta.previousClose;
+    const chgPct = prev ? ((price - prev) / prev * 100) : 0;
+    return { price, prev, chgPct };
+  } catch { return null; }
+}
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+// 分批依序抓取，避免無限制併發把 allorigins/Yahoo 打到限流（同一個問題之前在 snapshot.js 修過）
+async function fetchQuotesSequential(symbols, onEach, stagger = 180) {
+  for (const sym of symbols) {
+    const d = await fetchQuote(sym);
+    if (d) onEach(sym, d);
+    await sleep(stagger);
+  }
+}
+// 個股代號自動補 .TW（已知上櫃股用 .TWO）
+const OTC_SYMBOLS = new Set(['3211']); // 順達等上櫃股，之後有新的上櫃持股在這裡加代號
+function tickerOf(symbol) {
+  if (!/^\d+$/.test(symbol)) return symbol;
+  return symbol + (OTC_SYMBOLS.has(symbol) ? '.TWO' : '.TW');
+}
+
+// ═══════════════════════════════════════════
+// STORAGE
+// ═══════════════════════════════════════════
+const STORE_KEY = 'stockRadar_mystocks_holdings';
+const CloudSync = {
+  _DEV: location.hostname === 'localhost' || location.hostname === '127.0.0.1',
+  async push(data) {
+    if (this._DEV) return;
+    try { await fetch('/api/sync?key=mystocks_holdings', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ data }) }); } catch {}
+  },
+  async pull() {
+    if (this._DEV) return null;
+    try { const res = await fetch('/api/sync?key=mystocks_holdings'); const d = await res.json(); return d.ok ? d.data : null; } catch { return null; }
+  },
+  async init() {
+    if (this._DEV) return;
+    try {
+      const cloud = await this.pull();
+      if (cloud && Array.isArray(cloud) && cloud.length) {
+        localStorage.setItem(STORE_KEY, JSON.stringify(cloud));
+        STATE.holdings = cloud;
+        render();
+        refreshAll();
+        return;
+      }
+      // 雲端是空的 → 把本機現有資料（含預設種子）推上去
+      await this.push(STATE.holdings);
+    } catch {}
+  },
+};
+
+// 預設種子資料（2026-07-31 已知實際持股，之後用「新增/編輯持股」維護，不用改程式碼）
+const SEED_HOLDINGS = [
+  { id:'6770', name:'力積電', shares:200, cost:74.6, type:'fund', note:'底倉120股永遠不動／可交易80股；2026-07-28核實基本面轉強(Q2毛利率10%→28%、EPS轉正0.76元)，出場看毛利率/產能利用率guidance是否兌現，不再只看季線66.76' },
+  { id:'2408', name:'南亞科', shares:30, cost:448, type:'fund', note:'30股全額底倉，不切可交易部分；出場看基本面改變，不看日K；下次檢查點＝2026年底DRAM景氣是否延續' },
+  { id:'6139', name:'亞翔', shares:915, cost:288, type:'swing', note:'波段倉，60MA約723／波段低點約708／硬底560僅供參考需重算；逼近1000才減碼；訂單能見度4400億、營運展望佳' },
+  { id:'3211', name:'順達', shares:30, cost:447, type:'fund', note:'2026-07-30核實後改列基本面倉；BBU(AI資料中心)為核心動能，H1 EPS3.4/營益率+78.9%；Q2單季曾衰退65.1%需追蹤Q3是否回穩' },
+  { id:'2530', name:'華建', shares:1000, cost:19, type:'fund', note:'關鍵追蹤指標＝房屋銷售率；進場價19元，目標+50%(28.5元)，25-26元開始密切關注；⚠️前董座涉內線交易疑雲需持續留意後續' },
+];
+
+const Storage = {
+  get() {
+    try {
+      const raw = localStorage.getItem(STORE_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch {}
+    return SEED_HOLDINGS;
+  },
+  save(d) {
+    localStorage.setItem(STORE_KEY, JSON.stringify(d));
+    CloudSync.push(d);
+  },
+};
+
+let STATE = { holdings: Storage.get(), prices: {}, editId: null };
+
+// ═══════════════════════════════════════════
+// 總經面板
+// ═══════════════════════════════════════════
+const MACRO_SYMBOLS = [
+  { label:'台灣加權', symbol:'^TWII', decimals:0 },
+  { label:'費半 SOX', symbol:'^SOX',  decimals:0 },
+  { label:'VIX 恐慌指數', symbol:'^VIX', decimals:2 },
+  { label:'S&P 500', symbol:'^GSPC', decimals:0 },
+];
+let _macro = {};
+
+async function refreshMacro() {
+  await fetchQuotesSequential(MACRO_SYMBOLS.map(m => m.symbol), (sym, d) => { _macro[sym] = d; });
+  renderMacro();
+}
+
+function renderMacro() {
+  const grid = document.getElementById('macroGrid');
+  grid.innerHTML = MACRO_SYMBOLS.map(m => {
+    const d = _macro[m.symbol];
+    if (!d) return `<div class="macro-card"><div class="macro-label">${m.label}</div><div class="macro-val">—</div></div>`;
+    const cls = d.chgPct > 0.05 ? 'up' : d.chgPct < -0.05 ? 'down' : '';
+    return `<div class="macro-card ${cls}">
+      <div class="macro-label">${m.label}</div>
+      <div class="macro-val">${d.price?.toLocaleString('en-US',{minimumFractionDigits:m.decimals,maximumFractionDigits:m.decimals}) ?? '—'}</div>
+      <div class="macro-chg ${cls}">${d.chgPct>=0?'+':''}${d.chgPct.toFixed(2)}%</div>
+    </div>`;
+  }).join('');
+
+  const sox = _macro['^SOX']?.chgPct;
+  const vix = _macro['^VIX'];
+  const twii = _macro['^TWII']?.chgPct;
+  const noteEl = document.getElementById('macroNote');
+  const parts = [];
+  if (sox != null) {
+    if (sox >= 3) parts.push(`SOX大漲 <b>+${sox.toFixed(1)}%</b>，台股半導體/記憶體相關可能有補漲壓力，注意追高風險`);
+    else if (sox <= -3) parts.push(`SOX大跌 <b>${sox.toFixed(1)}%</b>，台股明日開盤有補跌壓力，暫緩進場`);
+    else parts.push(`SOX ${sox>=0?'+':''}${sox.toFixed(1)}%，變動不大`);
+  }
+  if (vix) {
+    if (vix.price >= 25) parts.push(`VIX <b>${vix.price.toFixed(1)}（紅色危險）</b>，市場極度不安，暫停進場決策`);
+    else if (vix.price >= 20) parts.push(`VIX <b>${vix.price.toFixed(1)}（黃色警示）</b>，情緒偏緊張，縮小部位`);
+    else parts.push(`VIX ${vix.price.toFixed(1)}，情緒正常`);
+  }
+  if (twii != null) parts.push(`台股大盤今日 ${twii>=0?'+':''}${twii.toFixed(2)}%`);
+  noteEl.innerHTML = parts.join('　｜　') || '資料載入中…';
+  document.getElementById('macroTime').textContent = new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'}) + ' 更新';
+}
+
+// ═══════════════════════════════════════════
+// 持股價格 + 相對SOX強弱（簡單版，不用複雜迴歸，方便自行核對）
+// ═══════════════════════════════════════════
+async function refreshHoldingPrices() {
+  const ids = STATE.holdings.map(h => h.id);
+  if (!ids.length) return;
+  document.getElementById('liveDot').style.background = 'var(--warn)';
+  const idByTicker = {};
+  ids.forEach(id => { idByTicker[tickerOf(id)] = id; });
+  await fetchQuotesSequential(Object.keys(idByTicker), (ticker, d) => {
+    STATE.prices[idByTicker[ticker]] = d;
+    render(); // 每抓到一檔就先更新畫面，不用全部等完才看到東西
+  });
+  const now = new Date();
+  document.getElementById('lastRefresh').textContent = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
+  document.getElementById('liveDot').style.background = 'var(--up)';
+}
+
+async function refreshAll() {
+  // 先抓總經(4檔)，再抓持股(5檔)，全部依序不併發，避免打到Yahoo/allorigins限流
+  await refreshMacro();
+  await refreshHoldingPrices();
+  render();
+}
+
+// ═══════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════
+function fmt(n, decimals = 0) { if (n == null || isNaN(n)) return '—'; return n.toLocaleString('zh-TW', { minimumFractionDigits: decimals, maximumFractionDigits: decimals }); }
+function fmtPrice(n) { return n == null ? '—' : fmt(n, 2); }
+
+function renderSummary() {
+  let totalCost = 0, totalValue = 0, hasPrice = false;
+  STATE.holdings.forEach(h => {
+    const cost = h.cost * h.shares;
+    totalCost += cost;
+    const q = STATE.prices[h.id];
+    if (q?.price != null) {
+      const sellFee = calcFee(q.price, h.shares, 'sell');
+      totalValue += (q.price * h.shares) - sellFee;
+      hasPrice = true;
+    } else {
+      totalValue += cost;
+    }
+  });
+  const buyFeeTotal = STATE.holdings.reduce((s,h) => s + calcFee(h.cost, h.shares, 'buy'), 0);
+  const costWithFee = totalCost + buyFeeTotal;
+  const pnl = totalValue - costWithFee;
+  const pnlPct = costWithFee > 0 ? (pnl / costWithFee * 100) : 0;
+
+  document.getElementById('sumCost').textContent = totalCost > 0 ? `$${fmt(costWithFee)}` : '—';
+  document.getElementById('sumCount').textContent = `${STATE.holdings.length} 檔持股`;
+  document.getElementById('sumValue').textContent = hasPrice ? `$${fmt(totalValue)}` : '—';
+  const pnlEl = document.getElementById('sumPnl');
+  pnlEl.textContent = hasPrice ? `${pnl>=0?'+':''}$${fmt(Math.abs(pnl))}` : '—';
+  pnlEl.className = 'summary-value' + (hasPrice ? (pnl>=0?' up':' down') : '');
+  document.getElementById('sumPnlPct').textContent = hasPrice ? `${pnlPct>=0?'+':''}${pnlPct.toFixed(2)}%（已含手續費+證交稅）` : '—';
+}
+
+function renderHoldings() {
+  const el = document.getElementById('holdingsList');
+  if (!STATE.holdings.length) {
+    el.innerHTML = `<div class="empty">目前沒有持股，點右上角「新增/編輯持股」開始追蹤</div>`;
+    return;
+  }
+  const soxChg = _macro['^SOX']?.chgPct;
+  el.innerHTML = STATE.holdings.map(h => {
+    const q = STATE.prices[h.id];
+    const price = q?.price ?? null;
+    const cost = h.cost * h.shares;
+    const buyFee = calcFee(h.cost, h.shares, 'buy');
+    let value = null, netPnl = null, pnlPct = null;
+    if (price != null) {
+      const sellFee = calcFee(price, h.shares, 'sell');
+      value = price * h.shares - sellFee;
+      netPnl = value - (cost + buyFee);
+      pnlPct = netPnl / (cost + buyFee) * 100;
+    }
+    const pnlCls = pnlPct == null ? '' : pnlPct >= 0 ? 'up' : 'down';
+
+    // 相對SOX強弱：個股今日% - SOX今日%
+    let relHtml = '<span class="rel-strength flat">—</span>';
+    if (q?.chgPct != null) {
+      const stockChg = q.chgPct;
+      const chgCls = stockChg > 0.05 ? 'up' : stockChg < -0.05 ? 'down' : '';
+      const chgStr = `<span class="cell ${chgCls}" style="display:inline;">${stockChg>=0?'+':''}${stockChg.toFixed(2)}%</span>`;
+      if (soxChg != null) {
+        const rel = stockChg - soxChg;
+        const relCls = rel > 1 ? 'strong' : rel < -1 ? 'weak' : 'flat';
+        const relLabel = rel > 1 ? '強於SOX' : rel < -1 ? '弱於SOX' : '同步';
+        relHtml = `${chgStr}　<span class="rel-strength ${relCls}">${relLabel} ${rel>=0?'+':''}${rel.toFixed(1)}</span>`;
+      } else {
+        relHtml = chgStr;
+      }
+    }
+
+    const typeTag = h.type === 'swing'
+      ? '<span class="tag-type swing">波段倉</span>'
+      : '<span class="tag-type fund">基本面倉</span>';
+
+    return `<div class="holding-row holdings-grid">
+      <span class="cell sym">${h.id}</span>
+      <span class="cell">${h.name || '—'}</span>
+      <span class="cell">${fmt(h.shares)}</span>
+      <span class="cell muted">${fmtPrice(h.cost)}</span>
+      <span class="cell ${pnlCls}">${price != null ? fmtPrice(price) : '—'}</span>
+      <span class="cell">${value != null ? '$'+fmt(value) : '—'}</span>
+      <span class="cell ${pnlCls}">${pnlPct != null ? (pnlPct>=0?'+':'')+pnlPct.toFixed(2)+'%' : '—'}</span>
+      <span class="cell">${relHtml}</span>
+      <span class="cell">${typeTag}</span>
+      <span class="note-text">${h.note || ''}</span>
+      <span class="cell">
+        <div class="row-actions">
+          <button class="act-btn" onclick="editHolding('${h.id}')">編輯</button>
+          <button class="act-btn del" onclick="deleteHolding('${h.id}')">🗑</button>
+        </div>
+      </span>
+    </div>`;
+  }).join('');
+}
+
+function render() { renderSummary(); renderHoldings(); }
+
+// ═══════════════════════════════════════════
+// MODAL
+// ═══════════════════════════════════════════
+function openAddModal() {
+  STATE.editId = null;
+  document.getElementById('modalTitle').textContent = '新增持股';
+  document.getElementById('fSymbol').value = '';
+  document.getElementById('fName').value = '';
+  document.getElementById('fShares').value = '';
+  document.getElementById('fCost').value = '';
+  document.getElementById('fType').value = 'fund';
+  document.getElementById('fNote').value = '';
+  document.getElementById('addOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('fSymbol').focus(), 100);
+}
+function editHolding(id) {
+  const h = STATE.holdings.find(x => x.id === id);
+  if (!h) return;
+  STATE.editId = id;
+  document.getElementById('modalTitle').textContent = '編輯持股';
+  document.getElementById('fSymbol').value = h.id;
+  document.getElementById('fName').value = h.name || '';
+  document.getElementById('fShares').value = h.shares;
+  document.getElementById('fCost').value = h.cost;
+  document.getElementById('fType').value = h.type || 'fund';
+  document.getElementById('fNote').value = h.note || '';
+  document.getElementById('addOverlay').classList.add('open');
+}
+function closeAddModal() { document.getElementById('addOverlay').classList.remove('open'); }
+function closeModal(e) { if (e.target === document.getElementById('addOverlay')) closeAddModal(); }
+
+function saveHolding() {
+  const id = document.getElementById('fSymbol').value.trim();
+  const name = document.getElementById('fName').value.trim();
+  const shares = parseFloat(document.getElementById('fShares').value);
+  const cost = parseFloat(document.getElementById('fCost').value);
+  const type = document.getElementById('fType').value;
+  const note = document.getElementById('fNote').value.trim();
+
+  if (!id) { showToast('請輸入股票代號'); return; }
+  if (isNaN(shares) || shares <= 0) { showToast('請輸入正確股數'); return; }
+  if (isNaN(cost) || cost <= 0) { showToast('請輸入正確成本'); return; }
+
+  const rec = { id, name, shares, cost, type, note };
+  const idx = STATE.holdings.findIndex(h => h.id === (STATE.editId || id));
+  if (idx >= 0) STATE.holdings[idx] = rec;
+  else STATE.holdings.push(rec);
+
+  Storage.save(STATE.holdings);
+  closeAddModal();
+  render();
+  showToast(`已儲存 ${id}`);
+  refreshHoldingPrices().then(render);
+}
+function deleteHolding(id) {
+  if (!confirm(`確定刪除 ${id} 這筆持股記錄？（只是從追蹤清單移除，不影響你實際的股票）`)) return;
+  STATE.holdings = STATE.holdings.filter(h => h.id !== id);
+  Storage.save(STATE.holdings);
+  render();
+}
+
+// ═══════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════
+let _toastTimer = null;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show';
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+render();
+refreshAll();
+CloudSync.init();
+setInterval(refreshAll, 5 * 60 * 1000);
+</script>
+
+<div style="margin-top:40px;padding:20px 16px 30px;border-top:0.5px solid var(--border);text-align:center;">
+  <div style="max-width:600px;margin:0 auto;">
+    <div style="font-size:13px;color:var(--text-2);font-weight:600;margin-bottom:6px;">給獺金幣 Stock Radar — 我的持股</div>
+    <div style="font-size:11px;color:var(--text-4);line-height:1.8;margin-bottom:12px;">
+      作者：檸子　<a href="https://www.instagram.com/yuzukiluo" target="_blank" style="color:var(--accent-text);text-decoration:none;">IG @yuzukiluo</a>　<a href="mailto:luohitomi@gmail.com" style="color:var(--accent-text);text-decoration:none;">luohitomi@gmail.com</a>
+    </div>
+    <div style="font-size:11px;color:var(--text-4);background:var(--bg-1);border:0.5px solid var(--border);border-radius:8px;padding:10px 14px;line-height:1.7;">
+      ⚠️ 本工具提供之資訊僅供參考，不構成任何投資建議或推薦。相對SOX強弱是簡單的今日漲跌幅相減，非嚴謹迴歸beta，僅供輔助參考。投資有風險，請自行判斷並承擔相應責任。
+    </div>
+  </div>
+</div>
+</body>
+</html>
