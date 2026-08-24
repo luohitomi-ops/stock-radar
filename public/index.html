@@ -1493,10 +1493,12 @@ const CONFIG = {
       ]},
     { hot:true,  sector:'台股 矽光子 / CPO', exp:null, act:null, gap:null,
       market:'US', driveName:'美股 費城半導體', driveIndex:'SOX', driveChg:null, cover:50,
+      // 2026-08-19修復：原本跟CoWoS用同一組股票(2330台積電/3711日月光)導致兩族群數字永遠相同，
+      // 改用全新/聯亞(InP雷射材料核心供應商，矽光子上游)+上詮，跟CoWoS的先進封裝路線區隔開
       stocks:[
-        {id:'2330',name:'台積電', price:2300,chg:null, role:'龍頭', seed:601},
-        {id:'3711',name:'日月光', price:165, chg:null, role:'核心', seed:602},
-        {id:'3014',name:'聯陽',   price:85,  chg:null, role:'觀察', seed:603},
+        {id:'2455',name:'全新',   price:120, chg:null, role:'龍頭', seed:601},
+        {id:'3081',name:'聯亞',   price:95,  chg:null, role:'核心', seed:602},
+        {id:'3363',name:'上詮',   price:180, chg:null, role:'觀察', seed:603},
       ]},
     { hot:true,  sector:'台股 電力設備 / 變壓器', exp:null, act:null, gap:null,
       market:'US', driveName:'美股 費城半導體', driveIndex:'SOX', driveChg:null, cover:75,

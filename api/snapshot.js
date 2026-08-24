@@ -124,7 +124,7 @@ export default async function handler(req, res) {
       { sector:'台股 IC 設計 / 繪圖晶片',      driveIndex:'SOX', stockSymbols:['2454.TW','2379.TW','3443.TW'] },
       { sector:'台股 ASIC / 客製晶片',         driveIndex:'SOX', stockSymbols:['2454.TW','3443.TW','5347.TWO'] },
       { sector:'台股 ABF 載板 / PCB',          driveIndex:'SOX', stockSymbols:['3037.TW','8046.TW','3189.TW'] },
-      { sector:'台股 矽光子 / CPO',            driveIndex:'SOX', stockSymbols:['2330.TW','3711.TW','3014.TW'] },
+      { sector:'台股 矽光子 / CPO',            driveIndex:'SOX', stockSymbols:['2455.TW','3081.TW','3363.TW'] }, // 2026-08-19修復：原本跟CoWoS共用2330/3711導致數字永遠相同，改用全新/聯亞/上詮(InP雷射材料供應商)
       { sector:'台股 電力設備 / 變壓器',        driveIndex:'SOX', stockSymbols:['1519.TW','1513.TW','1503.TW'] },
       { sector:'台股 鴻海 / 代工龍頭',         driveIndex:'SOX', stockSymbols:['2317.TW','2357.TW','3231.TW'] },
       { sector:'台股 光學鏡頭',                driveIndex:'SOX', stockSymbols:['3008.TW','3406.TW'] },
